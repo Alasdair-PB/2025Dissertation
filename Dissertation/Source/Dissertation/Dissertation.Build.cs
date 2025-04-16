@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 using UnrealBuildTool;
 
 public class Dissertation : ModuleRules
@@ -13,8 +11,6 @@ public class Dissertation : ModuleRules
 
         PublicIncludePaths.AddRange(new string[] { "Dissertation/Octrees/Public", "Dissertation/VoxelRenderer/Public", "Dissertation/VoxelGeneration/Public" });
         PrivateIncludePaths.AddRange(new string[] { "Dissertation/Octrees/Private", "Dissertation/VoxelRenderer/Private", "Dissertation/VoxelGeneration/Private" });
-
-        // Uncomment if you are using Slate UI
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		
 		// Uncomment if you are using online features

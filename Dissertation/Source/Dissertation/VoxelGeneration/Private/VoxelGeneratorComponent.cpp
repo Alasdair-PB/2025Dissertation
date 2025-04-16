@@ -24,6 +24,11 @@ float UVoxelGeneratorComponent::SampleSDF(FVector p) {
     return (p.Length()) - 1.0f;
 }
 
+void NoiseSampler(FVector p) {
+
+}
+
+
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {
     if (!node) return;
 
@@ -65,7 +70,7 @@ void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {
         TraverseAndDraw(node->children[i]);
 }
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
-    if (!node) return;
+    /*if (!node) return;
 
     FVector min = node->bounds.min;
     FVector max = node->bounds.max;
@@ -92,14 +97,15 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
         }
     }
 
-    float IsoLevel = 2.0f;
-    voxelRenderer->RenderVoxelAsMarchingCubes(ScalarField, GridSize, IsoLevel);
+    TraverseAndDraw((*tree).root);
+    float IsoLevel = 1.0f;
+    voxelRenderer->RenderVoxelAsMarchingCubes(ScalarField, GridSize, IsoLevel);*/
 }
 
 void UVoxelGeneratorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     TraverseAndDraw((*tree).root);
-    InvokeVoxelRenderer((*tree).root);
+    //InvokeVoxelRenderer((*tree).root);
 }
 

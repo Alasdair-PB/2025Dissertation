@@ -8,6 +8,10 @@ public:
     bool isLeaf;
     OctreeNode* children[8];
 
+    // Voxel data
+    uint8_t type;
+
+
     OctreeNode(const AABB& b) : bounds(b), isLeaf(true) {
         for (int i = 0; i < 8; ++i)
             children[i] = nullptr;

@@ -3,14 +3,18 @@ using UnrealBuildTool;
 public class MyShaders : ModuleRules
 {
     public MyShaders(ReadOnlyTargetRules Target) : base(Target)
-
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivateIncludePaths.AddRange(new string[]
         {
-            "Runtime/Renderer/Private",
             "MyShaders/Private"
         });
+
+        PublicIncludePaths.AddRange(new string[]
+        {
+            "MyShaders/Public"
+        });
+
         if (Target.bBuildEditor == true)
             PrivateDependencyModuleNames.Add("TargetPlatform");
 
@@ -24,7 +28,9 @@ public class MyShaders : ModuleRules
             "Renderer",
             "RenderCore",
             "RHI",
-            "Projects"
+            "Projects",
+            "Core",
+            "Engine"
         });
 
         if (Target.bBuildEditor == true)
@@ -35,13 +41,6 @@ public class MyShaders : ModuleRules
                     "MaterialUtilities",
                     "SlateCore",
                     "Slate"
-                }
-            );
-
-            CircularlyReferencedDependentModules.AddRange(
-                new string[] {
-                    "UnrealEd",
-                    "MaterialUtilities",
                 }
             );
         }

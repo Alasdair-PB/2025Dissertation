@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
-
 #include "MarchingCubes.generated.h"
 
 struct MYSHADERS_API FMarchingCubesDispatchParams
@@ -12,18 +11,13 @@ struct MYSHADERS_API FMarchingCubesDispatchParams
 	int Y;
 	int Z;
 
-
 	int Input[2];
 	int Output;
 
-
-
-	FMarchingCubesDispatchParams(int x, int y, int z)
-		: X(x)
-		, Y(y)
-		, Z(z)
-	{
-	}
+	FMarchingCubesDispatchParams(int x, int y, int z): 
+		X(x),
+		Y(y), 
+		Z(z) {}
 };
 
 // This is a public interface that we define so outside code can invoke our compute shader.
@@ -55,27 +49,21 @@ public:
 		TFunction<void(int OutputVal)> AsyncCallback
 	)
 	{
-		if (IsInRenderingThread()) {
+		if (IsInRenderingThread())
 			DispatchRenderThread(GetImmediateCommandList_ForRenderCommand(), Params, AsyncCallback);
-		}
-		else {
+		else
 			DispatchGameThread(Params, AsyncCallback);
-		}
 	}
 };
 
-
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMarchingCubesLibrary_AsyncExecutionCompleted, const int, Value);
 
-
-UCLASS() // Change the _API to match your project
+UCLASS()
 class MYSHADERS_API UMarchingCubesLibrary_AsyncExecution : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()
 
 public:
-
 	// Execute the actual load
 	virtual void Activate() override {
 		// Create a dispatch parameters struct and fill it the input array with our args
@@ -88,8 +76,6 @@ public:
 			this->Completed.Broadcast(OutputVal);
 			});
 	}
-
-
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", Category = "ComputeShader", WorldContext = "WorldContextObject"))
 	static UMarchingCubesLibrary_AsyncExecution* ExecuteBaseComputeShader(UObject* WorldContextObject, int Arg1, int Arg2) {
@@ -104,8 +90,6 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnMarchingCubesLibrary_AsyncExecutionCompleted Completed;
 
-
 	int Arg1;
 	int Arg2;
-
 };

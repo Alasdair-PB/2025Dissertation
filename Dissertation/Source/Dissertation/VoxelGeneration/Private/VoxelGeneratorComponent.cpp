@@ -1,7 +1,5 @@
 #include "VoxelGeneratorComponent.h"
-#include "../Plugins/VoxelRendering/Source/MyShaders/Public/MySimpleComputeShader.h"
-//#include "MySimpleComputeShader.h"
-
+#include "MySimpleComputeShader.h"
 
 UVoxelGeneratorComponent::UVoxelGeneratorComponent()
 {
@@ -29,7 +27,7 @@ float UVoxelGeneratorComponent::SampleSDF(FVector p) {
 
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
-    /*FMySimpleComputeShaderDispatchParams Params(1, 1, 1);
+    FMySimpleComputeShaderDispatchParams Params(1, 1, 1);
 
     // Fill in your input parameters here
     Params.Input[0] = 2;
@@ -39,7 +37,7 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     FMySimpleComputeShaderInterface::Dispatch(Params, [](int OutputVal) {
         // OutputVal == 10
         // Called when the results are back from the GPU.
-        });*/
+        });
 }
 
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {

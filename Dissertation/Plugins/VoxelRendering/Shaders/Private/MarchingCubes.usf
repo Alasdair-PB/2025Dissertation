@@ -1,14 +1,154 @@
+#pragma once
+#pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
 #include "/Engine/Public/Platform.ush"
 #include "MarchTables.usf"
 
-Buffer<int> Input;
-RWBuffer<int> Output;
-
-[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
-void MarchingCubes(
-	uint3 DispatchThreadId : SV_DispatchThreadID,
-	uint GroupIndex : SV_GroupIndex)
+struct OctreeNode
 {
-	// Outputs one number
-    Output[0] = Input[0] * Input[1];
+    int3 voxelBodyCoord;
+    int scalarFieldOffset;
+    int depthLevel;
+};
+
+struct Vertex
+{
+    float3 position;
+    float3 normal;
+    int2 id;
+};
+
+struct Triangle
+{
+    Vertex vertexC;
+    Vertex vertexB;
+    Vertex vertexA;
+};
+
+// Properties
+StructuredBuffer<OctreeNode> OctreeNodes;
+RWBuffer<float> ScalarField;
+AppendStructuredBuffer<Triangle> triangles;
+float isoLevel;
+
+const float baseScale = 1.0f;
+const int baseResolution = 4;
+const int voxelResolutionPerAxis = 8;
+const int maxDepth = 16;
+
+// Helpers
+float sampleDensity(int index) { return ScalarField[index];}
+
+int coordToIndex(int3 coord, int resolution) {
+    return coord.x + coord.y * resolution + coord.z * resolution * resolution;
+}
+
+float3 coordToWorld(int3 coord, OctreeNode node){
+    float voxelScale = baseScale * (1 << (maxDepth - node.depthLevel));
+    return (float3(coord) * voxelScale);
+}
+
+float sampleDensityFromCoord(int3 coord, OctreeNode node)
+{
+    int3 local = coord - node.voxelBodyCoord;
+    int resolution = baseResolution >> node.depthLevel;
+    int index = node.scalarFieldOffset + coordToIndex(local, resolution);
+    return sampleDensity(index);
+}
+
+float3 calculateNormal(int3 coord, OctreeNode node)
+{
+    int3 x = int3(1, 0, 0);
+    int3 y = int3(0, 1, 0);
+    int3 z = int3(0, 0, 1);
+
+    float dx = sampleDensityFromCoord(coord + x, node) - sampleDensityFromCoord(coord - x, node);
+    float dy = sampleDensityFromCoord(coord + y, node) - sampleDensityFromCoord(coord - y, node);
+    float dz = sampleDensityFromCoord(coord + z, node) - sampleDensityFromCoord(coord - z, node);
+
+    return normalize(float3(dx, dy, dz));
+}
+
+Vertex createVertex(int3 a, int3 b, OctreeNode node)
+{
+    float3 posA = coordToWorld(a, node);
+    float3 posB = coordToWorld(b, node);
+
+    float dA = sampleDensityFromCoord(a, node);
+    float dB = sampleDensityFromCoord(b, node);
+
+    float t = (isoLevel - dA) / max(0.0001, (dB - dA));
+    float3 pos = posA + t * (posB - posA);
+
+    float3 normA = calculateNormal(a, node);
+    float3 normB = calculateNormal(b, node);
+    float3 norm = normalize(normA + t * (normB - normA));
+
+    Vertex v;
+    v.position = pos;
+    v.normal = norm;
+    v.id = int2(coordToIndex(a, voxelResolutionPerAxis), coordToIndex(b, voxelResolutionPerAxis));
+    return v;
+}
+
+[numthreads(voxelResolutionPerAxis, voxelResolutionPerAxis, voxelResolutionPerAxis)]
+void MarchingCubes(uint id : SV_DispatchThreadID)
+{
+    int voxelsPerNode = voxelResolutionPerAxis * voxelResolutionPerAxis * voxelResolutionPerAxis;
+    int nodeIndex = id / voxelsPerNode;
+    int voxelIndex = id % voxelsPerNode;
+
+    OctreeNode node = OctreeNodes[nodeIndex];
+
+    int3 local = int3(
+        voxelIndex % voxelResolutionPerAxis,
+        (voxelIndex / voxelResolutionPerAxis) % voxelResolutionPerAxis,
+        (voxelIndex / (voxelResolutionPerAxis * voxelResolutionPerAxis))
+    );
+
+    if (any(local >= (voxelResolutionPerAxis - 1)))
+        return;
+
+    int3 coord = node.voxelBodyCoord + local;
+
+    int3 corners[8] =
+    {
+        coord + int3(0, 0, 0),
+        coord + int3(1, 0, 0),
+        coord + int3(1, 0, 1),
+        coord + int3(0, 0, 1),
+        coord + int3(0, 1, 0),
+        coord + int3(1, 1, 0),
+        coord + int3(1, 1, 1),
+        coord + int3(0, 1, 1)
+    };
+
+    int config = 0;
+    
+    for (int h = 0; h < 8; ++h)
+    {
+        if (sampleDensityFromCoord(corners[h], node) < isoLevel)
+            config |= (1 << h);
+    }
+
+    int edgeIndices[] = triangulation[config];
+    for (int i = 0; i < 16; i += 3)
+    {
+        if (edgeIndices[i] == -1)
+            break;
+
+        int a0 = cornerIndexAFromEdge[edgeIndices[i]];
+        int a1 = cornerIndexBFromEdge[edgeIndices[i]];
+
+        int b0 = cornerIndexAFromEdge[edgeIndices[i + 1]];
+        int b1 = cornerIndexBFromEdge[edgeIndices[i + 1]];
+
+        int c0 = cornerIndexAFromEdge[edgeIndices[i + 2]];
+        int c1 = cornerIndexBFromEdge[edgeIndices[i + 2]];
+
+        Triangle tri;
+        tri.vertexA = createVertex(corners[c0], corners[c1], node);
+        tri.vertexB = createVertex(corners[b0], corners[b1], node);
+        tri.vertexC = createVertex(corners[a0], corners[a1], node);
+        triangles.Append(tri);
+    }
 }

@@ -1,5 +1,6 @@
 #include "VoxelGeneratorComponent.h"
 #include "MySimpleComputeShader.h"
+#include "Logging/LogMacros.h"
 
 UVoxelGeneratorComponent::UVoxelGeneratorComponent()
 {
@@ -26,18 +27,13 @@ float UVoxelGeneratorComponent::SampleSDF(FVector p) {
 }
 
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
-
     FMySimpleComputeShaderDispatchParams Params(1, 1, 1);
-
-    // Fill in your input parameters here
     Params.Input[0] = 2;
     Params.Input[1] = 5;
 
-    // Executes the compute shader and calls the TFunction when complete.
     FMySimpleComputeShaderInterface::Dispatch(Params, [](int OutputVal) {
-        // OutputVal == 10
-        // Called when the results are back from the GPU.
-        });
+        UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), OutputVal);
+    });
 }
 
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {
@@ -84,6 +80,6 @@ void UVoxelGeneratorComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     TraverseAndDraw((*tree).root);
-    //InvokeVoxelRenderer((*tree).root);
+    InvokeVoxelRenderer((*tree).root);
 }
 

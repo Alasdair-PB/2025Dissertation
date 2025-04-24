@@ -28,9 +28,7 @@ public class MyShaders : ModuleRules
             "Renderer",
             "RenderCore",
             "RHI",
-            "Projects",
-            "Core",
-            "Engine"
+            "Projects"
         });
 
         if (Target.bBuildEditor == true)

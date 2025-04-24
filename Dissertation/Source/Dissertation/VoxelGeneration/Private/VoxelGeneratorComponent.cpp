@@ -1,4 +1,7 @@
 #include "VoxelGeneratorComponent.h"
+#include "../Plugins/VoxelRendering/Source/MyShaders/Public/MySimpleComputeShader.h"
+//#include "MySimpleComputeShader.h"
+
 
 UVoxelGeneratorComponent::UVoxelGeneratorComponent()
 {
@@ -24,10 +27,20 @@ float UVoxelGeneratorComponent::SampleSDF(FVector p) {
     return (p.Length()) - 1.0f;
 }
 
-void NoiseSampler(FVector p) {
+void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
+    /*FMySimpleComputeShaderDispatchParams Params(1, 1, 1);
+
+    // Fill in your input parameters here
+    Params.Input[0] = 2;
+    Params.Input[1] = 5;
+
+    // Executes the compute shader and calls the TFunction when complete.
+    FMySimpleComputeShaderInterface::Dispatch(Params, [](int OutputVal) {
+        // OutputVal == 10
+        // Called when the results are back from the GPU.
+        });*/
 }
-
 
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {
     if (!node) return;
@@ -65,41 +78,8 @@ void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {
         }
         return;
     }
-
     for (int i = 0; i < 8; ++i)
         TraverseAndDraw(node->children[i]);
-}
-void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
-    /*if (!node) return;
-
-    FVector min = node->bounds.min;
-    FVector max = node->bounds.max;
-    FVector nodeSize = max - min;
-
-    int resolution = FMath::RoundToInt(FMath::Max(nodeSize.X, FMath::Max(nodeSize.Y, nodeSize.Z)) / 10.0f);
-    FIntVector GridSize(resolution, resolution, resolution);
-    TArray<float> ScalarField;
-    ScalarField.SetNumUninitialized(GridSize.X * GridSize.Y * GridSize.Z);
-
-    int index = 0;
-    for (int x = 0; x < GridSize.X; ++x) {
-        for (int y = 0; y < GridSize.Y; ++y) {
-            for (int z = 0; z < GridSize.Z; ++z) {
-                FVector p = FMath::Lerp(min, max, FVector(
-                    (float)x / (GridSize.X - 1),
-                    (float)y / (GridSize.Y - 1),
-                    (float)z / (GridSize.Z - 1)
-                ));
-
-                float value = SampleSDF(p);
-                ScalarField[index++] = value;
-            }
-        }
-    }
-
-    TraverseAndDraw((*tree).root);
-    float IsoLevel = 1.0f;
-    voxelRenderer->RenderVoxelAsMarchingCubes(ScalarField, GridSize, IsoLevel);*/
 }
 
 void UVoxelGeneratorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

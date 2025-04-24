@@ -1,11 +1,11 @@
-// Using https://dev.epicgames.com/community/learning/tutorials/WkwJ/unreal-engine-simple-compute-shader-with-cpu-readback
 #include "/Engine/Public/Platform.ush"
+#include "MarchTables.usf"
 
 Buffer<int> Input;
 RWBuffer<int> Output;
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
-void MySimpleComputeShader(
+void MarchingCubes(
 	uint3 DispatchThreadId : SV_DispatchThreadID,
 	uint GroupIndex : SV_GroupIndex)
 {

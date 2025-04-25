@@ -1,5 +1,5 @@
 // Using https://dev.epicgames.com/community/learning/tutorials/WkwJ/unreal-engine-simple-compute-shader-with-cpu-readback
-#include "/Engine/Public/Platform.ush"
+//#include "/Engine/Public/Platform.ush"
 
 Buffer<int> Input;
 RWBuffer<int> Output;

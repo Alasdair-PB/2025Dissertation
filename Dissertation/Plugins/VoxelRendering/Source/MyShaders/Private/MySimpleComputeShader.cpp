@@ -124,7 +124,6 @@ void FMySimpleComputeShaderInterface::DispatchRenderThread(FRHICommandListImmedi
 			int NumInputs = 2;
 			int InputSize = sizeof(int);
 			FRDGBufferRef InputBuffer = CreateUploadBuffer(GraphBuilder, TEXT("InputBuffer"), InputSize, NumInputs, RawData, InputSize * NumInputs);
-
 			PassParameters->Input = GraphBuilder.CreateSRV(FRDGBufferSRVDesc(InputBuffer, PF_R32_SINT));
 
 			FRDGBufferRef OutputBuffer = GraphBuilder.CreateBuffer(

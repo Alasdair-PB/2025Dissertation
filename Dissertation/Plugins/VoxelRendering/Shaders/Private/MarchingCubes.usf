@@ -1,93 +1,83 @@
 #pragma once
 #pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
-#include "/Engine/Public/Platform.ush"
 #include "MarchTables.usf"
 
-struct OctreeNode
-{
-    int3 voxelBodyCoord;
-    int scalarFieldOffset;
-    int depthLevel;
-};
+StructuredBuffer<float3> voxelBodyCoord;
+StructuredBuffer<int> scalarFieldOffset;
+StructuredBuffer<int> depthLevel;
+StructuredBuffer<float> scalarField;
 
-struct Vertex
-{
-    float3 position;
-    float3 normal;
-    int2 id;
-};
-
-struct Triangle
-{
-    Vertex vertexC;
-    Vertex vertexB;
-    Vertex vertexA;
-};
-
-// Properties
-StructuredBuffer<OctreeNode> OctreeNodes;
-RWBuffer<float> ScalarField;
-AppendStructuredBuffer<Triangle> triangles;
+RWStructuredBuffer<float3> outVertices;
+RWStructuredBuffer<int> outTris;
+RWStructuredBuffer<float3> outNormals;
 float isoLevel;
 
 const float baseScale = 1.0f;
 const int baseResolution = 4;
 const int voxelResolutionPerAxis = 8;
 const int maxDepth = 16;
+const int maxVertsPerNode = voxelResolutionPerAxis * voxelResolutionPerAxis * voxelResolutionPerAxis;
+const int maxTrisPerNode = maxVertsPerNode / 2;
+const int maxNodes = 1024;
+const int maxVertices = maxNodes * maxVertsPerNode;
+const int maxTriangles = maxNodes * maxTrisPerNode;
+int vertexStartIndex = 0;
+int triangleStartIndex = 0;
 
-// Helpers
-float sampleDensity(int index) { return ScalarField[index];}
+float sampleDensity(int index)
+{
+    return scalarField[index];
+}
 
-int coordToIndex(int3 coord, int resolution) {
+int coordToIndex(int3 coord, int resolution)
+{
     return coord.x + coord.y * resolution + coord.z * resolution * resolution;
 }
 
-float3 coordToWorld(int3 coord, OctreeNode node){
-    float voxelScale = baseScale * (1 << (maxDepth - node.depthLevel));
+float3 coordToWorld(int3 coord, int level)
+{
+    float voxelScale = baseScale * (1 << (maxDepth - level));
     return (float3(coord) * voxelScale);
 }
 
-float sampleDensityFromCoord(int3 coord, OctreeNode node)
+float sampleDensityFromCoord(int3 coord, int3 baseCoord, int level, int offset)
 {
-    int3 local = coord - node.voxelBodyCoord;
-    int resolution = baseResolution >> node.depthLevel;
-    int index = node.scalarFieldOffset + coordToIndex(local, resolution);
+    int3 local = coord - baseCoord;
+    int resolution = baseResolution >> level;
+    int index = offset + coordToIndex(local, resolution);
     return sampleDensity(index);
 }
 
-float3 calculateNormal(int3 coord, OctreeNode node)
+float3 calculateNormal(int3 coord, int3 baseCoord, int level, int offset)
 {
     int3 x = int3(1, 0, 0);
     int3 y = int3(0, 1, 0);
     int3 z = int3(0, 0, 1);
-
-    float dx = sampleDensityFromCoord(coord + x, node) - sampleDensityFromCoord(coord - x, node);
-    float dy = sampleDensityFromCoord(coord + y, node) - sampleDensityFromCoord(coord - y, node);
-    float dz = sampleDensityFromCoord(coord + z, node) - sampleDensityFromCoord(coord - z, node);
-
+    float dx = sampleDensityFromCoord(coord + x, baseCoord, level, offset) - sampleDensityFromCoord(coord - x, baseCoord, level, offset);
+    float dy = sampleDensityFromCoord(coord + y, baseCoord, level, offset) - sampleDensityFromCoord(coord - y, baseCoord, level, offset);
+    float dz = sampleDensityFromCoord(coord + z, baseCoord, level, offset) - sampleDensityFromCoord(coord - z, baseCoord, level, offset);
     return normalize(float3(dx, dy, dz));
 }
 
-Vertex createVertex(int3 a, int3 b, OctreeNode node)
+float3 createVertex(int3 a, int3 b, int3 baseCoord, int level, int offset)
 {
-    float3 posA = coordToWorld(a, node);
-    float3 posB = coordToWorld(b, node);
+    float3 posA = coordToWorld(a, level);
+    float3 posB = coordToWorld(b, level);
 
-    float dA = sampleDensityFromCoord(a, node);
-    float dB = sampleDensityFromCoord(b, node);
-
+    float dA = sampleDensityFromCoord(a, baseCoord, level, offset);
+    float dB = sampleDensityFromCoord(b, baseCoord, level, offset);
     float t = (isoLevel - dA) / max(0.0001, (dB - dA));
     float3 pos = posA + t * (posB - posA);
 
-    float3 normA = calculateNormal(a, node);
-    float3 normB = calculateNormal(b, node);
+    float3 normA = calculateNormal(a, baseCoord, level, offset);
+    float3 normB = calculateNormal(b, baseCoord, level, offset);
     float3 norm = normalize(normA + t * (normB - normA));
 
-    Vertex v;
-    v.position = pos;
-    v.normal = norm;
-    v.id = int2(coordToIndex(a, voxelResolutionPerAxis), coordToIndex(b, voxelResolutionPerAxis));
-    return v;
+    outNormals[vertexStartIndex] = norm;
+    outVertices[vertexStartIndex] = pos;
+
+    vertexStartIndex++;
+    return pos;
 }
 
 [numthreads(voxelResolutionPerAxis, voxelResolutionPerAxis, voxelResolutionPerAxis)]
@@ -97,7 +87,9 @@ void MarchingCubes(uint id : SV_DispatchThreadID)
     int nodeIndex = id / voxelsPerNode;
     int voxelIndex = id % voxelsPerNode;
 
-    OctreeNode node = OctreeNodes[nodeIndex];
+    int3 baseCoord = int3(voxelBodyCoord[nodeIndex]);
+    int offset = scalarFieldOffset[nodeIndex];
+    int level = depthLevel[nodeIndex];
 
     int3 local = int3(
         voxelIndex % voxelResolutionPerAxis,
@@ -108,7 +100,7 @@ void MarchingCubes(uint id : SV_DispatchThreadID)
     if (any(local >= (voxelResolutionPerAxis - 1)))
         return;
 
-    int3 coord = node.voxelBodyCoord + local;
+    int3 coord = baseCoord + local;
 
     int3 corners[8] =
     {
@@ -123,10 +115,9 @@ void MarchingCubes(uint id : SV_DispatchThreadID)
     };
 
     int config = 0;
-    
     for (int h = 0; h < 8; ++h)
     {
-        if (sampleDensityFromCoord(corners[h], node) < isoLevel)
+        if (sampleDensityFromCoord(corners[h], baseCoord, level, offset) < isoLevel)
             config |= (1 << h);
     }
 
@@ -145,10 +136,16 @@ void MarchingCubes(uint id : SV_DispatchThreadID)
         int c0 = cornerIndexAFromEdge[edgeIndices[i + 2]];
         int c1 = cornerIndexBFromEdge[edgeIndices[i + 2]];
 
-        Triangle tri;
-        tri.vertexA = createVertex(corners[c0], corners[c1], node);
-        tri.vertexB = createVertex(corners[b0], corners[b1], node);
-        tri.vertexC = createVertex(corners[a0], corners[a1], node);
-        triangles.Append(tri);
+        float3 v0 = createVertex(corners[c0], corners[c1], baseCoord, level, offset);
+        float3 v1 = createVertex(corners[b0], corners[b1], baseCoord, level, offset);
+        float3 v2 = createVertex(corners[a0], corners[a1], baseCoord, level, offset);
+
+        int baseIndex = vertexStartIndex - 3;
+
+        outTris[triangleStartIndex] = baseIndex + 2;
+        outTris[triangleStartIndex + 1] = baseIndex + 1;
+        outTris[triangleStartIndex + 2] = baseIndex + 0;
+
+        triangleStartIndex += 3;
     }
 }

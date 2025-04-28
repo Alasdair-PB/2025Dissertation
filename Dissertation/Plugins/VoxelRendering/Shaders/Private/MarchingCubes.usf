@@ -2,27 +2,20 @@
 #pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
 #include "MarchTables.usf"
 
-StructuredBuffer<float3> voxelBodyCoord;
-StructuredBuffer<int> scalarFieldOffset;
-StructuredBuffer<int> depthLevel;
-StructuredBuffer<float> scalarField;
+StructuredBuffer<int> leafPosition;
+StructuredBuffer<int> leafDepth;
+StructuredBuffer<float> isoValues;
 
 RWStructuredBuffer<float3> outVertices;
 RWStructuredBuffer<int> outTris;
 RWStructuredBuffer<float3> outNormals;
-float isoLevel;
 
-const float baseScale = 1.0f;
-const int baseResolution = 4;
-const int voxelResolutionPerAxis = 8;
-const int maxDepth = 16;
-const int maxVertsPerNode = voxelResolutionPerAxis * voxelResolutionPerAxis * voxelResolutionPerAxis;
-const int maxTrisPerNode = maxVertsPerNode / 2;
-const int maxNodes = 1024;
-const int maxVertices = maxNodes * maxVertsPerNode;
-const int maxTriangles = maxNodes * maxTrisPerNode;
-int vertexStartIndex = 0;
-int triangleStartIndex = 0;
+float3 voxelBodyPosition;
+
+int nodeCount;
+int voxelsPerNode;
+float baseDepthScale;
+float isoLevel;
 
 float sampleDensity(int index)
 {
@@ -80,44 +73,38 @@ float3 createVertex(int3 a, int3 b, int3 baseCoord, int level, int offset)
     return pos;
 }
 
-[numthreads(voxelResolutionPerAxis, voxelResolutionPerAxis, voxelResolutionPerAxis)]
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(uint id : SV_DispatchThreadID)
 {
-    int voxelsPerNode = voxelResolutionPerAxis * voxelResolutionPerAxis * voxelResolutionPerAxis;
-    int nodeIndex = id / voxelsPerNode;
-    int voxelIndex = id % voxelsPerNode;
+    int numCubesPerAxis = nodeCount - 1;
+    if (id >= numCubesPerAxis) { return;}
+    
+    int voxelIndex = id * voxelsPerNode; // Where a voxel is 4 corners/ isoValues 
+    int triangleStartIndex = voxelIndex * 5;
+    int vertexStartIndex = voxelIndex * 15;
+    
+    float3 local = leafPosition[voxelIndex];
+    float division = 2 + ((leafDepth[voxelIndex] * 2.0));
+    local -= float3(baseDepthScale / division, baseDepthScale / division, baseDepthScale / division);
 
-    int3 baseCoord = int3(voxelBodyCoord[nodeIndex]);
-    int offset = scalarFieldOffset[nodeIndex];
-    int level = depthLevel[nodeIndex];
+    int3 coord = voxelBodyPosition + local;
 
-    int3 local = int3(
-        voxelIndex % voxelResolutionPerAxis,
-        (voxelIndex / voxelResolutionPerAxis) % voxelResolutionPerAxis,
-        (voxelIndex / (voxelResolutionPerAxis * voxelResolutionPerAxis))
-    );
-
-    if (any(local >= (voxelResolutionPerAxis - 1)))
-        return;
-
-    int3 coord = baseCoord + local;
-
-    int3 corners[8] =
+    float3 corners[8] =
     {
-        coord + int3(0, 0, 0),
-        coord + int3(1, 0, 0),
-        coord + int3(1, 0, 1),
-        coord + int3(0, 0, 1),
-        coord + int3(0, 1, 0),
-        coord + int3(1, 1, 0),
-        coord + int3(1, 1, 1),
-        coord + int3(0, 1, 1)
+        coord + float3(0, 0, 0),
+        coord + float3(1, 0, 0),
+        coord + float3(1, 0, 1),
+        coord + float3(0, 0, 1),
+        coord + float3(0, 1, 0),
+        coord + float3(1, 1, 0),
+        coord + float3(1, 1, 1),
+        coord + float3(0, 1, 1)
     };
 
     int config = 0;
     for (int h = 0; h < 8; ++h)
     {
-        if (sampleDensityFromCoord(corners[h], baseCoord, level, offset) < isoLevel)
+        if (sampleDensityFromCoord(corners[h], basePosition, level, offset) < isoLevel)
             config |= (1 << h);
     }
 

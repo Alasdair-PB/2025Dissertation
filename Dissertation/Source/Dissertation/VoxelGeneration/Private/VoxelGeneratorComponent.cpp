@@ -1,5 +1,7 @@
 #include "VoxelGeneratorComponent.h"
 #include "MySimpleComputeShader.h"
+#include "MarchingCubesDispatcher.h"
+
 #include "Logging/LogMacros.h"
 
 UVoxelGeneratorComponent::UVoxelGeneratorComponent()

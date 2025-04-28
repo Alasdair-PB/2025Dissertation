@@ -1,7 +1,7 @@
 #pragma once
 #include "Modules/ModuleManager.h"
 
-class FVoxelRenderingModule : public IModuleInterface
+class FOctreeModule : public IModuleInterface
 {
 public:
 	virtual void StartupModule() override;

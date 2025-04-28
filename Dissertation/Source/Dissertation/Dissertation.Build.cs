@@ -5,7 +5,7 @@ public class Dissertation : ModuleRules
 	public Dissertation(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "MyShaders", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "ProceduralMeshComponent" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "MyShaders", "Octree", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "ProceduralMeshComponent" });
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
         //PublicIncludePaths.AddRange(new string[] { "Dissertation/Octrees/Public", "Dissertation/VoxelRenderer/Public", "Dissertation/VoxelGeneration/Public" });

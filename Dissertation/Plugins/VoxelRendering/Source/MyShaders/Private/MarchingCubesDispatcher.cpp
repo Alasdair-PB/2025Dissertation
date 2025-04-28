@@ -97,6 +97,26 @@ void AddMarchingCubesGraphPass(FRDGBuilder& GraphBuilder, const FMarchingCubesDi
 	);
 }
 
+void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FMarchingCubesDispatchParams NodeParams, OctreeNode* node, uint32 depth, uint32* nodeIndex) {
+	if (!node) return;
+	if (!(node->isLeaf)) {
+		for (OctreeNode* child : node->children)
+			AddMarchingCubesGraphPassFromOctree(GraphBuilder, NodeParams, child, depth++, nodeIndex);
+		return;
+	}
+
+	TArray<float> isoValues = TArray<float>();
+	for (float isoValue : node->isoValues)
+		isoValues.Add(isoValue);
+
+	NodeParams.Input.isoValues = isoValues;
+	NodeParams.Input.leafDepth = depth;
+	NodeParams.Input.leafPosition = node->bounds.Center();
+	NodeParams.Input.nodeIndex = *nodeIndex;
+	*nodeIndex++;
+	AddMarchingCubesGraphPass(GraphBuilder, NodeParams);
+}
+
 void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FMarchingCubesDispatchParams Params, TFunction<void(FMarchingCubesOutput OutputVal)> AsyncCallback) {
 	FRDGBuilder GraphBuilder(RHICmdList);
 	{
@@ -141,12 +161,11 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 				sizeof(FVector3f), maxVoxelCount, nullptr, 0);
 			PassParameters->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
 
-			/*for (int i = 0; i < Params.Input.leafNodes.Num(); ++i) {
-				FMarchingCubesDispatchParams NodeParams = Params;
-				NodeParams.Input.nodeIndex = i;
-				AddMarchingCubesGraphPass(GraphBuilder, NodeParams);
-			}*/
-			AddMarchingCubesGraphPass(GraphBuilder, Params);
+
+			uint32 nodeIndex = 0; 
+			FMarchingCubesDispatchParams NodeParams = Params;
+			AddMarchingCubesGraphPassFromOctree(GraphBuilder, NodeParams, Params.Input.tree, 0, &nodeIndex);
+			//AddMarchingCubesGraphPass(GraphBuilder, Params);
 
 			FRHIGPUBufferReadback* VerticesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesVertices"));
 			AddEnqueueCopyPass(GraphBuilder, VerticesReadback, outVerticesBuffer, 0u);

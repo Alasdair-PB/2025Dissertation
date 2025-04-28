@@ -1,7 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
-#include "../Private/OctreeNode.h"
-#include "../Private/AABB.h"
+#include "OctreeNode.h"
+#include "AABB.h"
 
 class Octree {
 public:

@@ -37,21 +37,26 @@ void UVoxelGeneratorComponent::SampleExampleComputeShader() {
 }
 
 void UVoxelGeneratorComponent::SwapBuffers() {
-
+    int32 Temp = ReadBufferIndex;
+    ReadBufferIndex = WriteBufferIndex;
+    WriteBufferIndex = Temp;
 }
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
-
+    //UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), meshInfo.tris[0]);
+    for (int32 tri : meshInfo.tris) {
+        UE_LOG(LogTemp, Warning, TEXT("A tri has been returned"));
+    }
+    for (FVector3f vert : meshInfo.vertices) {
+        UE_LOG(LogTemp, Warning, TEXT("A vertex has been returned"));
+    }
+    for (FVector3f normal : meshInfo.normals) {
+        UE_LOG(LogTemp, Warning, TEXT("A normal value has been returned"));
+    }
 }
 
-void UVoxelGeneratorComponent::DispatchMarchingCubes(OctreeNode* node, uint32 depth) {
-    if (!node) return;
-    if (!(node->isLeaf)) {
-        for (OctreeNode* child : node->children)
-            DispatchMarchingCubes(child, depth++);
-        return;
-    }
-
+void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
+    // SampleExampleComputeShader();
     if (bBufferReady[ReadBufferIndex])
     {
         UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
@@ -60,46 +65,23 @@ void UVoxelGeneratorComponent::DispatchMarchingCubes(OctreeNode* node, uint32 de
     }
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
-    TArray<float> isoValues = TArray<float>();
-    for (float isoValue : node->isoValues)
-        isoValues.Add(isoValue);
-
     Params.Input.baseDepthScale = 0.5f;
     Params.Input.isoLevel = 2;
     Params.Input.voxelsPerNode = voxelBodyDimensions;
+    Params.Input.tree = node;
 
-    Params.Input.isoValues = isoValues;
-    Params.Input.leafDepth = depth;
-    Params.Input.leafPosition = node->bounds.Center();
-    Params.Input.nodeIndex = nodeIndex;
-
-    FMarchingCubesInterface::Dispatch(Params, [](FMarchingCubesOutput OutputVal) {
-        UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), OutputVal.tris[0]);
-        });
-    nodeIndex++;
-}
-
-void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
-    // SampleExampleComputeShader();
-    nodeIndex = 0;
-    DispatchMarchingCubes(node, 1);
+    FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
+        bBufferReady[ReadBufferIndex] = true;
+        //UE_LOG(LogTemp, Warning, TEXT("Dispatch returned"));
+        //UE_LOG(LogTemp, Warning, TEXT("Dispatch returned"));
+     });
 }
 
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {
     if (!node) return;
 
     if (node->isLeaf) {
-        DrawDebugBox(
-            GetWorld(),
-            node->bounds.Center(),
-            node->bounds.Extent(),
-            FColor::Green,
-            false,
-            -1.f,
-            0,
-            1.f
-        );
-
+        DrawDebugBox(GetWorld(), node->bounds.Center(), node->bounds.Extent(), FColor::Green, false, -1.f, 0, 1.f);
         const int resolution = 2;
         FVector min = node->bounds.min;
         FVector max = node->bounds.max;

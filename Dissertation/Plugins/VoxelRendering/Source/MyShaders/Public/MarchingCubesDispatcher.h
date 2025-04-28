@@ -4,30 +4,30 @@
 #include "RenderGraph.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
+#include "../../Octree/Public/OctreeNode.h"
 #include "MarchingCubesDispatcher.generated.h"
+
 
 USTRUCT(BlueprintType)
 struct FMarchingCubesOutput
 {
 	GENERATED_BODY()
-	UPROPERTY(BlueprintReadOnly)
-	TArray<FVector3f> vertices;
-	UPROPERTY(BlueprintReadOnly)
-	TArray<int32> tris;
-	UPROPERTY(BlueprintReadOnly)
-	TArray<FVector3f> normals;
+	UPROPERTY(BlueprintReadOnly) TArray<FVector3f> vertices;
+	UPROPERTY(BlueprintReadOnly) TArray<int32> tris;
+	UPROPERTY(BlueprintReadOnly) TArray<FVector3f> normals;
 };
 
 USTRUCT(BlueprintType)
 struct FMarchingCubesInput
 {
 	GENERATED_BODY()
-	UPROPERTY(BlueprintReadOnly) int leafDepth;	
-	UPROPERTY(BlueprintReadOnly) int voxelsPerNode;
+	OctreeNode* tree;
+	UPROPERTY(BlueprintReadOnly) FVector leafPosition;
+	UPROPERTY(BlueprintReadOnly) int leafDepth;
 	UPROPERTY(BlueprintReadOnly) int nodeIndex;
+	UPROPERTY(BlueprintReadOnly) int voxelsPerNode;
 	UPROPERTY(BlueprintReadOnly) float baseDepthScale;
 	UPROPERTY(BlueprintReadOnly) float isoLevel;
-	UPROPERTY(BlueprintReadOnly) FVector leafPosition;
 	UPROPERTY(BlueprintReadOnly) TArray<float> isoValues;
 };
 
@@ -77,6 +77,7 @@ public:
 		Params.Input.leafDepth = Args.leafDepth;
 		Params.Input.isoValues = Args.isoValues;
 		Params.Input.leafPosition = Args.leafPosition;
+		Params.Input.tree = Args.tree;
 
 		Params.Input.voxelsPerNode = Args.voxelsPerNode;
 		Params.Input.nodeIndex = Args.nodeIndex;

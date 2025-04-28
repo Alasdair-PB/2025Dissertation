@@ -2,7 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "../../Octrees/Public/Octree.h"
+#include "../../../Octree/Public/Octree.h"
+#include "../../../Octree/Public/OctreeNode.h"
+
 #include "VoxelRendererComponent.h"
 #include "../../../MyShaders/Public/MarchingCubesDispatcher.h"
 #include "VoxelGeneratorComponent.generated.h"

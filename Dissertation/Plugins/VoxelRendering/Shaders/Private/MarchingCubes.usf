@@ -1,11 +1,12 @@
 #pragma once
 #pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
 #include "MarchTables.usf"
+#include "/Engine/Public/Platform.ush"
 
 float3 leafPosition;
 uint leafDepth;
 uint nodeIndex;
-StructuredBuffer<float> isoValues[8];
+StructuredBuffer<float> isoValues;
 
 RWStructuredBuffer<float3> outVertices;
 RWStructuredBuffer<int> outTris;

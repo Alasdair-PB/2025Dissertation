@@ -6,7 +6,7 @@
 #include "VoxelRendererComponent.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class DISSERTATION_API UVoxelRendererComponent : public UActorComponent
+class  VOXELRENDERING_API UVoxelRendererComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

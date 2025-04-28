@@ -25,5 +25,18 @@
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit"
 		}
+	],
+	"Plugins": [
+		{
+			"Name": "ModelingToolsEditorMode",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
+			"Name": "ProceduralMeshComponent",
+			"Enabled": true
+		}
 	]
 }

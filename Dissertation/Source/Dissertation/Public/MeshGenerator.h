@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "../Octrees/Public/Octree.h"
 #include "ProceduralMeshComponent.h"
 #include "MeshGenerator.generated.h"
 
@@ -23,9 +22,4 @@ public:
 private:
 	UProceduralMeshComponent* ProcMesh;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	float SampleSDF(FVector p);
-	Octree* tree;
-	void TraverseAndDraw(OctreeNode* node);
-	void InitOctree();
-
 };

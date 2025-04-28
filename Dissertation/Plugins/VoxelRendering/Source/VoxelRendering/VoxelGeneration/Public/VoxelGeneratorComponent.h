@@ -3,18 +3,17 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "../../Octrees/Public/Octree.h"
-#include "../../VoxelRenderer/Public/VoxelRendererComponent.h"
+#include "VoxelRendererComponent.h"
+#include "../../../MyShaders/Public/MarchingCubesDispatcher.h"
 #include "VoxelGeneratorComponent.generated.h"
-#include "MarchingCubesDispatcher.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class DISSERTATION_API UVoxelGeneratorComponent : public UActorComponent
+class VOXELRENDERING_API UVoxelGeneratorComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
 	UVoxelGeneratorComponent();
-
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
@@ -31,17 +30,13 @@ private:
 
 	UVoxelRendererComponent* voxelRenderer;
 	Octree* tree;
-	uint32 nodeIndex = 0;
 
 	FMarchingCubesOutput marchingCubesOutBuffer[2];
 	bool bBufferReady[2] = { false, false };
-	int32 ReadBufferIndex = 0;
-	int32 WriteBufferIndex = 1;
+	uint32 ReadBufferIndex = 0;
+	uint32 WriteBufferIndex = 1;
+	uint32 nodeIndex = 0;
 
-
-	int32 ReadBufferIndex = 0;
-	int32 WriteBufferIndex = 1;
-	
 	float SampleSDF(FVector p);
 
 };

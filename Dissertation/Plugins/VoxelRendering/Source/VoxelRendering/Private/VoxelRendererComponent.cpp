@@ -1,5 +1,4 @@
 #include "VoxelRendererComponent.h"
-#include "PolygoniseMappings.h"
 
 UVoxelRendererComponent::UVoxelRendererComponent()
 {

@@ -1,7 +1,5 @@
 #include "VoxelGeneratorComponent.h"
 #include "MySimpleComputeShader.h"
-#include "MarchingCubesDispatcher.h"
-
 #include "Logging/LogMacros.h"
 
 UVoxelGeneratorComponent::UVoxelGeneratorComponent()
@@ -28,14 +26,63 @@ float UVoxelGeneratorComponent::SampleSDF(FVector p) {
     return (p.Length()) - 1.0f;
 }
 
-void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
+void UVoxelGeneratorComponent::SampleExampleComputeShader() {
     FMySimpleComputeShaderDispatchParams Params(1, 1, 1);
     Params.Input[0] = 2;
     Params.Input[1] = 5;
 
     FMySimpleComputeShaderInterface::Dispatch(Params, [](int OutputVal) {
         UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), OutputVal);
-    });
+        });
+}
+
+void UVoxelGeneratorComponent::SwapBuffers() {
+
+}
+
+void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
+
+}
+
+void UVoxelGeneratorComponent::DispatchMarchingCubes(OctreeNode* node, uint32 depth) {
+    if (!node) return;
+    if (!(node->isLeaf)) {
+        for (OctreeNode* child : node->children)
+            DispatchMarchingCubes(child, depth++);
+        return;
+    }
+
+    if (bBufferReady[ReadBufferIndex])
+    {
+        UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
+        bBufferReady[ReadBufferIndex] = false;
+        SwapBuffers();
+    }
+
+    FMarchingCubesDispatchParams Params(1, 1, 1);
+    TArray<float> isoValues = TArray<float>();
+    for (float isoValue : node->isoValues)
+        isoValues.Add(isoValue);
+
+    Params.Input.baseDepthScale = 0.5f;
+    Params.Input.isoLevel = 2;
+    Params.Input.voxelsPerNode = voxelBodyDimensions;
+
+    Params.Input.isoValues = isoValues;
+    Params.Input.leafDepth = depth;
+    Params.Input.leafPosition = node->bounds.Center();
+    Params.Input.nodeIndex = nodeIndex;
+
+    FMarchingCubesInterface::Dispatch(Params, [](FMarchingCubesOutput OutputVal) {
+        UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), OutputVal.tris[0]);
+        });
+    nodeIndex++;
+}
+
+void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
+    // SampleExampleComputeShader();
+    nodeIndex = 0;
+    DispatchMarchingCubes(node, 1);
 }
 
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {

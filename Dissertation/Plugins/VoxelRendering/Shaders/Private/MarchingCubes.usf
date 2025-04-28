@@ -3,46 +3,79 @@
 #include "MarchTables.usf"
 
 float3 leafPosition;
-float3 voxelBodyPosition;
-int leafDepth;
-StructuredBuffer<float> isoValues;
+uint leafDepth;
+uint nodeIndex;
+StructuredBuffer<float> isoValues[8];
 
 RWStructuredBuffer<float3> outVertices;
 RWStructuredBuffer<int> outTris;
 RWStructuredBuffer<float3> outNormals;
 
 // Constants
-int voxelsPerNode;
+uint voxelsPerNode;
 float baseDepthScale;
 float isoLevel;
 
+float3 calculateNormal(int index)
+{
+    int3 offsetX = int3(1, 0, 0);
+    int3 offsetY = int3(0, 1, 0);
+    int3 offsetZ = int3(0, 0, 1);
+    float density = isoValues[index];
+    
+    float densityXPlus = isoValues[index + offsetX.x];
+    float densityXMinus = isoValues[index - offsetX.x];
+    float densityYPlus = isoValues[index + offsetY.y * voxelsPerNode];
+    float densityYMinus = isoValues[index - offsetY.y * voxelsPerNode];
+    float densityZPlus = isoValues[index + offsetZ.z * voxelsPerNode * voxelsPerNode];
+    float densityZMinus = isoValues[index - offsetZ.z * voxelsPerNode * voxelsPerNode];
+
+    float dx = densityXPlus - densityXMinus;
+    float dy = densityYPlus - densityYMinus;
+    float dz = densityZPlus - densityZMinus;
+
+    float3 normal = float3(dx, dy, dz);
+    return normalize(normal);
+}
+
+float3 indexToWorld(int index, float scale)
+{
+    int x = index % voxelsPerNode;
+    int y = (index / voxelsPerNode) % voxelsPerNode;
+    int z = index / (voxelsPerNode * voxelsPerNode);
+    return leafPosition + float3(x, y, z) * scale;
+}
+ 
+int createVertex(int indexA, int indexB, int vertexStartIndex, float scale)
+{
+    float3 posA = indexToWorld(indexA, scale);
+    float3 posB = indexToWorld(indexB, scale);
+    float densityA = isoValues[indexA];
+    float densityB = isoValues[indexB];
+
+    float t = (isoLevel - densityA) / (densityB - densityA);
+    float3 position = posA + t * (posB - posA);
+    
+    float3 normalA = calculateNormal(indexA);
+    float3 normalB = calculateNormal(indexB);
+    float3 normal = normalize(normalA + t * (normalB - normalA));
+    
+    outNormals[vertexStartIndex] = normal;
+    outVertices[vertexStartIndex] = position;
+    return vertexStartIndex++;
+}
+
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
-void MarchingCubes(uint id : SV_DispatchThreadID)
+void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
     int numCubesPerAxis = voxelsPerNode - 1;
-    if (id >= numCubesPerAxis) { return;}
+    if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis) { return; }
     
-    int voxelIndex = id * voxelsPerNode; // Where a voxel is 4 corners/ isoValues 
-    int triangleStartIndex = voxelIndex * 5;
-    int vertexStartIndex = voxelIndex * 15;
-    
-    float3 local = leafPosition[voxelIndex];
-    float allocation = baseDepthScale / (2 + (leafDepth * 2.0));
+    int voxelIndex = id.z * voxelsPerNode * voxelsPerNode + id.y * voxelsPerNode + id.x; // Where a voxel is 4 corners/ isoValues 
+    int triangleStartIndex = nodeIndex * voxelIndex * 5;
+    int vertexStartIndex = nodeIndex * voxelIndex * 15; // Given no connecting vertexes between marched cubes (will be investigated later)
+    float scale = baseDepthScale / (2 + (leafDepth * 2.0));
         
-    float3 position = id + float3(voxelBodyPosition);
-
-    float3 corners[8] =
-    {
-        position + float3(0, 0, 0),
-        position + float3(1, 0, 0),
-        position + float3(1, 0, 1),
-        position + float3(0, 0, 1),
-        position + float3(0, 1, 0),
-        position + float3(1, 1, 0),
-        position + float3(1, 1, 1),
-        position + float3(0, 1, 1)
-    };
-
     int config = 0;
     for (int h = 0; h < 8; ++h)
     {
@@ -65,12 +98,11 @@ void MarchingCubes(uint id : SV_DispatchThreadID)
         int c0 = cornerIndexAFromEdge[edgeIndices[i + 2]];
         int c1 = cornerIndexBFromEdge[edgeIndices[i + 2]];
 
-        float3 v0 = createVertex(corners[c0], corners[c1]);
-        float3 v1 = createVertex(corners[b0], corners[b1]);
-        float3 v2 = createVertex(corners[a0], corners[a1]);
-
+        int vertexA = createVertex(a0, a1, vertexStartIndex, scale);
+        int vertexB = createVertex(b0, b1, vertexStartIndex, scale);
+        int vertexC = createVertex(c0, c1, vertexStartIndex, scale);
+        
         int baseIndex = vertexStartIndex - 3;
-
         outTris[triangleStartIndex] = baseIndex + 2;
         outTris[triangleStartIndex + 1] = baseIndex + 1;
         outTris[triangleStartIndex + 2] = baseIndex + 0;

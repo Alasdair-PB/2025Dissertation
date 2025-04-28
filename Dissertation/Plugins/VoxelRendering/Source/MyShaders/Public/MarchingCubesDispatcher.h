@@ -22,14 +22,13 @@ USTRUCT(BlueprintType)
 struct FMarchingCubesInput
 {
 	GENERATED_BODY()
-	UPROPERTY(BlueprintReadOnly)
-	TArray<FVector3f> voxelBodyCoord;
-	UPROPERTY(BlueprintReadOnly)
-	TArray<float> scalarFieldOffset;
-	UPROPERTY(BlueprintReadOnly)
-	TArray<float> depthLevel;
-	UPROPERTY(BlueprintReadOnly)
-	float isoLevel;
+	UPROPERTY(BlueprintReadOnly) int leafDepth;	
+	UPROPERTY(BlueprintReadOnly) int voxelsPerNode;
+	UPROPERTY(BlueprintReadOnly) int nodeIndex;
+	UPROPERTY(BlueprintReadOnly) float baseDepthScale;
+	UPROPERTY(BlueprintReadOnly) float isoLevel;
+	UPROPERTY(BlueprintReadOnly) FVector leafPosition;
+	UPROPERTY(BlueprintReadOnly) TArray<float> isoValues;
 };
 
 struct MYSHADERS_API FMarchingCubesDispatchParams
@@ -38,12 +37,11 @@ struct MYSHADERS_API FMarchingCubesDispatchParams
 	int Y;
 	int Z;
 
-	FVector voxelBodyDimensions;
 	FMarchingCubesInput Input;
 	FMarchingCubesOutput Output;
 
-	FMarchingCubesDispatchParams(int x, int y, int z, FVector voxelBodyDimensions) :
-		X(x),Y(y),Z(z), voxelBodyDimensions(voxelBodyDimensions){}
+	FMarchingCubesDispatchParams(int x, int y, int z) :
+		X(x),Y(y),Z(z){}
 };
 
 class MYSHADERS_API FMarchingCubesInterface {
@@ -75,11 +73,15 @@ class MYSHADERS_API UMarchingCubesLibrary_AsyncExecution : public UBlueprintAsyn
 	GENERATED_BODY()
 public:
 	virtual void Activate() override {
-		FMarchingCubesDispatchParams Params(1, 1, 1, FVector(1,1,1));
-		Params.Input.depthLevel = Args.depthLevel;
-		Params.Input.voxelBodyCoord = Args.voxelBodyCoord;
-		Params.Input.scalarFieldOffset = Args.scalarFieldOffset;
-		Params.Input.depthLevel = Args.depthLevel;
+		FMarchingCubesDispatchParams Params(1, 1, 1);
+		Params.Input.leafDepth = Args.leafDepth;
+		Params.Input.isoValues = Args.isoValues;
+		Params.Input.leafPosition = Args.leafPosition;
+
+		Params.Input.voxelsPerNode = Args.voxelsPerNode;
+		Params.Input.nodeIndex = Args.nodeIndex;
+		Params.Input.baseDepthScale = Args.baseDepthScale;
+		Params.Input.isoLevel = Args.isoLevel;
 
 		FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
 			this->Completed.Broadcast(OutputVal);

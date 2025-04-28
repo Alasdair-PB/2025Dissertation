@@ -2,81 +2,24 @@
 #pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
 #include "MarchTables.usf"
 
-StructuredBuffer<int> leafPosition;
-StructuredBuffer<int> leafDepth;
+float3 leafPosition;
+float3 voxelBodyPosition;
+int leafDepth;
 StructuredBuffer<float> isoValues;
 
 RWStructuredBuffer<float3> outVertices;
 RWStructuredBuffer<int> outTris;
 RWStructuredBuffer<float3> outNormals;
 
-float3 voxelBodyPosition;
-
-int nodeCount;
+// Constants
 int voxelsPerNode;
 float baseDepthScale;
 float isoLevel;
 
-float sampleDensity(int index)
-{
-    return scalarField[index];
-}
-
-int coordToIndex(int3 coord, int resolution)
-{
-    return coord.x + coord.y * resolution + coord.z * resolution * resolution;
-}
-
-float3 coordToWorld(int3 coord, int level)
-{
-    float voxelScale = baseScale * (1 << (maxDepth - level));
-    return (float3(coord) * voxelScale);
-}
-
-float sampleDensityFromCoord(int3 coord, int3 baseCoord, int level, int offset)
-{
-    int3 local = coord - baseCoord;
-    int resolution = baseResolution >> level;
-    int index = offset + coordToIndex(local, resolution);
-    return sampleDensity(index);
-}
-
-float3 calculateNormal(int3 coord, int3 baseCoord, int level, int offset)
-{
-    int3 x = int3(1, 0, 0);
-    int3 y = int3(0, 1, 0);
-    int3 z = int3(0, 0, 1);
-    float dx = sampleDensityFromCoord(coord + x, baseCoord, level, offset) - sampleDensityFromCoord(coord - x, baseCoord, level, offset);
-    float dy = sampleDensityFromCoord(coord + y, baseCoord, level, offset) - sampleDensityFromCoord(coord - y, baseCoord, level, offset);
-    float dz = sampleDensityFromCoord(coord + z, baseCoord, level, offset) - sampleDensityFromCoord(coord - z, baseCoord, level, offset);
-    return normalize(float3(dx, dy, dz));
-}
-
-float3 createVertex(int3 a, int3 b, int3 baseCoord, int level, int offset)
-{
-    float3 posA = coordToWorld(a, level);
-    float3 posB = coordToWorld(b, level);
-
-    float dA = sampleDensityFromCoord(a, baseCoord, level, offset);
-    float dB = sampleDensityFromCoord(b, baseCoord, level, offset);
-    float t = (isoLevel - dA) / max(0.0001, (dB - dA));
-    float3 pos = posA + t * (posB - posA);
-
-    float3 normA = calculateNormal(a, baseCoord, level, offset);
-    float3 normB = calculateNormal(b, baseCoord, level, offset);
-    float3 norm = normalize(normA + t * (normB - normA));
-
-    outNormals[vertexStartIndex] = norm;
-    outVertices[vertexStartIndex] = pos;
-
-    vertexStartIndex++;
-    return pos;
-}
-
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(uint id : SV_DispatchThreadID)
 {
-    int numCubesPerAxis = nodeCount - 1;
+    int numCubesPerAxis = voxelsPerNode - 1;
     if (id >= numCubesPerAxis) { return;}
     
     int voxelIndex = id * voxelsPerNode; // Where a voxel is 4 corners/ isoValues 
@@ -84,27 +27,26 @@ void MarchingCubes(uint id : SV_DispatchThreadID)
     int vertexStartIndex = voxelIndex * 15;
     
     float3 local = leafPosition[voxelIndex];
-    float division = 2 + ((leafDepth[voxelIndex] * 2.0));
-    local -= float3(baseDepthScale / division, baseDepthScale / division, baseDepthScale / division);
-
-    int3 coord = voxelBodyPosition + local;
+    float allocation = baseDepthScale / (2 + (leafDepth * 2.0));
+        
+    float3 position = id + float3(voxelBodyPosition);
 
     float3 corners[8] =
     {
-        coord + float3(0, 0, 0),
-        coord + float3(1, 0, 0),
-        coord + float3(1, 0, 1),
-        coord + float3(0, 0, 1),
-        coord + float3(0, 1, 0),
-        coord + float3(1, 1, 0),
-        coord + float3(1, 1, 1),
-        coord + float3(0, 1, 1)
+        position + float3(0, 0, 0),
+        position + float3(1, 0, 0),
+        position + float3(1, 0, 1),
+        position + float3(0, 0, 1),
+        position + float3(0, 1, 0),
+        position + float3(1, 1, 0),
+        position + float3(1, 1, 1),
+        position + float3(0, 1, 1)
     };
 
     int config = 0;
     for (int h = 0; h < 8; ++h)
     {
-        if (sampleDensityFromCoord(corners[h], basePosition, level, offset) < isoLevel)
+        if (isoValues[voxelIndex + h] < isoLevel)
             config |= (1 << h);
     }
 
@@ -123,9 +65,9 @@ void MarchingCubes(uint id : SV_DispatchThreadID)
         int c0 = cornerIndexAFromEdge[edgeIndices[i + 2]];
         int c1 = cornerIndexBFromEdge[edgeIndices[i + 2]];
 
-        float3 v0 = createVertex(corners[c0], corners[c1], baseCoord, level, offset);
-        float3 v1 = createVertex(corners[b0], corners[b1], baseCoord, level, offset);
-        float3 v2 = createVertex(corners[a0], corners[a1], baseCoord, level, offset);
+        float3 v0 = createVertex(corners[c0], corners[c1]);
+        float3 v1 = createVertex(corners[b0], corners[b1]);
+        float3 v2 = createVertex(corners[a0], corners[a1]);
 
         int baseIndex = vertexStartIndex - 3;
 

@@ -151,7 +151,7 @@ void FMySimpleComputeShaderInterface::DispatchRenderThread(FRHICommandListImmedi
 			auto RunnerFunc = [GPUBufferReadback, AsyncCallback](auto&& RunnerFunc) -> void {
 				if (GPUBufferReadback->IsReady()) {
 
-					int32* Buffer = (int32*)GPUBufferReadback->Lock(1);
+					int32* Buffer = (int32*)GPUBufferReadback->Lock(0);
 					int OutVal = Buffer[0];
 
 					GPUBufferReadback->Unlock();

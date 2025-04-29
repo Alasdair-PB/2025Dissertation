@@ -179,8 +179,6 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			auto RunnerFunc = [VerticesReadback, TrianglesReadback, NormalsReadback, AsyncCallback, vertexCount, triCount](auto&& RunnerFunc) -> void {
 				if (VerticesReadback->IsReady() && TrianglesReadback->IsReady() && NormalsReadback->IsReady()) {
 					FMarchingCubesOutput OutVal;
-					UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), vertexCount);
-
 					void* VBuf = VerticesReadback->Lock(0);
 					OutVal.vertices.Append((FVector3f*)VBuf, vertexCount);
 					VerticesReadback->Unlock();

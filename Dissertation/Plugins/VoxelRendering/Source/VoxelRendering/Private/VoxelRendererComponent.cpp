@@ -1,4 +1,5 @@
 #include "VoxelRendererComponent.h"
+#include "VoxelRendering.h"
 
 UVoxelRendererComponent::UVoxelRendererComponent()
 {

@@ -26,6 +26,8 @@ private:
 	void InitOctree();
 	void InvokeVoxelRenderer(OctreeNode* node);
 	void DispatchMarchingCubes(OctreeNode* node, uint32 depth);
+	int GetLeafCount(OctreeNode* node);
+
 	void SampleExampleComputeShader();
 	void SwapBuffers();
 	void UpdateMesh(FMarchingCubesOutput meshInfo);
@@ -39,6 +41,7 @@ private:
 	uint32 WriteBufferIndex = 1;
 	uint32 nodeIndex = 0;
 
+	int leafCount = 0;
 	float SampleSDF(FVector p);
 
 };

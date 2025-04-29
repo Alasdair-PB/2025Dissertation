@@ -14,6 +14,7 @@ void UVoxelGeneratorComponent::BeginPlay()
     voxelRenderer = NewObject<UVoxelRendererComponent>(Owner);
     voxelRenderer->RegisterComponent();
     InitOctree();
+    leafCount = GetLeafCount((*tree).root);
 }
 
 void UVoxelGeneratorComponent::InitOctree() {
@@ -40,6 +41,15 @@ void UVoxelGeneratorComponent::SwapBuffers() {
     int32 Temp = ReadBufferIndex;
     ReadBufferIndex = WriteBufferIndex;
     WriteBufferIndex = Temp;
+}
+
+int UVoxelGeneratorComponent::GetLeafCount(OctreeNode* node) {
+    if (!node) return 0;
+    if (node->isLeaf) return 1;
+    int count = 0;
+    for (int i = 0; i < 8; ++i)
+        count += GetLeafCount(node->children[i]);
+    return count;
 }
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
@@ -69,10 +79,10 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     Params.Input.isoLevel = 2;
     Params.Input.voxelsPerNode = voxelBodyDimensions;
     Params.Input.tree = node;
+    Params.Input.leafCount = leafCount;
 
     FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
         bBufferReady[ReadBufferIndex] = true;
-        //UE_LOG(LogTemp, Warning, TEXT("Dispatch returned"));
         //UE_LOG(LogTemp, Warning, TEXT("Dispatch returned"));
      });
 }

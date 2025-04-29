@@ -1,3 +1,4 @@
+#include "MyShaders.h"
 #include "MySimpleComputeShader.h"
 #include "MyShaders/Public/MySimpleComputeShader.h"
 #include "PixelShaderUtils.h"

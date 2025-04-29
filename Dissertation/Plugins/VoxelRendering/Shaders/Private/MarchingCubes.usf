@@ -3,9 +3,9 @@
 #include "MarchTables.usf"
 #include "/Engine/Public/Platform.ush"
 
-float3 leafPosition;
-uint leafDepth;
-uint nodeIndex;
+float3 leafPosition = float3(0, 0, 0);;
+uint leafDepth = 0;
+uint nodeIndex = 0;
 StructuredBuffer<float> isoValues;
 
 RWStructuredBuffer<float3> outVertices;
@@ -13,9 +13,9 @@ RWStructuredBuffer<int> outTris;
 RWStructuredBuffer<float3> outNormals;
 
 // Constants
-uint voxelsPerNode;
-float baseDepthScale;
-float isoLevel;
+uint voxelsPerNode = 0;
+float baseDepthScale = 0;
+float isoLevel = 0;
 
 float3 calculateNormal(int index)
 {
@@ -47,7 +47,7 @@ float3 indexToWorld(int index, float scale)
     return leafPosition + float3(x, y, z) * scale;
 }
  
-int createVertex(int indexA, int indexB, int vertexStartIndex, float scale)
+void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scale)
 {
     float3 posA = indexToWorld(indexA, scale);
     float3 posB = indexToWorld(indexB, scale);
@@ -63,7 +63,7 @@ int createVertex(int indexA, int indexB, int vertexStartIndex, float scale)
     
     outNormals[vertexStartIndex] = normal;
     outVertices[vertexStartIndex] = position;
-    return vertexStartIndex++;
+    vertexStartIndex++;
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
@@ -76,15 +76,35 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     int triangleStartIndex = nodeIndex * voxelIndex * 5;
     int vertexStartIndex = nodeIndex * voxelIndex * 15; // Given no connecting vertexes between marched cubes (will be investigated later)
     float scale = baseDepthScale / (2 + (leafDepth * 2.0));
-        
     int config = 0;
+    
     for (int h = 0; h < 8; ++h)
     {
         if (isoValues[voxelIndex + h] < isoLevel)
             config |= (1 << h);
     }
 
-    int edgeIndices[] = triangulation[config];
+    //const int edgeIndices[] = triangulation[config];
+    const int edgeIndices[16] =
+    {
+        triangulation[config][0],
+        triangulation[config][1],
+        triangulation[config][2],
+        triangulation[config][3],
+        triangulation[config][4],
+        triangulation[config][5],
+        triangulation[config][6],
+        triangulation[config][7],
+        triangulation[config][8],
+        triangulation[config][9],
+        triangulation[config][10],
+        triangulation[config][11],
+        triangulation[config][12],
+        triangulation[config][13],
+        triangulation[config][14],
+        triangulation[config][15]
+    };
+    
     for (int i = 0; i < 16; i += 3)
     {
         if (edgeIndices[i] == -1)
@@ -99,15 +119,14 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         int c0 = cornerIndexAFromEdge[edgeIndices[i + 2]];
         int c1 = cornerIndexBFromEdge[edgeIndices[i + 2]];
 
-        int vertexA = createVertex(a0, a1, vertexStartIndex, scale);
-        int vertexB = createVertex(b0, b1, vertexStartIndex, scale);
-        int vertexC = createVertex(c0, c1, vertexStartIndex, scale);
+        createVertex(a0, a1, vertexStartIndex, scale);
+        createVertex(b0, b1, vertexStartIndex, scale);
+        createVertex(c0, c1, vertexStartIndex, scale);
         
         int baseIndex = vertexStartIndex - 3;
         outTris[triangleStartIndex] = baseIndex + 2;
         outTris[triangleStartIndex + 1] = baseIndex + 1;
         outTris[triangleStartIndex + 2] = baseIndex + 0;
-
         triangleStartIndex += 3;
     }
 }

@@ -1,3 +1,4 @@
+#include "MyShaders.h"
 #include "MarchingCubesDispatcher.h"
 #include "CommonRenderResources.h"
 #include "RenderGraph.h"
@@ -113,7 +114,7 @@ void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FMarchingCub
 	NodeParams.Input.leafDepth = depth;
 	NodeParams.Input.leafPosition = node->bounds.Center();
 	NodeParams.Input.nodeIndex = *nodeIndex;
-	*nodeIndex++;
+	*nodeIndex = (*nodeIndex)++;
 	AddMarchingCubesGraphPass(GraphBuilder, NodeParams);
 }
 
@@ -132,7 +133,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		if (bIsShaderValid) {
 			FMarchingCubes::FParameters* PassParameters = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 
-			const int maxVoxelCount = Params.Input.voxelsPerNode;
+			const int maxVoxelCount = Params.Input.voxelsPerNode * Params.Input.leafCount;
 			const int vertexCount = maxVoxelCount * 15;
 			const int triCount = maxVoxelCount * 5 * 3;
 			const int isoCount = maxVoxelCount * 8;
@@ -161,7 +162,6 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 				sizeof(FVector3f), maxVoxelCount, nullptr, 0);
 			PassParameters->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
 
-
 			uint32 nodeIndex = 0; 
 			FMarchingCubesDispatchParams NodeParams = Params;
 			AddMarchingCubesGraphPassFromOctree(GraphBuilder, NodeParams, Params.Input.tree, 0, &nodeIndex);
@@ -179,6 +179,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			auto RunnerFunc = [VerticesReadback, TrianglesReadback, NormalsReadback, AsyncCallback, vertexCount, triCount](auto&& RunnerFunc) -> void {
 				if (VerticesReadback->IsReady() && TrianglesReadback->IsReady() && NormalsReadback->IsReady()) {
 					FMarchingCubesOutput OutVal;
+					UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), vertexCount);
 
 					void* VBuf = VerticesReadback->Lock(0);
 					OutVal.vertices.Append((FVector3f*)VBuf, vertexCount);
@@ -204,18 +205,8 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 						RunnerFunc(RunnerFunc); });
 				}
 			};
-
 			AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {
 				RunnerFunc(RunnerFunc); });
-
-			AsyncTask(ENamedThreads::GameThread, [AsyncCallback, outVertices, outTris, outNormals]() {
-				FMarchingCubesOutput OutVal;
-				OutVal.vertices = outVertices;
-				OutVal.tris = outTris;
-				OutVal.normals = outNormals;
-				AsyncCallback(OutVal);
-				});
-
 		} else {} // We silently exit here as we don't want to crash the game if the shader is not found or has an error.
 	}
 

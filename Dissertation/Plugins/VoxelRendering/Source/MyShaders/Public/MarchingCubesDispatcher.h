@@ -26,7 +26,7 @@ struct FMarchingCubesInput
 	UPROPERTY(BlueprintReadOnly) FVector leafPosition;
 	UPROPERTY(BlueprintReadOnly) int leafDepth;
 	UPROPERTY(BlueprintReadOnly) int nodeIndex;
-	UPROPERTY(BlueprintReadOnly) int voxelsPerNode;
+	UPROPERTY(BlueprintReadOnly) int voxelsPerAxis;
 	UPROPERTY(BlueprintReadOnly) float baseDepthScale;
 	UPROPERTY(BlueprintReadOnly) float isoLevel;
 	UPROPERTY(BlueprintReadOnly) TArray<float> isoValues;
@@ -81,7 +81,7 @@ public:
 		Params.Input.tree = Args.tree;
 		Params.Input.leafCount = Args.leafCount;
 
-		Params.Input.voxelsPerNode = Args.voxelsPerNode;
+		Params.Input.voxelsPerAxis = Args.voxelsPerAxis;
 		Params.Input.nodeIndex = Args.nodeIndex;
 		Params.Input.baseDepthScale = Args.baseDepthScale;
 		Params.Input.isoLevel = Args.isoLevel;

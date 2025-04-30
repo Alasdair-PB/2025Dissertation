@@ -13,7 +13,7 @@ RWStructuredBuffer<int> outTris;
 RWStructuredBuffer<float3> outNormals;
 
 // Constants
-uint voxelsPerNode = 0;
+uint voxelsPerAxis = 0;
 float baseDepthScale = 0;
 float isoLevel = 0;
 
@@ -26,10 +26,10 @@ float3 calculateNormal(int index)
     
     float densityXPlus = isoValues[index + offsetX.x];
     float densityXMinus = isoValues[index - offsetX.x];
-    float densityYPlus = isoValues[index + offsetY.y * voxelsPerNode];
-    float densityYMinus = isoValues[index - offsetY.y * voxelsPerNode];
-    float densityZPlus = isoValues[index + offsetZ.z * voxelsPerNode * voxelsPerNode];
-    float densityZMinus = isoValues[index - offsetZ.z * voxelsPerNode * voxelsPerNode];
+    float densityYPlus = isoValues[index + offsetY.y * voxelsPerAxis];
+    float densityYMinus = isoValues[index - offsetY.y * voxelsPerAxis];
+    float densityZPlus = isoValues[index + offsetZ.z * voxelsPerAxis * voxelsPerAxis];
+    float densityZMinus = isoValues[index - offsetZ.z * voxelsPerAxis * voxelsPerAxis];
 
     float dx = densityXPlus - densityXMinus;
     float dy = densityYPlus - densityYMinus;
@@ -41,9 +41,9 @@ float3 calculateNormal(int index)
 
 float3 indexToWorld(int index, float scale)
 {
-    int x = index % voxelsPerNode;
-    int y = (index / voxelsPerNode) % voxelsPerNode;
-    int z = index / (voxelsPerNode * voxelsPerNode);
+    int x = index % voxelsPerAxis;
+    int y = (index / voxelsPerAxis) % voxelsPerAxis;
+    int z = index / (voxelsPerAxis * voxelsPerAxis);
     return leafPosition + float3(x, y, z) * scale;
 }
  
@@ -69,10 +69,10 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
-    int numCubesPerAxis = voxelsPerNode - 1;
+    int numCubesPerAxis = voxelsPerAxis - 1;
     if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis) { return; }
     
-    int voxelIndex = id.z * voxelsPerNode * voxelsPerNode + id.y * voxelsPerNode + id.x; // Where a voxel is 4 corners/ isoValues 
+    int voxelIndex = voxelsPerAxis * id.z + voxelsPerAxis + id.y * voxelsPerAxis + id.x; // Where a voxel is 4 corners/ isoValues 
     int triangleStartIndex = nodeIndex * voxelIndex * 5;
     int vertexStartIndex = nodeIndex * voxelIndex * 15; // Given no connecting vertexes between marched cubes (will be investigated later)
     float scale = baseDepthScale / (2 + (leafDepth * 2.0));

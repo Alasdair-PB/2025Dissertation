@@ -1,5 +1,5 @@
-#include "MyShaders.h"
 #include "MarchingCubesDispatcher.h"
+#include "MyShaders.h"
 #include "CommonRenderResources.h"
 #include "RenderGraph.h"
 #include "MyShaders/Public/MarchingCubesDispatcher.h"
@@ -31,7 +31,7 @@ class FMarchingCubes : public FGlobalShader
 		SHADER_PARAMETER(FVector3f, leafPosition)
 		SHADER_PARAMETER(uint32, leafDepth)
 
-		SHADER_PARAMETER(uint32, voxelsPerNode)
+		SHADER_PARAMETER(uint32, voxelsPerAxis)
 		SHADER_PARAMETER(uint32, nodeIndex)
 		SHADER_PARAMETER(float, baseDepthScale)
 		SHADER_PARAMETER(float, isoLevel)
@@ -82,7 +82,7 @@ void AddMarchingCubesGraphPass(FRDGBuilder& GraphBuilder, const FMarchingCubesDi
 	CSParameters->leafDepth = PassParameters->leafDepth;
 	CSParameters->leafPosition = PassParameters->leafPosition;
 
-	CSParameters->voxelsPerNode = PassParameters->voxelsPerNode;
+	CSParameters->voxelsPerAxis = PassParameters->voxelsPerAxis;
 	CSParameters->nodeIndex = PassParameters->nodeIndex;
 	CSParameters->baseDepthScale = PassParameters->baseDepthScale;
 	CSParameters->isoLevel = PassParameters->isoLevel;
@@ -133,7 +133,10 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		if (bIsShaderValid) {
 			FMarchingCubes::FParameters* PassParameters = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 
-			const int maxVoxelCount = Params.Input.voxelsPerNode * Params.Input.leafCount;
+			if (Params.Input.leafCount == 0) return;
+
+			const int maxVoxelCount = (Params.Input.voxelsPerAxis * Params.Input.voxelsPerAxis * 
+				Params.Input.voxelsPerAxis) * Params.Input.leafCount;
 			const int vertexCount = maxVoxelCount * 15;
 			const int triCount = maxVoxelCount * 5 * 3;
 			const int isoCount = maxVoxelCount * 8;

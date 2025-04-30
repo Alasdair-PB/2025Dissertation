@@ -77,7 +77,7 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     FMarchingCubesDispatchParams Params(1, 1, 1);
     Params.Input.baseDepthScale = 0.5f;
     Params.Input.isoLevel = 2;
-    Params.Input.voxelsPerNode = voxelBodyDimensions;
+    Params.Input.voxelsPerAxis = voxelsPerAxis;
     Params.Input.tree = node;
     Params.Input.leafCount = leafCount;
 

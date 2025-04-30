@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 #include "AABB.h"
 
-static const int voxelBodyDimensions = 3 * 3 * 3;
+static const int voxelsPerAxis = 3;
 
 class OctreeNode {
 public:
@@ -10,7 +10,7 @@ public:
     bool isLeaf;
     OctreeNode* children[8];
 
-    float isoValues[voxelBodyDimensions * 8];
+    float isoValues[voxelsPerAxis * 8];
     uint8_t type;
 
     OctreeNode(const AABB& b) : bounds(b), isLeaf(true) {

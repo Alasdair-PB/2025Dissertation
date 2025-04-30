@@ -4,7 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "../../../Octree/Public/Octree.h"
 #include "../../../Octree/Public/OctreeNode.h"
-
+#include "ProceduralMeshComponent.h"
 #include "VoxelRendererComponent.h"
 #include "../../../MyShaders/Public/MarchingCubesDispatcher.h"
 #include "VoxelGeneratorComponent.generated.h"
@@ -25,8 +25,8 @@ private:
 	void TraverseAndDraw(OctreeNode* node);
 	void InitOctree();
 	void InvokeVoxelRenderer(OctreeNode* node);
-	void DispatchMarchingCubes(OctreeNode* node, uint32 depth);
 	int GetLeafCount(OctreeNode* node);
+	UProceduralMeshComponent* ProcMesh;
 
 	void SampleExampleComputeShader();
 	void SwapBuffers();

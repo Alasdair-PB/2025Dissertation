@@ -132,11 +132,9 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 		if (bIsShaderValid) {
 			FMarchingCubes::FParameters* PassParameters = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
-
 			if (Params.Input.leafCount == 0) return;
 
-			const int maxVoxelCount = (Params.Input.voxelsPerAxis * Params.Input.voxelsPerAxis * 
-				Params.Input.voxelsPerAxis) * Params.Input.leafCount;
+			const int maxVoxelCount = (Params.Input.voxelsPerAxis * Params.Input.voxelsPerAxis * Params.Input.voxelsPerAxis) * Params.Input.leafCount;
 			const int vertexCount = maxVoxelCount * 15;
 			const int triCount = maxVoxelCount * 5 * 3;
 			const int isoCount = maxVoxelCount * 8;
@@ -147,7 +145,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 			outVertices.Init(FVector3f(-1, -1, -1), vertexCount);
 			outTris.Init(-1, triCount);
-			outNormals.Init(FVector3f(0, 0, 0), vertexCount);
+			outNormals.Init(FVector3f(-1, -1, -1), vertexCount);
 
 			const FRDGBufferRef outVerticesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutVertices_SB"),
 				sizeof(FVector3f), vertexCount, outVertices.GetData(), vertexCount * sizeof(FVector3f));
@@ -162,13 +160,12 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			PassParameters->outNormals = GraphBuilder.CreateUAV(outNormalsBuffer);
 
 			const FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("GridNormals_SB"),
-				sizeof(FVector3f), maxVoxelCount, nullptr, 0);
+				sizeof(FVector3f), isoCount, nullptr, 0);
 			PassParameters->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
 
 			uint32 nodeIndex = 0; 
 			FMarchingCubesDispatchParams NodeParams = Params;
 			AddMarchingCubesGraphPassFromOctree(GraphBuilder, NodeParams, Params.Input.tree, 0, &nodeIndex);
-			//AddMarchingCubesGraphPass(GraphBuilder, Params);
 
 			FRHIGPUBufferReadback* VerticesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesVertices"));
 			AddEnqueueCopyPass(GraphBuilder, VerticesReadback, outVerticesBuffer, 0u);
@@ -182,6 +179,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			auto RunnerFunc = [VerticesReadback, TrianglesReadback, NormalsReadback, AsyncCallback, vertexCount, triCount](auto&& RunnerFunc) -> void {
 				if (VerticesReadback->IsReady() && TrianglesReadback->IsReady() && NormalsReadback->IsReady()) {
 					FMarchingCubesOutput OutVal;
+
 					void* VBuf = VerticesReadback->Lock(0);
 					OutVal.vertices.Append((FVector3f*)VBuf, vertexCount);
 					VerticesReadback->Unlock();

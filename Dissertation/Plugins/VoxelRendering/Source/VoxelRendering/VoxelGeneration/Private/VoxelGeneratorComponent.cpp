@@ -14,13 +14,35 @@ void UVoxelGeneratorComponent::BeginPlay()
     voxelRenderer = NewObject<UVoxelRendererComponent>(Owner);
     voxelRenderer->RegisterComponent();
     InitOctree();
+
     leafCount = GetLeafCount((*tree).root);
+    ProcMesh = NewObject<UProceduralMeshComponent>(Owner);
+    ProcMesh->RegisterComponent();
+    ProcMesh->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void UVoxelGeneratorComponent::InitOctree() {
     AABB bounds = { FVector(-200.0f), FVector(200.0f) };
     tree = new Octree(bounds, 5);
     tree->Build([this](FVector p) { return SampleSDF(p); });
+
+    TArray<float> isovalueBuffer;
+    TArray<uint8> typeBuffer;
+
+    int sx = 2, sy = 2, sz = 2;
+    int numVoxels = sx * sy * sz;
+
+    for (int z = 0; z < sz; ++z) {
+        for (int y = 0; y < sy; ++y) {
+            for (int x = 0; x < sx; ++x) {
+                float iso = (x + y + z) % 2 == 0 ? -1.0f : 1.0f;
+                uint8 type = (x + y + z) % 2;
+                isovalueBuffer.Add(iso);
+                typeBuffer.Add(type);
+            }
+        }
+    }
+    tree->BuildFromBuffers(isovalueBuffer, typeBuffer, sx, sy, sz);
 }
 
 float UVoxelGeneratorComponent::SampleSDF(FVector p) {
@@ -53,37 +75,69 @@ int UVoxelGeneratorComponent::GetLeafCount(OctreeNode* node) {
 }
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
-    //UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), meshInfo.tris[0]);
-    for (int32 tri : meshInfo.tris) {
-        UE_LOG(LogTemp, Warning, TEXT("A tri has been returned"));
+    TArray<FVector> Vertices;
+    TArray<int32> Indices;
+    TArray<FVector> Normals;
+    TArray<FVector2D> UVs;
+    TArray<FProcMeshTangent> Tangents;
+    TArray<FLinearColor> VertexColors;
+    TMap<int32, int32> IndexRemap;
+    int32 NextIndex = 0;
+
+    for (int32 i = 0; i < meshInfo.vertices.Num(); i++) {
+        const FVector& V = FVector(meshInfo.vertices[i]);
+        const FVector& N = FVector(meshInfo.normals[i]);
+
+        if (V == FVector(-1, -1, -1)) continue;
+
+        IndexRemap.Add(i, NextIndex);
+        Vertices.Add(V);
+        Normals.Add(N);
+        UVs.Add(FVector2D(0, 0));
+        Tangents.Add(FProcMeshTangent(1, 0, 0));
+        VertexColors.Add(FColor::White);
+        ++NextIndex;
     }
-    for (FVector3f vert : meshInfo.vertices) {
-        UE_LOG(LogTemp, Warning, TEXT("A vertex has been returned"));
+
+    for (int32 i = 0; i < meshInfo.tris.Num(); i += 3) {
+        int32 A = meshInfo.tris[i];
+        int32 B = meshInfo.tris[i + 1];
+        int32 C = meshInfo.tris[i + 2];
+
+        if (A < 0 || B < 0 || C < 0) break;
+        if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) continue;
+
+        Indices.Add(IndexRemap[A]);
+        Indices.Add(IndexRemap[B]);
+        Indices.Add(IndexRemap[C]);
     }
-    for (FVector3f normal : meshInfo.normals) {
-        UE_LOG(LogTemp, Warning, TEXT("A normal value has been returned"));
-    }
+
+    ProcMesh->CreateMeshSection_LinearColor(0, Vertices, Indices, Normals, UVs, VertexColors, Tangents, true, false);
 }
 
+bool rendered = false;
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
-    // SampleExampleComputeShader();
+
+    //if (rendered) return;
+
     if (bBufferReady[ReadBufferIndex])
     {
         UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
         bBufferReady[ReadBufferIndex] = false;
         SwapBuffers();
+        rendered = true;
     }
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
     Params.Input.baseDepthScale = 0.5f;
-    Params.Input.isoLevel = 2;
+    Params.Input.isoLevel = 0.5f;
     Params.Input.voxelsPerAxis = voxelsPerAxis;
     Params.Input.tree = node;
     Params.Input.leafCount = leafCount;
 
     FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
         bBufferReady[ReadBufferIndex] = true;
-        //UE_LOG(LogTemp, Warning, TEXT("Dispatch returned"));
+        marchingCubesOutBuffer[ReadBufferIndex] = OutputVal;
      });
 }
 
@@ -104,7 +158,6 @@ void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {
                         (float)y / resolution,
                         (float)z / resolution
                     ));
-
                     float v = SampleSDF(p);
                     FColor color = (FMath::Abs(v) < 0.01f) ? FColor::White : (v < 0.f ? FColor::Blue : FColor::Red);
                     DrawDebugPoint(GetWorld(), p, 5.f, color, false, -1.f);

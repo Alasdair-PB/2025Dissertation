@@ -24,9 +24,6 @@ void UVoxelRendererComponent::RenderVoxelAsMarchingCubes(const TArray<float>& Sc
 {
     TArray<FVector> Vertices;
     TArray<int32> Indices;
-
-    // Set vertices here
-
     TArray<FVector> Normals;
     TArray<FVector2D> UVs;
     TArray<FProcMeshTangent> Tangents;

@@ -70,7 +70,10 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
-    outTris[0] = 3;
+    if (id.x == 0 && id.y == 0 && id.z == 0)
+    {
+        outTris[0] = 3;
+    }
     
     int numCubesPerAxis = voxelsPerAxis - 1;
     if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis)

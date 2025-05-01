@@ -79,7 +79,6 @@ public:
 		Params.Input.isoValues = Args.isoValues;
 		Params.Input.leafPosition = Args.leafPosition;
 
-
 		Params.Input.tree = Args.tree;
 		Params.Input.leafCount = Args.leafCount;
 		Params.Input.voxelsPerAxis = voxelsPerAxis;

@@ -91,6 +91,8 @@ void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FMarchingCub
 void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FMarchingCubesDispatchParams Params, TFunction<void(FMarchingCubesOutput OutputVal)> AsyncCallback) {
 	FRDGBuilder GraphBuilder(RHICmdList);
 	{
+		if (Params.Input.leafCount == 0) return;
+
 		SCOPE_CYCLE_COUNTER(STAT_MarchingCubes_Execute);
 		DECLARE_GPU_STAT(MarchingCubes)
 		RDG_EVENT_SCOPE(GraphBuilder, "MarchingCubes");
@@ -102,8 +104,6 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 		if (bIsShaderValid) {
 			FMarchingCubes::FParameters* PassParameters = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
-			if (Params.Input.leafCount == 0) return;
-
 			const int maxVoxelCount = nodeVoxelCount * Params.Input.leafCount;
 			const int vertexCount = maxVoxelCount * 15;
 			const int triCount = maxVoxelCount * 5 * 3;

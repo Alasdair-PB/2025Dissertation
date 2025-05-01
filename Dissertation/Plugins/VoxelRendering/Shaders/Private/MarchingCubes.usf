@@ -70,6 +70,9 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
+    outTris[0] = 3;
+    
+    
     int numCubesPerAxis = voxelsPerAxis - 1;
     if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis)
     {
@@ -130,7 +133,7 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         createVertex(c0, c1, vertexStartIndex, scale, voxelIndex);
         
         int baseIndex = vertexStartIndex - 3;
-        outTris[1] = baseIndex + 2;
+        //outTris[1] = baseIndex + 2;
 
         //outTris[triangleStartIndex] = baseIndex + 2;
         //outTris[triangleStartIndex + 1] = baseIndex + 1;

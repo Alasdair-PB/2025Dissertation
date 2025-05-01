@@ -77,11 +77,8 @@ void FMySimpleComputeShaderInterface::DispatchRenderThread(FRHICommandListImmedi
 
 			auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(Params.X, Params.Y, Params.Z), FComputeShaderUtils::kGolden2DGroupSize);
 			GraphBuilder.AddPass(
-				RDG_EVENT_NAME("ExecuteMySimpleComputeShader"),
-				PassParameters,
-				ERDGPassFlags::AsyncCompute,
-				[&PassParameters, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList)
-				{
+				RDG_EVENT_NAME("ExecuteMySimpleComputeShader"), PassParameters, ERDGPassFlags::AsyncCompute,
+				[&PassParameters, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList){
 					FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParameters, GroupCount);
 				});
 

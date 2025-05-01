@@ -2,18 +2,18 @@
 #include "CoreMinimal.h"
 
 struct AABB {
-    FVector min;
-    FVector max;
+    FVector3f min;
+    FVector3f max;
 
-    FVector Center() const {
+    FVector3f Center() const {
         return (min + max) * 0.5f;
     }
 
-    FVector Extent() const {
+    FVector3f Extent() const {
         return (max - min) * 0.5f;
     }
 
-    bool Contains(const FVector& point) const {
+    bool Contains(const FVector3f& point) const {
         return (point.X >= min.X && point.X <= max.X) &&
             (point.Y >= min.Y && point.Y <= max.Y) &&
             (point.Z >= min.Z && point.Y <= max.Z);

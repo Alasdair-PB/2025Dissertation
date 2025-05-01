@@ -23,7 +23,7 @@ struct FMarchingCubesInput
 	GENERATED_BODY()
 	OctreeNode* tree;
 	UPROPERTY(BlueprintReadOnly) int leafCount;
-	UPROPERTY(BlueprintReadOnly) FVector leafPosition;
+	UPROPERTY(BlueprintReadOnly) FVector3f leafPosition;
 	UPROPERTY(BlueprintReadOnly) int leafDepth;
 	UPROPERTY(BlueprintReadOnly) int nodeIndex;
 	UPROPERTY(BlueprintReadOnly) int voxelsPerAxis;
@@ -78,10 +78,11 @@ public:
 		Params.Input.leafDepth = Args.leafDepth;
 		Params.Input.isoValues = Args.isoValues;
 		Params.Input.leafPosition = Args.leafPosition;
+
+
 		Params.Input.tree = Args.tree;
 		Params.Input.leafCount = Args.leafCount;
-
-		Params.Input.voxelsPerAxis = Args.voxelsPerAxis;
+		Params.Input.voxelsPerAxis = voxelsPerAxis;
 		Params.Input.nodeIndex = Args.nodeIndex;
 		Params.Input.baseDepthScale = Args.baseDepthScale;
 		Params.Input.isoLevel = Args.isoLevel;

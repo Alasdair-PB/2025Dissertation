@@ -2,7 +2,9 @@
 #include "CoreMinimal.h"
 #include "AABB.h"
 
-static const int voxelsPerAxis = 3;
+static const int voxelsPerAxis = 3; 
+static const int nodeVoxelCount = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
+static const int isoCount = nodeVoxelCount * 8;
 
 class OctreeNode {
 public:
@@ -10,12 +12,16 @@ public:
     bool isLeaf;
     OctreeNode* children[8];
 
-    float isoValues[voxelsPerAxis * voxelsPerAxis * voxelsPerAxis * 8];
-    float typeValues[voxelsPerAxis * voxelsPerAxis * voxelsPerAxis];
+    float isoValues[isoCount];
+    float typeValues[nodeVoxelCount];
 
     OctreeNode(const AABB& b) : bounds(b), isLeaf(true) {
         for (int i = 0; i < 8; ++i)
             children[i] = nullptr;
+
+        for (int i = 0; i < isoCount; ++i)
+            isoValues[i] = 1.0f;
+        FMemory::Memzero(typeValues, sizeof(float) * voxelsPerAxis * voxelsPerAxis * voxelsPerAxis);
     }
 
     ~OctreeNode() {
@@ -37,23 +43,23 @@ public:
         if (!isLeaf) return;
 
         isLeaf = false;
-        FVector c = bounds.Center();
-        FVector e = bounds.Extent() * 0.5f;
+        FVector3f c = bounds.Center();
+        FVector3f e = bounds.Extent() * 0.5f;
 
         for (int i = 0; i < 8; ++i) {
-            FVector offset((i & 1 ? 1 : -1) * e.X,(i & 2 ? 1 : -1) * e.Y,(i & 4 ? 1 : -1) * e.Z);
-            FVector childCenter = c + offset;
-            FVector halfSize = e;
+            FVector3f offset((i & 1 ? 1 : -1) * e.X,(i & 2 ? 1 : -1) * e.Y,(i & 4 ? 1 : -1) * e.Z);
+            FVector3f childCenter = c + offset;
+            FVector3f halfSize = e;
 
             AABB childAABB = {childCenter - halfSize,childCenter + halfSize};
             children[i] = new OctreeNode(childAABB);
         }
     }
 
-    bool CheckSubdivide(std::function<float(FVector)> sdf, float threshold = 0.0f) {
+    bool CheckSubdivide(std::function<float(FVector3f)> sdf, float threshold = 0.0f) {
         int signs = 0;
         for (int i = 0; i < 8; ++i) {
-            FVector corner(
+            FVector3f corner(
                 (i & 1) ? bounds.max.X : bounds.min.X,
                 (i & 2) ? bounds.max.Y : bounds.min.Y,
                 (i & 4) ? bounds.max.Z : bounds.min.Z
@@ -63,7 +69,7 @@ public:
         return signs == 3;
     }
 
-    int GetBufferIndex(const FVector& pos, int sx, int sy, int sz) {
+    int GetBufferIndex(const FVector3f& pos, int sx, int sy, int sz) {
         int voxelX = FMath::Clamp(FMath::FloorToInt(pos.X), 0, sx - 1);
         int voxelY = FMath::Clamp(FMath::FloorToInt(pos.Y), 0, sy - 1);
         int voxelZ = FMath::Clamp(FMath::FloorToInt(pos.Z), 0, sz - 1);
@@ -71,15 +77,15 @@ public:
     }
 
     void SampleValuesFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int sx, int sy, int sz) {
-        FVector min = bounds.min;
-        FVector max = bounds.max;
-        FVector size = (max - min) / (voxelsPerAxis - 1);
+        FVector3f min = bounds.min;
+        FVector3f max = bounds.max;
+        FVector3f size = (max - min) / (voxelsPerAxis - 1);
 
         int index = 0;
         for (int z = 0; z < voxelsPerAxis; ++z) {
             for (int y = 0; y < voxelsPerAxis; ++y) {
                 for (int x = 0; x < voxelsPerAxis; ++x) {
-                    FVector pos = min + FVector(x * size.X, y * size.Y, z * size.Z);
+                    FVector3f pos = min + FVector3f(x * size.X, y * size.Y, z * size.Z);
                     isoValues[index] = isovalueBuffer[GetBufferIndex(pos, sx, sy, sz)];
                     typeValues[index] = typeBuffer[GetBufferIndex(pos, sx, sy, sz)];
                     index++;

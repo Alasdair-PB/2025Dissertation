@@ -42,6 +42,6 @@ private:
 	uint32 nodeIndex = 0;
 
 	int leafCount = 0;
-	float SampleSDF(FVector p);
+	float SampleSDF(FVector3f p);
 
 };

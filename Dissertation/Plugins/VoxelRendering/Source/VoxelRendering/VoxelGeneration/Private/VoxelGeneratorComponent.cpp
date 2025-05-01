@@ -22,9 +22,9 @@ void UVoxelGeneratorComponent::BeginPlay()
 }
 
 void UVoxelGeneratorComponent::InitOctree() {
-    AABB bounds = { FVector(-200.0f), FVector(200.0f) };
-    tree = new Octree(bounds, 5);
-    tree->Build([this](FVector p) { return SampleSDF(p); });
+    AABB bounds = { FVector3f(-200.0f), FVector3f(200.0f) };
+    tree = new Octree(bounds, 2);
+    tree->Build([this](FVector3f p) { return SampleSDF(p); });
 
     TArray<float> isovalueBuffer;
     TArray<uint8> typeBuffer;
@@ -45,7 +45,7 @@ void UVoxelGeneratorComponent::InitOctree() {
     tree->BuildFromBuffers(isovalueBuffer, typeBuffer, sx, sy, sz);
 }
 
-float UVoxelGeneratorComponent::SampleSDF(FVector p) {
+float UVoxelGeneratorComponent::SampleSDF(FVector3f p) {
     return (p.Length()) - 1.0f;
 }
 
@@ -89,7 +89,6 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         const FVector& N = FVector(meshInfo.normals[i]);
 
         if (V == FVector(-1, -1, -1)) continue;
-
         IndexRemap.Add(i, NextIndex);
         Vertices.Add(V);
         Normals.Add(N);
@@ -145,22 +144,22 @@ void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {
     if (!node) return;
 
     if (node->isLeaf) {
-        DrawDebugBox(GetWorld(), node->bounds.Center(), node->bounds.Extent(), FColor::Green, false, -1.f, 0, 1.f);
+        DrawDebugBox(GetWorld(), FVector(node->bounds.Center()), FVector(node->bounds.Extent()), FColor::Green, false, -1.f, 0, 1.f);
         const int resolution = 2;
-        FVector min = node->bounds.min;
-        FVector max = node->bounds.max;
+        FVector3f min = node->bounds.min;
+        FVector3f max = node->bounds.max;
 
         for (int x = 0; x <= resolution; ++x) {
             for (int y = 0; y <= resolution; ++y) {
                 for (int z = 0; z <= resolution; ++z) {
-                    FVector p = FMath::Lerp(min, max, FVector(
+                    FVector3f p = FMath::Lerp(min, max, FVector3f(
                         (float)x / resolution,
                         (float)y / resolution,
                         (float)z / resolution
                     ));
                     float v = SampleSDF(p);
                     FColor color = (FMath::Abs(v) < 0.01f) ? FColor::White : (v < 0.f ? FColor::Blue : FColor::Red);
-                    DrawDebugPoint(GetWorld(), p, 5.f, color, false, -1.f);
+                    DrawDebugPoint(GetWorld(), FVector(p), 5.f, color, false, -1.f);
                 }
             }
         }

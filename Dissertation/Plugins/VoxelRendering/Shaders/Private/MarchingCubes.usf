@@ -3,14 +3,14 @@
 #include "MarchTables.usf"
 #include "/Engine/Public/Platform.ush"
 
-float3 leafPosition = float3(0, 0, 0);;
+float3 leafPosition = float3(0, 0, 0);
 uint leafDepth = 0;
 uint nodeIndex = 0;
-StructuredBuffer<float> isoValues;
+Buffer<float> isoValues;
 
-RWStructuredBuffer<float3> outVertices;
-RWStructuredBuffer<int> outTris;
-RWStructuredBuffer<float3> outNormals;
+RWBuffer<float3> outVertices;
+RWBuffer<int> outTris;
+RWBuffer<float3> outNormals;
 
 // Constants
 uint voxelsPerAxis = 0;
@@ -22,14 +22,14 @@ float3 calculateNormal(int index)
     int3 offsetX = int3(1, 0, 0);
     int3 offsetY = int3(0, 1, 0);
     int3 offsetZ = int3(0, 0, 1);
-    float density = isoValues[index];
+    //float density = isoValues[index];
     
-    float densityXPlus = isoValues[index + offsetX.x];
-    float densityXMinus = isoValues[index - offsetX.x];
-    float densityYPlus = isoValues[index + offsetY.y * voxelsPerAxis];
-    float densityYMinus = isoValues[index - offsetY.y * voxelsPerAxis];
-    float densityZPlus = isoValues[index + offsetZ.z * voxelsPerAxis * voxelsPerAxis];
-    float densityZMinus = isoValues[index - offsetZ.z * voxelsPerAxis * voxelsPerAxis];
+    float densityXPlus = 1;// isoValues[index + offsetX.x];
+    float densityXMinus = 1; // = isoValues[index - offsetX.x];
+    float densityYPlus = 1; // = isoValues[index + offsetY.y * voxelsPerAxis];
+    float densityYMinus = 1; // = isoValues[index - offsetY.y * voxelsPerAxis];
+    float densityZPlus = 1; // = isoValues[index + offsetZ.z * voxelsPerAxis * voxelsPerAxis];
+    float densityZMinus = 1; // = isoValues[index - offsetZ.z * voxelsPerAxis * voxelsPerAxis];
 
     float dx = densityXPlus - densityXMinus;
     float dy = densityYPlus - densityYMinus;
@@ -47,12 +47,13 @@ float3 indexToWorld(int index, float scale)
     return leafPosition + float3(x, y, z) * scale;
 }
  
-void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scale)
+void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scale, int voxelIndex)
 {
     float3 posA = indexToWorld(indexA, scale);
     float3 posB = indexToWorld(indexB, scale);
-    float densityA = isoValues[indexA];
-    float densityB = isoValues[indexB];
+    
+    float densityA = isoValues[voxelIndex + indexA];
+    float densityB = isoValues[voxelIndex + indexB];
 
     float t = (isoLevel - densityA) / (densityB - densityA);
     float3 position = posA + t * (posB - posA);
@@ -61,8 +62,8 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
     float3 normalB = calculateNormal(indexB);
     float3 normal = normalize(normalA + t * (normalB - normalA));
     
-    outNormals[vertexStartIndex] = normal;
-    outVertices[vertexStartIndex] = position;
+    //outNormals[1] = normal; //vertexStartIndex
+    //outVertices[1] = position;
     vertexStartIndex++;
 }
 
@@ -70,17 +71,23 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
     int numCubesPerAxis = voxelsPerAxis - 1;
-    if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis) { return; }
+    if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis)
+    {
+        return;
+    }
     
-    int voxelIndex = voxelsPerAxis * id.z + voxelsPerAxis + id.y * voxelsPerAxis + id.x; // Where a voxel is 4 corners/ isoValues 
-    int triangleStartIndex = nodeIndex * voxelIndex * 5;
-    int vertexStartIndex = nodeIndex * voxelIndex * 15; // Given no connecting vertexes between marched cubes (will be investigated later)
+    int voxelIndex = (id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x;
+    int totalCubesPerLeaf = (voxelsPerAxis - 1) * (voxelsPerAxis - 1) * (voxelsPerAxis - 1);
+    int flatCubeIndex = id.z * (voxelsPerAxis - 1) * (voxelsPerAxis - 1) + id.y * (voxelsPerAxis - 1) + id.x;
+    int vertexStartIndex = nodeIndex * totalCubesPerLeaf * 15;//    +flatCubeIndex * 15;
+    int triangleStartIndex = nodeIndex * totalCubesPerLeaf * 5; //* 5 + flatCubeIndex * 5;
+    
     float scale = baseDepthScale / (2 + (leafDepth * 2.0));
     int config = 0;
     
     for (int h = 0; h < 8; ++h)
     {
-        if (isoValues[voxelIndex + h] < isoLevel)
+        if (1 < isoValues[voxelIndex + h])
             config |= (1 << h);
     }
 
@@ -118,14 +125,16 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         int c0 = cornerIndexAFromEdge[edgeIndices[i + 2]];
         int c1 = cornerIndexBFromEdge[edgeIndices[i + 2]];
 
-        createVertex(a0, a1, vertexStartIndex, scale);
-        createVertex(b0, b1, vertexStartIndex, scale);
-        createVertex(c0, c1, vertexStartIndex, scale);
+        createVertex(a0, a1, vertexStartIndex, scale, voxelIndex);
+        createVertex(b0, b1, vertexStartIndex, scale, voxelIndex);
+        createVertex(c0, c1, vertexStartIndex, scale, voxelIndex);
         
         int baseIndex = vertexStartIndex - 3;
-        outTris[triangleStartIndex] = baseIndex + 2;
-        outTris[triangleStartIndex + 1] = baseIndex + 1;
-        outTris[triangleStartIndex + 2] = baseIndex + 0;
+        outTris[1] = baseIndex + 2;
+
+        //outTris[triangleStartIndex] = baseIndex + 2;
+        //outTris[triangleStartIndex + 1] = baseIndex + 1;
+        //outTris[triangleStartIndex + 2] = baseIndex + 0;
         triangleStartIndex += 3;
     }
 }

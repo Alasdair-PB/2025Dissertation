@@ -16,7 +16,7 @@ public:
         delete root;
     }
 
-    void Build(std::function<float(FVector)> sdf) {
+    void Build(std::function<float(FVector3f)> sdf) {
         SubdivideRecursive(root, 0, sdf);
     }
 
@@ -25,7 +25,7 @@ public:
     }
 
 private:
-    void SubdivideRecursive(OctreeNode* node, int depth, std::function<float(FVector)> sdf) {
+    void SubdivideRecursive(OctreeNode* node, int depth, std::function<float(FVector3f)> sdf) {
         if (depth >= maxDepth) return;
         if (node->CheckSubdivide(sdf)) {
             node->Subdivide();

@@ -12,9 +12,9 @@ USTRUCT(BlueprintType)
 struct FMarchingCubesOutput
 {
 	GENERATED_BODY()
-	UPROPERTY(BlueprintReadOnly) TArray<FVector3f> vertices;
-	UPROPERTY(BlueprintReadOnly) TArray<int32> tris;
-	UPROPERTY(BlueprintReadOnly) TArray<FVector3f> normals;
+	UPROPERTY(BlueprintReadOnly) TArray<FVector3f> outVertices;
+	UPROPERTY(BlueprintReadOnly) TArray<int> outTris;
+	UPROPERTY(BlueprintReadOnly) TArray<FVector3f> outNormals;
 };
 
 USTRUCT(BlueprintType)

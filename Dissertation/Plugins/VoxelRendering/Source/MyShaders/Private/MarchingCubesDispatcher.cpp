@@ -108,16 +108,15 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			const int vertexCount = maxVoxelCount * 15;
 			const int triCount = maxVoxelCount * 5 * 3;
 
-			FRDGBufferRef OutVerticesBuffer = GraphBuilder.CreateBuffer(
-				FRDGBufferDesc::CreateStructuredDesc(sizeof(FVector3f), vertexCount),TEXT("OutVertices_SB"));
+			FRDGBufferRef OutVerticesBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateStructuredDesc(sizeof(FVector3f), vertexCount),TEXT("OutVertices"));
 			PassParameters->outVertices = GraphBuilder.CreateUAV(OutVerticesBuffer);
 
-			FRDGBufferRef OutNormalsBuffer = GraphBuilder.CreateBuffer(
-				FRDGBufferDesc::CreateStructuredDesc(sizeof(FVector3f), vertexCount),TEXT("OutNormals_SB"));
+			FRDGBufferRef OutNormalsBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateStructuredDesc(sizeof(FVector3f), vertexCount),TEXT("OutNormals"));
 			PassParameters->outNormals = GraphBuilder.CreateUAV(OutNormalsBuffer);
 
-			FRDGBufferRef OutTrisBuffer = GraphBuilder.CreateBuffer(
-				FRDGBufferDesc::CreateBufferDesc(sizeof(int32), triCount),TEXT("OutTris_SB"));
+
+			//FRDGBufferRef OutputBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateBufferDesc(sizeof(int32), 1),TEXT("OutputBuffer"));			
+			FRDGBufferRef OutTrisBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateBufferDesc(sizeof(int32), 1),TEXT("OutTris"));
 			PassParameters->outTris = GraphBuilder.CreateUAV(FRDGBufferUAVDesc(OutTrisBuffer, PF_R32_SINT));
 
 			uint32 nodeIndex = 0; 
@@ -137,15 +136,15 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 					FMarchingCubesOutput OutVal;
 
 					void* VBuf = VerticesReadback->Lock(0);
-					OutVal.vertices.Append((FVector3f*)VBuf, vertexCount);
+					OutVal.outVertices.Append((FVector3f*)VBuf, vertexCount);
 					VerticesReadback->Unlock();
 
 					void* IBuf = TrianglesReadback->Lock(0);
-					OutVal.tris.Append((int32*)IBuf, triCount);
+					OutVal.outTris.Append((int*)IBuf, triCount);
 					TrianglesReadback->Unlock();
 
 					void* NBuf = NormalsReadback->Lock(0);
-					OutVal.normals.Append((FVector3f*)NBuf, vertexCount);
+					OutVal.outNormals.Append((FVector3f*)NBuf, vertexCount);
 					NormalsReadback->Unlock();
 
 					AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });

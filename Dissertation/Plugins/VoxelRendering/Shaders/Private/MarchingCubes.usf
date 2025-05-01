@@ -62,8 +62,8 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
     float3 normalB = calculateNormal(indexB);
     float3 normal = normalize(normalA + t * (normalB - normalA));
     
-    //outNormals[1] = normal; //vertexStartIndex
-    //outVertices[1] = position;
+    //outNormals[vertexStartIndex] = normal; //vertexStartIndex
+    //outVertices[vertexStartIndex] = position;
     vertexStartIndex++;
 }
 
@@ -71,7 +71,6 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
     outTris[0] = 3;
-    
     
     int numCubesPerAxis = voxelsPerAxis - 1;
     if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis)
@@ -82,8 +81,8 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     int voxelIndex = (id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x;
     int totalCubesPerLeaf = (voxelsPerAxis - 1) * (voxelsPerAxis - 1) * (voxelsPerAxis - 1);
     int flatCubeIndex = id.z * (voxelsPerAxis - 1) * (voxelsPerAxis - 1) + id.y * (voxelsPerAxis - 1) + id.x;
-    int vertexStartIndex = nodeIndex * totalCubesPerLeaf * 15;//    +flatCubeIndex * 15;
-    int triangleStartIndex = nodeIndex * totalCubesPerLeaf * 5; //* 5 + flatCubeIndex * 5;
+    int vertexStartIndex = nodeIndex * totalCubesPerLeaf * 15 + flatCubeIndex * 15;
+    int triangleStartIndex = nodeIndex * totalCubesPerLeaf * 5 + flatCubeIndex * 5;
     
     float scale = baseDepthScale / (2 + (leafDepth * 2.0));
     int config = 0;
@@ -133,7 +132,6 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         createVertex(c0, c1, vertexStartIndex, scale, voxelIndex);
         
         int baseIndex = vertexStartIndex - 3;
-        //outTris[1] = baseIndex + 2;
 
         //outTris[triangleStartIndex] = baseIndex + 2;
         //outTris[triangleStartIndex + 1] = baseIndex + 1;

@@ -9,7 +9,7 @@ uint nodeIndex = 0;
 Buffer<float> isoValues;
 
 RWStructuredBuffer<float3> outVertices;
-RWStructuredBuffer<int> outTris;
+RWBuffer<int> outTris;
 RWStructuredBuffer<float3> outNormals;
 
 // Constants
@@ -70,29 +70,30 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
-    int numCubesPerAxis = voxelsPerAxis - 1;
-    if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis)
-    {
-        return;
-    }
+    if (id.x > voxelsPerAxis || id.y > voxelsPerAxis || id.z > voxelsPerAxis) { return; }
     
-    int voxelIndex = (id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x;
-    int totalCubesPerLeaf = (voxelsPerAxis - 1) * (voxelsPerAxis - 1) * (voxelsPerAxis - 1);
-    int flatCubeIndex = id.z * (voxelsPerAxis - 1) * (voxelsPerAxis - 1) + id.y * (voxelsPerAxis - 1) + id.x;
-    int vertexStartIndex = nodeIndex * totalCubesPerLeaf * 15 + flatCubeIndex * 15;
-    int triangleStartIndex = nodeIndex * voxelsPerAxis * voxelsPerAxis * voxelsPerAxis * 5 * 3; //  totalCubesPerLeaf * 5 + flatCubeIndex * 5;
+    int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
+    int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
+    int localVoxelIndex = (id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x;
+    int triangleStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
     
-    if (id.x == 0 && id.y == 0 && id.z == 0)
-    {
-        outTris[triangleStartIndex] =  2;
-    }
+    outTris[triangleStartIndex] = 123; // filler values while debugging
+    outTris[triangleStartIndex + 1] = 456;
+    outTris[triangleStartIndex + 2] = 789;
+    
+    //if (id.x == 0 && id.y == 0 && id.z == 0)
+    //{
+    //    outTris[globalVoxelIndex] = 6;
+   // }
+    
+    int vertexStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
 
     float scale = baseDepthScale / (2 + (leafDepth * 2.0));
     int config = 0;
     
     for (int h = 0; h < 8; ++h)
     {
-        if (1 < isoValues[voxelIndex + h])
+        if (1 < isoValues[localVoxelIndex + h])
             config |= (1 << h);
     }
 
@@ -130,9 +131,9 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         int c0 = cornerIndexAFromEdge[edgeIndices[i + 2]];
         int c1 = cornerIndexBFromEdge[edgeIndices[i + 2]];
 
-        createVertex(a0, a1, vertexStartIndex, scale, voxelIndex);
-        createVertex(b0, b1, vertexStartIndex, scale, voxelIndex);
-        createVertex(c0, c1, vertexStartIndex, scale, voxelIndex);
+        createVertex(a0, a1, vertexStartIndex, scale, localVoxelIndex);
+        createVertex(b0, b1, vertexStartIndex, scale, localVoxelIndex);
+        createVertex(c0, c1, vertexStartIndex, scale, localVoxelIndex);
         
         int baseIndex = vertexStartIndex - 3;
 

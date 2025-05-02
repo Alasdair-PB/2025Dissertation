@@ -22,21 +22,21 @@ struct FMarchingCubesInput
 {
 	GENERATED_BODY()
 	OctreeNode* tree;
-	UPROPERTY(BlueprintReadOnly) int leafCount;
-	UPROPERTY(BlueprintReadOnly) FVector3f leafPosition;
-	UPROPERTY(BlueprintReadOnly) int leafDepth;
-	UPROPERTY(BlueprintReadOnly) int nodeIndex;
-	UPROPERTY(BlueprintReadOnly) int voxelsPerAxis;
-	UPROPERTY(BlueprintReadOnly) float baseDepthScale;
-	UPROPERTY(BlueprintReadOnly) float isoLevel;
+	UPROPERTY(BlueprintReadOnly) int leafCount = 0;
+	UPROPERTY(BlueprintReadOnly) FVector3f leafPosition = FVector3f();
+	UPROPERTY(BlueprintReadOnly) int leafDepth = 0;
+	UPROPERTY(BlueprintReadOnly) int nodeIndex = 0;
+	UPROPERTY(BlueprintReadOnly) int voxelsPerAxis = 0;
+	UPROPERTY(BlueprintReadOnly) float baseDepthScale = 0;
+	UPROPERTY(BlueprintReadOnly) float isoLevel = 0;
 	UPROPERTY(BlueprintReadOnly) TArray<float> isoValues;
 };
 
 struct MYSHADERS_API FMarchingCubesDispatchParams
 {
-	int X;
-	int Y;
-	int Z;
+	int X = 1;
+	int Y = 1;
+	int Z = 1;
 
 	FMarchingCubesInput Input;
 	FMarchingCubesOutput Output;

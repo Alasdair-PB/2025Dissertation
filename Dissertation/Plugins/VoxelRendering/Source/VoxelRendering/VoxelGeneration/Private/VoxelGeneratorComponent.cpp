@@ -98,7 +98,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         ++NextIndex;
     }
 
-    for (int32 i = 0; i < meshInfo.outTris.Num(); i += 3) {
+    /*for (int32 i = 0; i < meshInfo.outTris.Num(); i += 3) {
         int32 A = meshInfo.outTris[i];
         int32 B = meshInfo.outTris[i + 1];
         int32 C = meshInfo.outTris[i + 2];
@@ -111,7 +111,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         Indices.Add(IndexRemap[C]);
     }
 
-    ProcMesh->CreateMeshSection_LinearColor(0, Vertices, Indices, Normals, UVs, VertexColors, Tangents, true, false);
+    ProcMesh->CreateMeshSection_LinearColor(0, Vertices, Indices, Normals, UVs, VertexColors, Tangents, true, false);*/
 }
 
 bool rendered = false;

@@ -8,9 +8,9 @@ uint leafDepth = 0;
 uint nodeIndex = 0;
 Buffer<float> isoValues;
 
-RWBuffer<float3> outVertices;
-RWBuffer<int> outTris;
-RWBuffer<float3> outNormals;
+RWStructuredBuffer<float3> outVertices;
+RWStructuredBuffer<int> outTris;
+RWStructuredBuffer<float3> outNormals;
 
 // Constants
 uint voxelsPerAxis = 0;
@@ -70,11 +70,6 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x == 0 && id.y == 0 && id.z == 0)
-    {
-        outTris[0] = 3;
-    }
-    
     int numCubesPerAxis = voxelsPerAxis - 1;
     if (id.x >= numCubesPerAxis || id.y >= numCubesPerAxis || id.z >= numCubesPerAxis)
     {
@@ -85,8 +80,13 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     int totalCubesPerLeaf = (voxelsPerAxis - 1) * (voxelsPerAxis - 1) * (voxelsPerAxis - 1);
     int flatCubeIndex = id.z * (voxelsPerAxis - 1) * (voxelsPerAxis - 1) + id.y * (voxelsPerAxis - 1) + id.x;
     int vertexStartIndex = nodeIndex * totalCubesPerLeaf * 15 + flatCubeIndex * 15;
-    int triangleStartIndex = nodeIndex * totalCubesPerLeaf * 5 + flatCubeIndex * 5;
+    int triangleStartIndex = nodeIndex * voxelsPerAxis * voxelsPerAxis * voxelsPerAxis * 5 * 3; //  totalCubesPerLeaf * 5 + flatCubeIndex * 5;
     
+    if (id.x == 0 && id.y == 0 && id.z == 0)
+    {
+        outTris[triangleStartIndex] =  2;
+    }
+
     float scale = baseDepthScale / (2 + (leafDepth * 2.0));
     int config = 0;
     
@@ -139,6 +139,6 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         //outTris[triangleStartIndex] = baseIndex + 2;
         //outTris[triangleStartIndex + 1] = baseIndex + 1;
         //outTris[triangleStartIndex + 2] = baseIndex + 0;
-        triangleStartIndex += 3;
+        //triangleStartIndex += 3;
     }
 }

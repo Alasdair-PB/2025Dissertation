@@ -4,8 +4,8 @@
 #include "/Engine/Public/Platform.ush"
 
 float3 leafPosition = float3(0, 0, 0);
-uint leafDepth = 0;
-uint nodeIndex = 0;
+int leafDepth = 0;
+int nodeIndex = 0;
 Buffer<float> isoValues;
 
 RWStructuredBuffer<float3> outVertices;
@@ -13,7 +13,7 @@ RWBuffer<int> outTris;
 RWStructuredBuffer<float3> outNormals;
 
 // Constants
-uint voxelsPerAxis = 0;
+int voxelsPerAxis = 0;
 float baseDepthScale = 0;
 float isoLevel = 0;
 
@@ -74,17 +74,16 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
     int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
-    int localVoxelIndex = (id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x;
+    int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
     int triangleStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
     
-    outTris[triangleStartIndex] = 123; // filler values while debugging
-    outTris[triangleStartIndex + 1] = 456;
-    outTris[triangleStartIndex + 2] = 789;
+    //outTris[triangleStartIndex] = 123; // filler values while debugging
+   // outTris[triangleStartIndex + 1] = 456;
+    //outTris[triangleStartIndex + 2] = 789;
     
-    //if (id.x == 0 && id.y == 0 && id.z == 0)
-    //{
-    //    outTris[globalVoxelIndex] = 6;
-   // }
+
+    outTris[localVoxelIndex] = 6;
+   
     
     int vertexStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
 

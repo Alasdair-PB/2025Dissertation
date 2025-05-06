@@ -53,7 +53,7 @@ class FMarchingCubes : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/MyShadersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
 
-void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FMarchingCubes::FParameters* PassParameters, const FRDGBufferUAVRef OutTrisBufferUAV, FMarchingCubesDispatchParams Params, OctreeNode* node, uint32 depth, uint32* nodeIndex) {
+void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FMarchingCubes::FParameters* PassParameters, const FRDGBufferUAVRef& OutTrisBufferUAV, FMarchingCubesDispatchParams Params, OctreeNode* node, uint32 depth, uint32* nodeIndex) {
 
 	//if (!node) return;
 	//if (!(node->isLeaf)) {
@@ -73,9 +73,8 @@ void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FMarchingCub
 	FMarchingCubes::FParameters* NodePassParameters = &PassParametersCopy;
 	FRDGBufferRef OutTrisBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateBufferDesc(sizeof(int32), (27 * 2)), TEXT("OutTris_StructuredBuffer"));
 
-	//NodePassParameters->outTris = OutTrisBufferUAV; // GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
-	NodePassParameters->outTris = GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
-
+	NodePassParameters->outTris = OutTrisBufferUAV; // GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
+	//NodePassParameters->outTris = GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
 	NodePassParameters->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
 	NodePassParameters->leafDepth = depth;
 	NodePassParameters->leafPosition = node->bounds.Center();

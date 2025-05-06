@@ -121,10 +121,10 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     if (bBufferReady[ReadBufferIndex])
     {
-        UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
-        bBufferReady[ReadBufferIndex] = false;
-        SwapBuffers();
-        rendered = true;
+       // UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
+       // bBufferReady[ReadBufferIndex] = false;
+        //SwapBuffers();
+        //rendered = true;
     }
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
@@ -136,8 +136,8 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
         // Check if exited runtime
-        bBufferReady[ReadBufferIndex] = true;
-        marchingCubesOutBuffer[ReadBufferIndex] = OutputVal;
+        //bBufferReady[ReadBufferIndex] = true;
+        //marchingCubesOutBuffer[ReadBufferIndex] = OutputVal;
      });
 }
 

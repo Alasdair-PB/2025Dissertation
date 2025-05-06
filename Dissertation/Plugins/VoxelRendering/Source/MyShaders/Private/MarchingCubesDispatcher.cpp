@@ -52,8 +52,8 @@ class FMarchingCubes : public FGlobalShader
 };
 
 IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/MyShadersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
-void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FRDGBufferRef outVertices, FRDGBufferRef outNormals, FRDGBufferRef& outTris,
-	FMarchingCubesDispatchParams Params, OctreeNode* node, uint32 depth, uint32* nodeIndex) {
+
+void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FMarchingCubes::FParameters* PassParameters, const FRDGBufferUAVRef OutTrisBufferUAV, FMarchingCubesDispatchParams Params, OctreeNode* node, uint32 depth, uint32* nodeIndex) {
 
 	//if (!node) return;
 	//if (!(node->isLeaf)) {
@@ -62,70 +62,48 @@ void AddMarchingCubesGraphPassFromOctree(FRDGBuilder& GraphBuilder, FRDGBufferRe
 	//	return;
 	//}
 
-
-	FRDGBufferRef OutTrisBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateBufferDesc(sizeof(int32), (27 * 2)), TEXT("OutTris_StructuredBuffer"));	// To remove
-
-
+	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+	const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);
 
 	const FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(float), isoCount, node->isoValues, isoCount * sizeof(float));
 	const FRDGBufferRef isoValuesBufferb = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(float), isoCount, node->isoValues, isoCount * sizeof(float));
-	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-	const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);
-	FMarchingCubes::FParameters* PassParameters = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 	int index = (*nodeIndex);
-	PassParameters->baseDepthScale = Params.Input.baseDepthScale;
-	PassParameters->isoLevel = Params.Input.isoLevel;
-	PassParameters->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
-	PassParameters->leafDepth = depth;
-	PassParameters->leafPosition = node->bounds.Center();
-	PassParameters->voxelsPerAxis = voxelsPerAxis;
-	PassParameters->nodeIndex = index;
-	//PassParameters->outVertices = GraphBuilder.CreateUAV(OutVerticesBuffer);
-	//PassParameters->outNormals = GraphBuilder.CreateUAV(OutNormalsBuffer);
 
-
-	//PassParameters->outTris = GraphBuilder.CreateUAV(outTris, PF_R32_SINT);
-	PassParameters->outTris = GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
-
-	check(PassParameters->outTris);
-	UE_LOG(LogTemp, Warning, TEXT("Node index: %d"), PassParameters->nodeIndex);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis, voxelsPerAxis, voxelsPerAxis), FIntVector(1, 1, 1));
-	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), PassParameters, ERDGPassFlags::AsyncCompute,
-		[&PassParameters, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
-			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParameters, GroupCount); }
-	);
-
-	(*nodeIndex)++;
 	FMarchingCubes::FParameters PassParametersCopy = *PassParameters;
-	FMarchingCubes::FParameters* PassParametersB = &PassParametersCopy;
-	PassParametersB->nodeIndex = 1;
+	FMarchingCubes::FParameters* NodePassParameters = &PassParametersCopy;
+	FRDGBufferRef OutTrisBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateBufferDesc(sizeof(int32), (27 * 2)), TEXT("OutTris_StructuredBuffer"));
 
-	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), PassParametersB, ERDGPassFlags::AsyncCompute,
-		[&PassParametersB, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
-			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParametersB, GroupCount); }
+	//NodePassParameters->outTris = OutTrisBufferUAV; // GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
+	NodePassParameters->outTris = GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
+
+	NodePassParameters->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
+	NodePassParameters->leafDepth = depth;
+	NodePassParameters->leafPosition = node->bounds.Center();
+	NodePassParameters->nodeIndex = index;
+
+	check(NodePassParameters->outTris);
+
+
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis, voxelsPerAxis, voxelsPerAxis), FIntVector(1, 1, 1));
+	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), NodePassParameters, ERDGPassFlags::AsyncCompute,
+		[&NodePassParameters, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
+			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *NodePassParameters, GroupCount); }
 	);
 
-
-	/*FMarchingCubes::FParameters* PassParametersB = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
-	PassParametersB->baseDepthScale = Params.Input.baseDepthScale;
-	PassParametersB->isoLevel = Params.Input.isoLevel;
+	//----------------------------------------------------------------------------------------------------------------------------------
+	(*nodeIndex)++;
+	/*FMarchingCubes::FParameters PassParametersCopyB = *NodePassParameters;
+	FMarchingCubes::FParameters* PassParametersB = &PassParametersCopyB;
+	PassParametersB->nodeIndex = 1;
 	PassParametersB->isoValues = GraphBuilder.CreateSRV(isoValuesBufferb);
-
-	PassParametersB->leafDepth = depth;
-	PassParametersB->leafPosition = node->bounds.Center();
-	PassParametersB->voxelsPerAxis = voxelsPerAxis;
-	PassParametersB->nodeIndex = 1;
-	UE_LOG(LogTemp, Warning, TEXT("Node index: %d"), PassParametersB->nodeIndex);
-
-	//PassParametersB->outVertices = GraphBuilder.CreateUAV(OutVerticesBuffer);
-	//PassParametersB->outNormals = GraphBuilder.CreateUAV(OutNormalsBuffer);
-	PassParametersB->outTris = GraphBuilder.CreateUAV(OutTrisBuffer); // GraphBuilder.CreateUAV(outTris); // 
+	PassParametersB->outTris = OutTrisBufferUAV; // GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), PassParametersB, ERDGPassFlags::AsyncCompute,
 		[&PassParametersB, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
 			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParametersB, GroupCount); }
-	);
-*/
+	);*/
+	//----------------------------------------------------------------------------------------------------------------------------------
+
 }
 
 void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FMarchingCubesDispatchParams Params, TFunction<void(FMarchingCubesOutput OutputVal)> AsyncCallback) {
@@ -156,11 +134,21 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 			FRDGBufferRef OutVerticesBuffer = CreateStructuredBuffer(GraphBuilder,TEXT("OutVertices_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutVertices.GetData(), vertexCount * sizeof(FVector3f));
 			FRDGBufferRef OutNormalsBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutVertices_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutNormals.GetData(), vertexCount * sizeof(FVector3f));
-			//FRDGBufferRef OutTrisBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateBufferDesc(sizeof(int32), triCount), TEXT("OutTris_StructuredBuffer"));
-			FRDGBufferRef OutTrisBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutTris_StructuredBuffer"), sizeof(int32), triCount, OutTris.GetData(), triCount * sizeof(int32));
+			//FRDGBufferRef OutTrisBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutTris_StructuredBuffer"), sizeof(int32), triCount, OutTris.GetData(), triCount * sizeof(int32));
+			FRDGBufferRef OutTrisBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateBufferDesc(sizeof(int32),( 27 * 2)), TEXT("OutTris_StructuredBuffer"));
 
+			const FRDGBufferUAVRef OutTrisBufferUAV = GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
+
+			FMarchingCubes::FParameters* PassParameters = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
+			PassParameters->baseDepthScale = Params.Input.baseDepthScale;
+			PassParameters->isoLevel = Params.Input.isoLevel;
+			PassParameters->leafDepth = 75;
+			PassParameters->leafPosition = FVector3f();
+			PassParameters->voxelsPerAxis = voxelsPerAxis;
+			PassParameters->nodeIndex = 0;
+		
 			uint32 nodeIndex = 0;
-			AddMarchingCubesGraphPassFromOctree(GraphBuilder, OutVerticesBuffer, OutNormalsBuffer, OutTrisBuffer, Params, Params.Input.tree, 0, &nodeIndex);
+			AddMarchingCubesGraphPassFromOctree(GraphBuilder, PassParameters, OutTrisBufferUAV, Params, Params.Input.tree, 0, &nodeIndex);
 
 			FRHIGPUBufferReadback* VerticesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesVertices"));
 			FRHIGPUBufferReadback* TrianglesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesIndices"));

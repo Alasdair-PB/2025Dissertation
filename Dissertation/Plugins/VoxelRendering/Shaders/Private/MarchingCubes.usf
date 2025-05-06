@@ -82,8 +82,9 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
    // outTris[triangleStartIndex + 1] = 456;
     //outTris[triangleStartIndex + 2] = 789;
     
+    outTris[0] = 6;
 
-    outTris[triangleStartIndex] = 6;
+    //outTris[triangleStartIndex] = 6;
    
     
     int vertexStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);

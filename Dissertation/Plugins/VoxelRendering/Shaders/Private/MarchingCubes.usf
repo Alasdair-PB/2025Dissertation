@@ -23,13 +23,20 @@ float3 calculateNormal(int index)
     int3 offsetY = int3(0, 1, 0);
     int3 offsetZ = int3(0, 0, 1);
     
-    float densityXPlus = 1; //  isoValues[index + offsetX.x];
-    float densityXMinus = 1; // = isoValues[index - offsetX.x];
-    float densityYPlus = 1; // = isoValues[index + offsetY.y * voxelsPerAxis];
-    float densityYMinus = 1; // = isoValues[index - offsetY.y * voxelsPerAxis];
-    float densityZPlus = 1; // = isoValues[index + offsetZ.z * voxelsPerAxis * voxelsPerAxis];
-    float densityZMinus = 1; // = isoValues[index - offsetZ.z * voxelsPerAxis * voxelsPerAxis];
+    float densityXPlus = 1;
+    float densityXMinus = 1;
+    float densityYPlus = 1;
+    float densityYMinus = 1;
+    float densityZPlus = 1;
+    float densityZMinus = 1;
 
+    /*float densityXPlus = isoValues[index + offsetX.x];
+    float densityXMinus = isoValues[index - offsetX.x];
+    float densityYPlus = isoValues[index + offsetY.y * voxelsPerAxis];
+    float densityYMinus  = isoValues[index - offsetY.y * voxelsPerAxis];
+    float densityZPlus = isoValues[index + offsetZ.z * voxelsPerAxis * voxelsPerAxis];
+    float densityZMinus = isoValues[index - offsetZ.z * voxelsPerAxis * voxelsPerAxis];*/
+    
     float dx = densityXPlus - densityXMinus;
     float dy = densityYPlus - densityYMinus;
     float dz = densityZPlus - densityZMinus;
@@ -76,7 +83,27 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
     int triangleStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
     int vertexStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
-
+    int vertexCounter = vertexStartIndex;
+    
+    
+    for (int k = 0; k < 16; k += 1)
+    {
+        outNormals[vertexCounter] = float3(0, 1, 0);
+        outVertices[vertexCounter] = float3(k, k, k) + leafPosition;
+        vertexCounter++;
+    }
+    
+    vertexCounter = vertexStartIndex;
+    for (int j = 0; j < 16; j += 3)
+    {
+        outTris[triangleStartIndex] = vertexCounter + 2;
+        outTris[triangleStartIndex + 1] = vertexCounter + 1;
+        outTris[triangleStartIndex + 2] = vertexCounter + 0;
+        triangleStartIndex += 3;
+    }
+    
+    
+    /*
     float scale = baseDepthScale / (2 + (leafDepth * 2.0));
     int config = 0;
     
@@ -130,5 +157,5 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         outTris[triangleStartIndex + 1] = baseIndex + 1;
         outTris[triangleStartIndex + 2] = baseIndex + 0;
         triangleStartIndex += 3;
-    }
+    }*/
 }

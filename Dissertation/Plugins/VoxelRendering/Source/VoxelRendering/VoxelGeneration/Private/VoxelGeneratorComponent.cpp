@@ -98,9 +98,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         const FVector& V = FVector(meshInfo.outVertices[i]);
         const FVector& N = FVector(meshInfo.outNormals[i]);
 
-        if (V == FVector(-1, -1, -1)) continue;
-        UE_LOG(LogTemp, Warning, TEXT("Init values"));
-       
+        if (V == FVector(-1, -1, -1) || N == FVector(-1, -1, -1)) continue;       
         IndexRemap.Add(i, NextIndex);
         Vertices.Add(V);
         Normals.Add(N);
@@ -114,7 +112,8 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         int32 A = meshInfo.outTris[i];
         int32 B = meshInfo.outTris[i + 1];
         int32 C = meshInfo.outTris[i + 2];
-        if (A < 0 || B < 0 || C < 0) break;
+
+        if (A < 0 || B < 0 || C < 0) continue;
         if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) continue;
 
         Indices.Add(IndexRemap[A]);

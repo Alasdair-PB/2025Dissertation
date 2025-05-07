@@ -22,9 +22,8 @@ float3 calculateNormal(int index)
     int3 offsetX = int3(1, 0, 0);
     int3 offsetY = int3(0, 1, 0);
     int3 offsetZ = int3(0, 0, 1);
-    //float density = isoValues[index];
     
-    float densityXPlus = 1;// isoValues[index + offsetX.x];
+    float densityXPlus = 1; //  isoValues[index + offsetX.x];
     float densityXMinus = 1; // = isoValues[index - offsetX.x];
     float densityYPlus = 1; // = isoValues[index + offsetY.y * voxelsPerAxis];
     float densityYMinus = 1; // = isoValues[index - offsetY.y * voxelsPerAxis];
@@ -62,8 +61,8 @@ void createVertex(int indexA, int indexB, inout int vertexStartIndex, float scal
     float3 normalB = calculateNormal(indexB);
     float3 normal = normalize(normalA + t * (normalB - normalA));
     
-    //outNormals[vertexStartIndex] = normal; //vertexStartIndex
-    //outVertices[vertexStartIndex] = position;
+    outNormals[vertexStartIndex] = normal;
+    outVertices[vertexStartIndex] = position;
     vertexStartIndex++;
 }
 
@@ -75,18 +74,7 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
     int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
     int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
-    int triangleStartIndex = (globalVoxelIndex * voxelsPerLeaf * 1) + (localVoxelIndex * 1);
-    //int triangleStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
-
-    //outTris[triangleStartIndex] = 123; // filler values while debugging
-   // outTris[triangleStartIndex + 1] = 456;
-    //outTris[triangleStartIndex + 2] = 789;
-    
-    // outTris[0] = 6;
-
-    outTris[triangleStartIndex] = 6;
-   
-    
+    int triangleStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
     int vertexStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
 
     float scale = baseDepthScale / (2 + (leafDepth * 2.0));
@@ -138,9 +126,9 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         
         int baseIndex = vertexStartIndex - 3;
 
-        //outTris[triangleStartIndex] = baseIndex + 2;
-        //outTris[triangleStartIndex + 1] = baseIndex + 1;
-        //outTris[triangleStartIndex + 2] = baseIndex + 0;
-        //triangleStartIndex += 3;
+        outTris[triangleStartIndex] = baseIndex + 2;
+        outTris[triangleStartIndex + 1] = baseIndex + 1;
+        outTris[triangleStartIndex + 2] = baseIndex + 0;
+        triangleStartIndex += 3;
     }
 }

@@ -21,6 +21,12 @@ void UVoxelGeneratorComponent::BeginPlay()
     ProcMesh->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 }
 
+void UVoxelGeneratorComponent::BeginDestroy() {
+    Super::BeginDestroy();
+    //voxelRenderer->DestroyComponent();
+    delete tree;
+}
+
 void UVoxelGeneratorComponent::InitOctree() {
     AABB bounds = { FVector3f(-200.0f), FVector3f(200.0f) };
     tree = new Octree(bounds, 2);
@@ -117,14 +123,14 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 bool rendered = false;
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
-    //if (rendered) return;
+    if (rendered) return;
 
     if (bBufferReady[ReadBufferIndex])
     {
-       // UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
+        //UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
        // bBufferReady[ReadBufferIndex] = false;
         //SwapBuffers();
-        //rendered = true;
+        rendered = true;
     }
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
@@ -135,9 +141,8 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     Params.Input.leafCount = leafCount;
 
     FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
-        // Check if exited runtime
-        //bBufferReady[ReadBufferIndex] = true;
-        //marchingCubesOutBuffer[ReadBufferIndex] = OutputVal;
+        bBufferReady[ReadBufferIndex] = true;
+        marchingCubesOutBuffer[ReadBufferIndex] = OutputVal;
      });
 }
 

@@ -20,7 +20,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
+	virtual void BeginDestroy() override;
 private:
 	void TraverseAndDraw(OctreeNode* node);
 	void InitOctree();

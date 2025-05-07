@@ -33,7 +33,7 @@ class FMarchingCubes : public FGlobalShader
 		SHADER_PARAMETER(float, isoLevel)
 
 		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<FVector>, outVertices)
-		SHADER_PARAMETER_RDG_BUFFER_UAV(RWBuffer<int>, outTris)
+		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<int>, outTris)
 		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<FVector>, outNormals)
 	END_SHADER_PARAMETER_STRUCT()
 
@@ -58,10 +58,10 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 	FRDGBuilder GraphBuilder(RHICmdList);
 	{
-		//SCOPE_CYCLE_COUNTER(STAT_MarchingCubes_Execute);
-		//DECLARE_GPU_STAT(MarchingCubes)
-		//RDG_EVENT_SCOPE(GraphBuilder, "MarchingCubes");
-		//RDG_GPU_STAT_SCOPE(GraphBuilder, MarchingCubes);
+		SCOPE_CYCLE_COUNTER(STAT_MarchingCubes_Execute);
+		DECLARE_GPU_STAT(MarchingCubes)
+		RDG_EVENT_SCOPE(GraphBuilder, "MarchingCubes");
+		RDG_GPU_STAT_SCOPE(GraphBuilder, MarchingCubes);
 
 		typename FMarchingCubes::FPermutationDomain PermutationVector;
 		TShaderMapRef<FMarchingCubes> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), PermutationVector);
@@ -74,14 +74,17 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 			TArray<FVector3f> OutVertices;
 			TArray<FVector3f> OutNormals;
+			TArray<int32> OutTris;
+
 			OutVertices.Init(FVector3f(-1, -1, -1), vertexCount);
 			OutNormals.Init(FVector3f(-1, -1, -1), vertexCount);
+			OutTris.Init(-1, triCount);
 
 			FRDGBufferRef OutVerticesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutVertices_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutVertices.GetData(), vertexCount * sizeof(FVector3f));
-			FRDGBufferRef OutNormalsBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutVertices_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutNormals.GetData(), vertexCount * sizeof(FVector3f));
-			FRDGBufferRef OutTrisBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateBufferDesc(sizeof(int32), triCount),TEXT("OutTris_StructuredBuffer"));
+			FRDGBufferRef OutNormalsBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutNormals_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutNormals.GetData(), vertexCount * sizeof(FVector3f));
+			FRDGBufferRef OutTrisBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutTris_StructuredBuffer"), sizeof(int32), triCount, OutTris.GetData(), triCount * sizeof(int32));
 
-			FRDGBufferUAVRef OutTrisUAV = GraphBuilder.CreateUAV(OutTrisBuffer, PF_R32_SINT);
+			FRDGBufferUAVRef OutTrisUAV = GraphBuilder.CreateUAV(OutTrisBuffer);
 			FRDGBufferUAVRef OutNormalsUAV = GraphBuilder.CreateUAV(OutNormalsBuffer);
 			FRDGBufferUAVRef OutVerticiesUAV = GraphBuilder.CreateUAV(OutVerticesBuffer);
 
@@ -143,7 +146,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 					VerticesReadback->Unlock();
 
 					void* IBuf = TrianglesReadback->Lock(0);
-					OutVal.outTris.Append((int*)IBuf, triCount);
+					OutVal.outTris.Append((int32*)IBuf, triCount);
 					TrianglesReadback->Unlock();
 
 					void* NBuf = NormalsReadback->Lock(0);

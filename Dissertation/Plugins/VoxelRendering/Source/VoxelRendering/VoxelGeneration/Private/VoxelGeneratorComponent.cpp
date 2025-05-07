@@ -30,7 +30,6 @@ void UVoxelGeneratorComponent::BeginDestroy() {
 void UVoxelGeneratorComponent::InitOctree() {
     AABB bounds = { FVector3f(-200.0f), FVector3f(200.0f) };
     tree = new Octree(bounds, 2);
-    tree->Build([this](FVector3f p) { return SampleSDF(p); });
 
     TArray<float> isovalueBuffer;
     TArray<uint8> typeBuffer;
@@ -88,26 +87,21 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TArray<FProcMeshTangent> Tangents;
     TArray<FLinearColor> VertexColors;
     TMap<int32, int32> IndexRemap;
-    int32 NextIndex = 0;
-    UE_LOG(LogTemp, Warning, TEXT("This checks if exists"));
+
+    int32 currentIndex = 0;
 
     for (int32 i = 0; i < meshInfo.outVertices.Num(); i++) {
         const FVector& V = FVector(meshInfo.outVertices[i]);
         const FVector& N = FVector(meshInfo.outNormals[i]);
 
-        if (V == FVector(-1, -1, -1) || N == FVector(-1, -1, -1)) continue;
-
-        UE_LOG(LogTemp, Warning, TEXT("Verts exist"));
-        UE_LOG(LogTemp, Warning, TEXT("OutVert count: %d"), meshInfo.outVertices.Num());
-        UE_LOG(LogTemp, Warning, TEXT("OuTri count: %d"), meshInfo.outTris.Num());
-       
-        IndexRemap.Add(i, NextIndex);
+        if (N == FVector(-1, -1, -1)) continue;
+        IndexRemap.Add(i, currentIndex);
         Vertices.Add(V);
         Normals.Add(N);
         UVs.Add(FVector2D(0, 0));
         Tangents.Add(FProcMeshTangent(1, 0, 0));
         VertexColors.Add(FColor::White);
-        ++NextIndex;
+        currentIndex++;
     }
 
     for (int32 i = 0; i < meshInfo.outTris.Num(); i += 3) {
@@ -115,13 +109,42 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         int32 B = meshInfo.outTris[i + 1];
         int32 C = meshInfo.outTris[i + 2];
 
-        if (A < 0 || B < 0 || C < 0) continue;
-        if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) continue;
+        if (A == -1 || B == -1 || C == -1) continue;
+        if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) { 
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle: %d"), A);
+            continue; 
+        }
 
+        int32 IA = IndexRemap[A];
+        int32 IB = IndexRemap[B];
+        int32 IC = IndexRemap[C];
+
+        if (IA == IB || IB == IC || IC == IA) {
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle: %d"), A);
+            continue;
+        }
+        if (Vertices[IA] == Vertices[IB] || Vertices[IB] == Vertices[IC] || Vertices[IC] == Vertices[IA]) {
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle: %d"), A);
+            continue;
+        }
+
+        Indices.Add(IA);
+        Indices.Add(IB);
+        Indices.Add(IC);
+    }
+
+    /*for (int32 i = 0; i < meshInfo.outTris.Num(); i += 3) {
+        int32 A = meshInfo.outTris[i];
+        int32 B = meshInfo.outTris[i + 1];
+        int32 C = meshInfo.outTris[i + 2];
+
+        if (A == -1 || B == -1 || C == -1) continue; 
+        if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C))  continue; 
+ 
         Indices.Add(IndexRemap[A]);
         Indices.Add(IndexRemap[B]);
         Indices.Add(IndexRemap[C]);
-    }
+    }*/
 
     if (!ProcMesh) return;
     if (IsEngineExitRequested()) return;
@@ -143,12 +166,14 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     Params.Input.tree = node;
     Params.Input.leafCount = leafCount;
 
-    FMarchingCubesInterface::Dispatch(Params, [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this)](FMarchingCubesOutput OutputVal) {
-        if (!WeakThis.IsValid()) return;
-        if (IsEngineExitRequested()) return;
+    int32 readBufferIndex = ReadBufferIndex;
+    FMarchingCubesInterface::Dispatch(Params,
+        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), readBufferIndex](FMarchingCubesOutput OutputVal) {
+            if (!WeakThis.IsValid()) return;
+            if (IsEngineExitRequested()) return;
 
-        WeakThis->bBufferReady[0] = true;
-        WeakThis->marchingCubesOutBuffer[0] = OutputVal;
+            WeakThis->bBufferReady[readBufferIndex] = true;
+            WeakThis->marchingCubesOutBuffer[readBufferIndex] = OutputVal;
         });
 
 

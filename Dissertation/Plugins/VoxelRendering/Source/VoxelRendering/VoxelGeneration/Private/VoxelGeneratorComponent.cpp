@@ -89,16 +89,18 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TArray<FLinearColor> VertexColors;
     TMap<int32, int32> IndexRemap;
     int32 NextIndex = 0;
-
-    UE_LOG(LogTemp, Warning, TEXT("OutVert count: %d"), meshInfo.outVertices.Num());
-    UE_LOG(LogTemp, Warning, TEXT("OuTri count: %d"), meshInfo.outTris.Num());
-
+    UE_LOG(LogTemp, Warning, TEXT("This checks if exists"));
 
     for (int32 i = 0; i < meshInfo.outVertices.Num(); i++) {
         const FVector& V = FVector(meshInfo.outVertices[i]);
         const FVector& N = FVector(meshInfo.outNormals[i]);
 
-        if (V == FVector(-1, -1, -1) || N == FVector(-1, -1, -1)) continue;       
+        if (V == FVector(-1, -1, -1) || N == FVector(-1, -1, -1)) continue;
+
+        UE_LOG(LogTemp, Warning, TEXT("Verts exist"));
+        UE_LOG(LogTemp, Warning, TEXT("OutVert count: %d"), meshInfo.outVertices.Num());
+        UE_LOG(LogTemp, Warning, TEXT("OuTri count: %d"), meshInfo.outTris.Num());
+       
         IndexRemap.Add(i, NextIndex);
         Vertices.Add(V);
         Normals.Add(N);
@@ -121,20 +123,17 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         Indices.Add(IndexRemap[C]);
     }
 
+    if (!ProcMesh) return;
+    if (IsEngineExitRequested()) return;
     ProcMesh->CreateMeshSection_LinearColor(0, Vertices, Indices, Normals, UVs, VertexColors, Tangents, true, false);
 }
 
-bool rendered = false;
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
-
-    //if (rendered) return;
-
     if (bBufferReady[ReadBufferIndex])
     {
         UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
         bBufferReady[ReadBufferIndex] = false;
         SwapBuffers();
-        rendered = true;
     }
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
@@ -144,10 +143,20 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     Params.Input.tree = node;
     Params.Input.leafCount = leafCount;
 
-    FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
+    FMarchingCubesInterface::Dispatch(Params, [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this)](FMarchingCubesOutput OutputVal) {
+        if (!WeakThis.IsValid()) return;
+        if (IsEngineExitRequested()) return;
+
+        WeakThis->bBufferReady[0] = true;
+        WeakThis->marchingCubesOutBuffer[0] = OutputVal;
+        });
+
+
+    /*FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
+        if (IsEngineExitRequested()) return;
         bBufferReady[ReadBufferIndex] = true;
         marchingCubesOutBuffer[ReadBufferIndex] = OutputVal;
-     });
+     });*/
 }
 
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {

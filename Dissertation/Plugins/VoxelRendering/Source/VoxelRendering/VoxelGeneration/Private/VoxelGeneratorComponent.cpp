@@ -90,11 +90,17 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TMap<int32, int32> IndexRemap;
     int32 NextIndex = 0;
 
+    UE_LOG(LogTemp, Warning, TEXT("OutVert count: %d"), meshInfo.outVertices.Num());
+    UE_LOG(LogTemp, Warning, TEXT("OuTri count: %d"), meshInfo.outTris.Num());
+
+
     for (int32 i = 0; i < meshInfo.outVertices.Num(); i++) {
         const FVector& V = FVector(meshInfo.outVertices[i]);
         const FVector& N = FVector(meshInfo.outNormals[i]);
 
         if (V == FVector(-1, -1, -1)) continue;
+        UE_LOG(LogTemp, Warning, TEXT("Init values"));
+       
         IndexRemap.Add(i, NextIndex);
         Vertices.Add(V);
         Normals.Add(N);
@@ -108,7 +114,6 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         int32 A = meshInfo.outTris[i];
         int32 B = meshInfo.outTris[i + 1];
         int32 C = meshInfo.outTris[i + 2];
-
         if (A < 0 || B < 0 || C < 0) break;
         if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) continue;
 
@@ -123,13 +128,13 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 bool rendered = false;
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
-    if (rendered) return;
+    //if (rendered) return;
 
     if (bBufferReady[ReadBufferIndex])
     {
-        //UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
-       // bBufferReady[ReadBufferIndex] = false;
-        //SwapBuffers();
+        UpdateMesh(marchingCubesOutBuffer[ReadBufferIndex]);
+        bBufferReady[ReadBufferIndex] = false;
+        SwapBuffers();
         rendered = true;
     }
 

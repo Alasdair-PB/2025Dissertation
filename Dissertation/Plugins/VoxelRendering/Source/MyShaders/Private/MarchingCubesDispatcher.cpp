@@ -110,7 +110,6 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 					PassParams->outNormals = OutNormalsUAV;
 					PassParams->outVertices = OutVerticiesUAV;
 
-					UE_LOG(LogTemp, Warning, TEXT("Node index: %d"), PassParams->nodeIndex);
 					const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 					const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);
 

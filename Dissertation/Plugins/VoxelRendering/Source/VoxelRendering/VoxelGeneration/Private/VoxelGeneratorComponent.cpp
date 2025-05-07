@@ -160,7 +160,7 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     }
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
-    Params.Input.baseDepthScale = 0.5f;
+    Params.Input.baseDepthScale = 3.0f;
     Params.Input.isoLevel = 0.5f;
     Params.Input.voxelsPerAxis = voxelsPerAxis;
     Params.Input.tree = node;

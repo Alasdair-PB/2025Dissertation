@@ -44,19 +44,28 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     int vertexStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
     int vertexCounter = vertexStartIndex;
     
-    float scale = baseDepthScale / (2 + (leafDepth * 2.0));
+    float scale = baseDepthScale / (1 + leafDepth);
     float cornerScale = scale / 2;
     float3 worldPos = leafPosition + (id * scale);
     
     int3 cornerCoords[8];
-    cornerCoords[0] = int3(0, 0, 0) * cornerScale;
+    cornerCoords[0] = int3(0, 0, 0);
+    cornerCoords[1] = int3(1, 0, 0);
+    cornerCoords[2] = int3(1, 0, 1);
+    cornerCoords[3] = int3(0, 0, 1);
+    cornerCoords[4] = int3(0, 1, 0);
+    cornerCoords[5] = int3(1, 1, 0);
+    cornerCoords[6] = int3(1, 1, 1);
+    cornerCoords[7] = int3(0, 1, 1);
+    
+   /* cornerCoords[0] = int3(0, 0, 0) * cornerScale;
     cornerCoords[1] = int3(1, 0, 0) * cornerScale;
     cornerCoords[2] = int3(1, 0, 1) * cornerScale;
     cornerCoords[3] = int3(0, 0, 1) * cornerScale;
     cornerCoords[4] = int3(0, 1, 0) * cornerScale;
     cornerCoords[5] = int3(1, 1, 0) * cornerScale;
     cornerCoords[6] = int3(1, 1, 1) * cornerScale;
-    cornerCoords[7] = int3(0, 1, 1) * cornerScale;
+    cornerCoords[7] = int3(0, 1, 1) * cornerScale;*/
     
     int config = 0;
     for (int h = 0; h < 8; ++h)

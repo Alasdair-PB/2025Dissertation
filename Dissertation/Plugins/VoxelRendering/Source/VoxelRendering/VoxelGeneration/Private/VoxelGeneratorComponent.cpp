@@ -68,8 +68,8 @@ void UVoxelGeneratorComponent::InitOctree() {
         }
     }
 
-    if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, sx, sy, sz)) {
-        UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocated values"));
+    if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, sx, sy, sz, depth)) {
+        UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
     }
 }
 

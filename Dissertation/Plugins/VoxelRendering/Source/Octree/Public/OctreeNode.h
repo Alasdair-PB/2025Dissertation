@@ -90,8 +90,16 @@ public:
         int allocatedTypeCount = (endTypeIndex - startTypeIndex + 1);        
         int allocatedIsoCount = (endIsoIndex - startIsoIndex + 1);
 
-        if (allocatedTypeCount % nodeVoxelCount != 0) return false; // Valid isoValues have not been provided for this level of detail
-        if (allocatedIsoCount % isoCount != 0) return false; // Valid isoValues have not been provided for this level of detail
+        if (allocatedTypeCount % nodeVoxelCount != 0) {
+            UE_LOG(LogTemp, Warning, TEXT("Valid typeValues have not been provided for this level of detail"));
+            return false; 
+        }
+
+        int x = allocatedIsoCount % isoCount;
+        if (allocatedIsoCount % isoCount != 0) {
+            UE_LOG(LogTemp, Warning, TEXT("Valid isoValues have not been provided for this level of detail: %d"), x);
+            return false;
+        }
 
         int averagePassCount = allocatedTypeCount / nodeVoxelCount;
 

@@ -16,16 +16,14 @@ public:
         delete root;
     }
 
-    bool BuildFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int sizeX, int sizeY, int sizeZ) {
+    bool BuildFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int sizeX, int sizeY, int sizeZ, int depth) {
         if (typeBuffer.Num() != sizeX * sizeY * sizeZ) return false;
         if (isovalueBuffer.Num() != (sizeX + 1) * (sizeY + 1) * (sizeZ + 1)) return false;
-
-        maxDepth = FMath::Log2(static_cast<float>(sizeX));
+        maxDepth = depth;
         return SubdivideFromBuffers(root, 0, isovalueBuffer, typeBuffer, 0, 0, 0, sizeX, sizeY, sizeZ);
     }
 
 private:
-
     inline int TypeIndex(int x, int y, int z, int sx, int sy) {
         return x + sx * (y + sy * z);
     }
@@ -61,8 +59,10 @@ private:
 
             if (!SubdivideFromBuffers(node->children[i], depth + 1, isoBuffer, typeBuffer,
                 startX + ox, startY + oy, startZ + oz,
-                childSizeX, childSizeY, childSizeZ))
-                return false;
+                childSizeX, childSizeY, childSizeZ)){
+                    UE_LOG(LogTemp, Warning, TEXT("Subdividing Octree node has failed"));
+                    return false;
+            }
         }
         return true;
     }

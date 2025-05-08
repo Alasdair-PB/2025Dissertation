@@ -98,6 +98,8 @@ public:
         int x = allocatedIsoCount % isoCount;
         if (allocatedIsoCount % isoCount != 0) {
             UE_LOG(LogTemp, Warning, TEXT("Valid isoValues have not been provided for this level of detail: %d"), x);
+            UE_LOG(LogTemp, Warning, TEXT("The allocated isocount is not sufficient: %d"), allocatedIsoCount);
+
             return false;
         }
 

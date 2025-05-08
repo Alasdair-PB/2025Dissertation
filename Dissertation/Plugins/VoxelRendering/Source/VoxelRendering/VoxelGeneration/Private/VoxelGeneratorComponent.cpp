@@ -31,24 +31,29 @@ void UVoxelGeneratorComponent::InitOctree() {
     AABB bounds = { FVector3f(-200.0f), FVector3f(200.0f) };
     tree = new Octree(bounds, 2);
 
+    int sx = voxelsPerAxis, sy = voxelsPerAxis, sz = voxelsPerAxis;
     TArray<float> isovalueBuffer;
     TArray<uint8> typeBuffer;
-
-    int sx = 2, sy = 2, sz = 2;
-    int numVoxels = sx * sy * sz;
 
     for (int z = 0; z < sz; ++z) {
         for (int y = 0; y < sy; ++y) {
             for (int x = 0; x < sx; ++x) {
-                float iso = (x + y + z) % 2 == 0 ? -1.0f : 1.0f;
                 uint8 type = (x + y + z) % 2;
-                isovalueBuffer.Add(iso);
                 typeBuffer.Add(type);
+            }
+        }
+    }
+    for (int z = 0; z <= sz; ++z) {
+        for (int y = 0; y <= sy; ++y) {
+            for (int x = 0; x <= sx; ++x) {
+                float iso = (x + y + z) % 2 == 0 ? -1.0f : 1.0f;
+                isovalueBuffer.Add(iso);
             }
         }
     }
     tree->BuildFromBuffers(isovalueBuffer, typeBuffer, sx, sy, sz);
 }
+
 
 float UVoxelGeneratorComponent::SampleSDF(FVector3f p) {
     return (p.Length()) - 1.0f;
@@ -132,19 +137,6 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         Indices.Add(IB);
         Indices.Add(IC);
     }
-
-    /*for (int32 i = 0; i < meshInfo.outTris.Num(); i += 3) {
-        int32 A = meshInfo.outTris[i];
-        int32 B = meshInfo.outTris[i + 1];
-        int32 C = meshInfo.outTris[i + 2];
-
-        if (A == -1 || B == -1 || C == -1) continue; 
-        if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C))  continue; 
- 
-        Indices.Add(IndexRemap[A]);
-        Indices.Add(IndexRemap[B]);
-        Indices.Add(IndexRemap[C]);
-    }*/
 
     if (!ProcMesh) return;
     if (IsEngineExitRequested()) return;

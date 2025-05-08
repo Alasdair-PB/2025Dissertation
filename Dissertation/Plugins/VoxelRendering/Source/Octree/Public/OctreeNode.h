@@ -4,7 +4,7 @@
 
 static const int voxelsPerAxis = 3; 
 static const int nodeVoxelCount = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
-static const int isoCount = nodeVoxelCount * 8;
+static const int isoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
 
 class OctreeNode {
 public:
@@ -79,16 +79,25 @@ public:
     void SampleValuesFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int sx, int sy, int sz) {
         FVector3f min = bounds.min;
         FVector3f max = bounds.max;
-        FVector3f size = (max - min) / (voxelsPerAxis - 1);
 
-        int index = 0;
+        FVector3f isoSize = (max - min) / voxelsPerAxis;
+        int isoIndex = 0;
+        for (int z = 0; z <= voxelsPerAxis; ++z) {
+            for (int y = 0; y <= voxelsPerAxis; ++y) {
+                for (int x = 0; x <= voxelsPerAxis; ++x) {
+                    FVector3f pos = min + FVector3f(x * isoSize.X, y * isoSize.Y, z * isoSize.Z);
+                    isoValues[isoIndex++] = isovalueBuffer[GetBufferIndex(pos, sx, sy, sz)];
+                }
+            }
+        }
+
+        FVector3f typeSize = (max - min) / voxelsPerAxis;
+        int typeIndex = 0;
         for (int z = 0; z < voxelsPerAxis; ++z) {
             for (int y = 0; y < voxelsPerAxis; ++y) {
                 for (int x = 0; x < voxelsPerAxis; ++x) {
-                    FVector3f pos = min + FVector3f(x * size.X, y * size.Y, z * size.Z);
-                    isoValues[index] = isovalueBuffer[GetBufferIndex(pos, sx, sy, sz)];
-                    typeValues[index] = typeBuffer[GetBufferIndex(pos, sx, sy, sz)];
-                    index++;
+                    FVector3f pos = min + FVector3f((x + 0.5f) * typeSize.X, (y + 0.5f) * typeSize.Y, (z + 0.5f) * typeSize.Z);
+                    typeValues[typeIndex++] = typeBuffer[GetBufferIndex(pos, sx, sy, sz)];
                 }
             }
         }

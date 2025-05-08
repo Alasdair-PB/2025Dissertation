@@ -12,7 +12,10 @@ public:
     bool isLeaf;
     OctreeNode* children[8];
 
-    float isoValues[isoCount];
+    int32 allocatedIndexStart;
+    int32 allocatedIndexEnd; 
+
+    float isoAveragedValues[isoCount];
     float typeValues[nodeVoxelCount];
 
     OctreeNode(const AABB& b) : bounds(b), isLeaf(true) {
@@ -20,7 +23,7 @@ public:
             children[i] = nullptr;
 
         for (int i = 0; i < isoCount; ++i)
-            isoValues[i] = 1.0f;
+            isoAveragedValues[i] = 1.0f;
         FMemory::Memzero(typeValues, sizeof(float) * voxelsPerAxis * voxelsPerAxis * voxelsPerAxis);
     }
 
@@ -56,50 +59,52 @@ public:
         }
     }
 
-    bool CheckSubdivide(std::function<float(FVector3f)> sdf, float threshold = 0.0f) {
-        int signs = 0;
-        for (int i = 0; i < 8; ++i) {
-            FVector3f corner(
-                (i & 1) ? bounds.max.X : bounds.min.X,
-                (i & 2) ? bounds.max.Y : bounds.min.Y,
-                (i & 4) ? bounds.max.Z : bounds.min.Z
-            );
-            signs |= (sdf(corner) > threshold) ? 1 : 2;
+    int GetAverageType(int i, int averagePassCount, const TArray<uint8>& typeBuffer) {
+        int mostCommonIndex = 0;
+        int maxCount = 0;
+        TMap<int, int> frequencyMap;
+
+        for (int j = 0; j < averagePassCount; j++) {
+            int value = typeBuffer[i + j];
+            frequencyMap.FindOrAdd(value)++;
         }
-        return signs == 3;
-    }
 
-    int GetBufferIndex(const FVector3f& pos, int sx, int sy, int sz) {
-        int voxelX = FMath::Clamp(FMath::FloorToInt(pos.X), 0, sx - 1);
-        int voxelY = FMath::Clamp(FMath::FloorToInt(pos.Y), 0, sy - 1);
-        int voxelZ = FMath::Clamp(FMath::FloorToInt(pos.Z), 0, sz - 1);
-        return voxelZ * (sx * sy) + voxelY * sx + voxelX;
-    }
-
-    void SampleValuesFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int sx, int sy, int sz) {
-        FVector3f min = bounds.min;
-        FVector3f max = bounds.max;
-
-        FVector3f isoSize = (max - min) / voxelsPerAxis;
-        int isoIndex = 0;
-        for (int z = 0; z <= voxelsPerAxis; ++z) {
-            for (int y = 0; y <= voxelsPerAxis; ++y) {
-                for (int x = 0; x <= voxelsPerAxis; ++x) {
-                    FVector3f pos = min + FVector3f(x * isoSize.X, y * isoSize.Y, z * isoSize.Z);
-                    isoValues[isoIndex++] = isovalueBuffer[GetBufferIndex(pos, sx, sy, sz)];
-                }
+        for (const auto& pair : frequencyMap) {
+            if (pair.Value > maxCount) {
+                mostCommonIndex = pair.Key;
+                maxCount = pair.Value;
             }
         }
+        return mostCommonIndex;
+    }
 
-        FVector3f typeSize = (max - min) / voxelsPerAxis;
-        int typeIndex = 0;
-        for (int z = 0; z < voxelsPerAxis; ++z) {
-            for (int y = 0; y < voxelsPerAxis; ++y) {
-                for (int x = 0; x < voxelsPerAxis; ++x) {
-                    FVector3f pos = min + FVector3f((x + 0.5f) * typeSize.X, (y + 0.5f) * typeSize.Y, (z + 0.5f) * typeSize.Z);
-                    typeValues[typeIndex++] = typeBuffer[GetBufferIndex(pos, sx, sy, sz)];
-                }
-            }
+    float GetAveragedIsoValue(int i, int averagePassCount, const TArray<float>& isovalueBuffer) {
+        float sum = 0.0f;
+        for (int j = 0; j < averagePassCount; j++)
+            sum += isovalueBuffer[i + j];
+        return sum / averagePassCount;
+    }
+
+    // Optimization::Could be made parallel
+    bool SampleValuesFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int startTypeIndex, int endTypeIndex, int startIsoIndex, int endIsoIndex) {
+        int allocatedTypeCount = (endTypeIndex - startTypeIndex + 1);        
+        int allocatedIsoCount = (endIsoIndex - startIsoIndex + 1);
+
+        if (allocatedTypeCount % nodeVoxelCount != 0) return false; // Valid isoValues have not been provided for this level of detail
+        if (allocatedIsoCount % isoCount != 0) return false; // Valid isoValues have not been provided for this level of detail
+
+        int averagePassCount = allocatedTypeCount / nodeVoxelCount;
+        for (int localIndex = 0; localIndex < nodeVoxelCount; ++localIndex) {
+            int baseIndex = startTypeIndex + localIndex * averagePassCount;
+            typeValues[localIndex] = GetAverageType(baseIndex, averagePassCount, typeBuffer);
         }
+
+        int isoAveragePassCount = allocatedIsoCount / isoCount;
+        for (int localIndex = 0; localIndex < isoCount; ++localIndex) {
+            int baseIndex = startTypeIndex + localIndex * isoAveragePassCount;
+            typeValues[localIndex] = GetAveragedIsoValue(baseIndex, isoAveragePassCount, isovalueBuffer);
+        }
+
+        return true;
     }
 };

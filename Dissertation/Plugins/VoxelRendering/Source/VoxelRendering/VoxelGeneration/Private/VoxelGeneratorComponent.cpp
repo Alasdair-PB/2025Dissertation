@@ -27,31 +27,47 @@ void UVoxelGeneratorComponent::BeginDestroy() {
     delete tree;
 }
 
+int32 IntPow(int32 base, int32 exponent) {
+    int32 result = 1;
+    while (exponent > 0) {
+        if (exponent % 2 == 1)
+            result *= base;
+        base *= base;
+        exponent /= 2;
+    }
+    return result;
+}
+
 void UVoxelGeneratorComponent::InitOctree() {
     AABB bounds = { FVector3f(-200.0f), FVector3f(200.0f) };
-    tree = new Octree(bounds, 2);
+    tree = new Octree(bounds);
 
-    int sx = voxelsPerAxis, sy = voxelsPerAxis, sz = voxelsPerAxis;
+    int32 depth = 2; 
+    int32 nodesPerAxisMaxRes = IntPow(8, depth);
+    int32 sx = voxelsPerAxis * nodesPerAxisMaxRes, sy = voxelsPerAxis * nodesPerAxisMaxRes, sz = voxelsPerAxis * nodesPerAxisMaxRes;
     TArray<float> isovalueBuffer;
     TArray<uint8> typeBuffer;
 
-    for (int z = 0; z < sz; ++z) {
-        for (int y = 0; y < sy; ++y) {
-            for (int x = 0; x < sx; ++x) {
+    typeBuffer.Reserve(sx * sy * sz);
+    isovalueBuffer.Reserve((sx + 1) * (sy + 1) * (sz + 1));
+
+    for (int32 z = 0; z < sz; ++z) {
+        for (int32 y = 0; y < sy; ++y) {
+            for (int32 x = 0; x < sx; ++x) {
                 uint8 type = (x + y + z) % 2;
                 typeBuffer.Add(type);
             }
         }
     }
-    for (int z = 0; z <= sz; ++z) {
-        for (int y = 0; y <= sy; ++y) {
-            for (int x = 0; x <= sx; ++x) {
+    for (int32 z = 0; z <= sz; ++z) {
+        for (int32 y = 0; y <= sy; ++y) {
+            for (int32 x = 0; x <= sx; ++x) {
                 float iso = (x + y + z) % 2 == 0 ? -1.0f : 1.0f;
                 isovalueBuffer.Add(iso);
             }
         }
     }
-    tree->BuildFromBuffers(isovalueBuffer, typeBuffer, sx, sy, sz);
+    tree->BuildFromBuffers(isovalueBuffer, typeBuffer);
 }
 
 
@@ -167,13 +183,6 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
             WeakThis->bBufferReady[readBufferIndex] = true;
             WeakThis->marchingCubesOutBuffer[readBufferIndex] = OutputVal;
         });
-
-
-    /*FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
-        if (IsEngineExitRequested()) return;
-        bBufferReady[ReadBufferIndex] = true;
-        marchingCubesOutBuffer[ReadBufferIndex] = OutputVal;
-     });*/
 }
 
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {

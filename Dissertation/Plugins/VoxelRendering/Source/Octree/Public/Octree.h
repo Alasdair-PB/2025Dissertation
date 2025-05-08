@@ -8,7 +8,7 @@ public:
     OctreeNode* root;
     int maxDepth;
 
-    Octree(const AABB& bounds, int depth) : maxDepth(depth) {
+    Octree(const AABB& bounds) : maxDepth(0) {
         root = new OctreeNode(bounds);
     }
 
@@ -16,32 +16,37 @@ public:
         delete root;
     }
 
-    void Build(std::function<float(FVector3f)> sdf) {
-        SubdivideRecursive(root, 0, sdf);
-    }
-
-    void BuildFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int sx, int sy, int sz) {
-        SubdivideFromBuffers(root, 0, isovalueBuffer, typeBuffer, sx, sy, sz);
+    bool BuildFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer) {
+        if (typeBuffer.Num() % 8 != 0 || isovalueBuffer.Num() % 8 != 0) return false;
+        maxDepth = typeBuffer.Num() / 8;
+        return SubdivideFromBuffers(root, 0, isovalueBuffer, typeBuffer, 0, typeBuffer.Num() - 1, 0, isovalueBuffer.Num() - 1);
     }
 
 private:
-    void SubdivideRecursive(OctreeNode* node, int depth, std::function<float(FVector3f)> sdf) {
-        if (depth >= maxDepth) return;
-        if (node->CheckSubdivide(sdf)) {
-            node->Subdivide();
-            for (int i = 0; i < 8; ++i)
-                SubdivideRecursive(node->children[i], depth + 1, sdf);
-        }
-    }
+    bool SubdivideFromBuffers(OctreeNode* node, int depth, const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int startTypeIndex, int endTypeIndex, int startIsoIndex, int endIsoIndex) {
+        node->SampleValuesFromBuffers(isovalueBuffer, typeBuffer, startTypeIndex, endTypeIndex, startIsoIndex, endIsoIndex);
 
-    void SubdivideFromBuffers(OctreeNode* node, int depth, const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int sx, int sy, int sz) {
-        node->SampleValuesFromBuffers(isovalueBuffer, typeBuffer, sx, sy, sz);
-        if (depth >= maxDepth || node->IsHomogeneousType())
-            return;
-
+        if (depth >= maxDepth || node->IsHomogeneousType()) return;
         node->Subdivide();
+
+        int totalTypeSize = endTypeIndex - startTypeIndex + 1;
+        int totalIsoSize = endIsoIndex - startIsoIndex + 1;
+
+        if (totalTypeSize % 8 != 0 || totalIsoSize % 8 != 0) return false;
+
+        int allocatedTypeSize = totalTypeSize / 8;
+        int allocatedIsoSize = totalIsoSize / 8;
+
         for (int i = 0; i < 8; ++i) {
-            SubdivideFromBuffers(node->children[i], depth + 1, isovalueBuffer, typeBuffer, sx, sy, sz);
+            int newTypeStart = startTypeIndex + (allocatedTypeSize * i);
+            int newTypeEnd = (i == 7) ? endTypeIndex : startTypeIndex + (allocatedTypeSize * (i + 1)) - 1;
+
+            int newIsoStart = startIsoIndex + (allocatedIsoSize * i);
+            int newIsoEnd = (i == 7) ? endIsoIndex : startIsoIndex + (allocatedIsoSize * (i + 1)) - 1;
+
+            if (!SubdivideFromBuffers(node->children[i], depth + 1, isovalueBuffer, typeBuffer, newTypeStart, newTypeEnd, newIsoStart, newIsoEnd))
+                return false;
         }
+        return true;
     }
 };

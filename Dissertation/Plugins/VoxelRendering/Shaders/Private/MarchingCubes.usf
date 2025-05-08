@@ -67,7 +67,6 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     int vertexCounter = vertexStartIndex;
     
     float scale = baseDepthScale / (1 + leafDepth);
-    float cornerScale = scale / 2;
     float3 worldPos = leafPosition + (id * scale);
     
     int3 cornerCoords[8];

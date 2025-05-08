@@ -94,6 +94,7 @@ public:
         if (allocatedIsoCount % isoCount != 0) return false; // Valid isoValues have not been provided for this level of detail
 
         int averagePassCount = allocatedTypeCount / nodeVoxelCount;
+
         for (int localIndex = 0; localIndex < nodeVoxelCount; ++localIndex) {
             int baseIndex = startTypeIndex + localIndex * averagePassCount;
             typeValues[localIndex] = GetAverageType(baseIndex, averagePassCount, typeBuffer);
@@ -101,8 +102,8 @@ public:
 
         int isoAveragePassCount = allocatedIsoCount / isoCount;
         for (int localIndex = 0; localIndex < isoCount; ++localIndex) {
-            int baseIndex = startTypeIndex + localIndex * isoAveragePassCount;
-            typeValues[localIndex] = GetAveragedIsoValue(baseIndex, isoAveragePassCount, isovalueBuffer);
+            int baseIndex = startIsoIndex + localIndex * isoAveragePassCount;
+            isoAveragedValues[localIndex] = GetAveragedIsoValue(baseIndex, isoAveragePassCount, isovalueBuffer);
         }
 
         return true;

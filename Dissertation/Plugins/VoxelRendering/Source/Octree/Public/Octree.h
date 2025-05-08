@@ -16,37 +16,53 @@ public:
         delete root;
     }
 
-    bool BuildFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer) {
-        if (typeBuffer.Num() % 8 != 0 || isovalueBuffer.Num() % 8 != 0) return false;
-        maxDepth = typeBuffer.Num() / 8;
-        return SubdivideFromBuffers(root, 0, isovalueBuffer, typeBuffer, 0, typeBuffer.Num() - 1, 0, isovalueBuffer.Num() - 1);
+    bool BuildFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int sizeX, int sizeY, int sizeZ) {
+        if (typeBuffer.Num() != sizeX * sizeY * sizeZ) return false;
+        if (isovalueBuffer.Num() != (sizeX + 1) * (sizeY + 1) * (sizeZ + 1)) return false;
+
+        maxDepth = FMath::Log2(static_cast<float>(sizeX));
+        return SubdivideFromBuffers(root, 0, isovalueBuffer, typeBuffer, 0, 0, 0, sizeX, sizeY, sizeZ);
     }
 
 private:
-    bool SubdivideFromBuffers(OctreeNode* node, int depth, const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int startTypeIndex, int endTypeIndex, int startIsoIndex, int endIsoIndex) {
-        if (depth >= maxDepth || node->IsHomogeneousType())
-            node->SampleValuesFromBuffers(isovalueBuffer, typeBuffer, startTypeIndex, endTypeIndex, startIsoIndex, endIsoIndex);
-        else {
-            node->Subdivide();
 
-            int totalTypeSize = endTypeIndex - startTypeIndex + 1;
-            int totalIsoSize = endIsoIndex - startIsoIndex + 1;
+    inline int TypeIndex(int x, int y, int z, int sx, int sy) {
+        return x + sx * (y + sy * z);
+    }
 
-            if (totalTypeSize % 8 != 0 || totalIsoSize % 8 != 0) return false;
+    inline int IsoIndex(int x, int y, int z, int sx, int sy) {
+        return x + (sx + 1) * (y + (sy + 1) * z);
+    }
 
-            int allocatedTypeSize = totalTypeSize / 8;
-            int allocatedIsoSize = totalIsoSize / 8;
+    bool SubdivideFromBuffers(OctreeNode* node, int depth, const TArray<float>& isoBuffer, const TArray<uint8>& typeBuffer, 
+        int startX, int startY, int startZ, int sizeX, int sizeY, int sizeZ)  {
 
-            for (int i = 0; i < 8; ++i) {
-                int newTypeStart = startTypeIndex + (allocatedTypeSize * i);
-                int newTypeEnd = (i == 7) ? endTypeIndex : startTypeIndex + (allocatedTypeSize * (i + 1)) - 1;
+        if (depth >= maxDepth || node->IsHomogeneousType()) {
+            int typeStartIndex = TypeIndex(startX, startY, startZ, voxelsPerAxis, voxelsPerAxis);
+            int isoStartIndex = IsoIndex(startX, startY, startZ, voxelsPerAxis, voxelsPerAxis);
+            int typeCount = sizeX * sizeY * sizeZ;
+            int allotedIsoCount = (sizeX + 1) * (sizeY + 1) * (sizeZ + 1);
 
-                int newIsoStart = startIsoIndex + (allocatedIsoSize * i);
-                int newIsoEnd = (i == 7) ? endIsoIndex : startIsoIndex + (allocatedIsoSize * (i + 1)) - 1;
+            return node->SampleValuesFromBuffers(isoBuffer, typeBuffer, typeStartIndex, typeStartIndex + typeCount - 1,
+                isoStartIndex, isoStartIndex + allotedIsoCount - 1);
+        }
 
-                if (!SubdivideFromBuffers(node->children[i], depth + 1, isovalueBuffer, typeBuffer, newTypeStart, newTypeEnd, newIsoStart, newIsoEnd))
-                    return false;
-            }
+        node->Subdivide();
+        int halfX = sizeX / 2, halfY = sizeY / 2, halfZ = sizeZ / 2;
+
+        for (int i = 0; i < 8; ++i) {
+            int ox = (i & 1) ? halfX : 0;
+            int oy = (i & 2) ? halfY : 0;
+            int oz = (i & 4) ? halfZ : 0;
+
+            int childSizeX = (i & 1) ? (sizeX - halfX) : halfX;
+            int childSizeY = (i & 2) ? (sizeY - halfY) : halfY;
+            int childSizeZ = (i & 4) ? (sizeZ - halfZ) : halfZ;
+
+            if (!SubdivideFromBuffers(node->children[i], depth + 1, isoBuffer, typeBuffer,
+                startX + ox, startY + oy, startZ + oz,
+                childSizeX, childSizeY, childSizeZ))
+                return false;
         }
         return true;
     }

@@ -27,23 +27,12 @@ void UVoxelGeneratorComponent::BeginDestroy() {
     delete tree;
 }
 
-int32 IntPow(int32 base, int32 exponent) {
-    int32 result = 1;
-    while (exponent > 0) {
-        if (exponent % 2 == 1)
-            result *= base;
-        base *= base;
-        exponent /= 2;
-    }
-    return result;
-}
-
 void UVoxelGeneratorComponent::InitOctree() {
     AABB bounds = { FVector3f(-200.0f), FVector3f(200.0f) };
     tree = new Octree(bounds);
 
     int32 depth = 2; 
-    int32 nodesPerAxisMaxRes = IntPow(8, depth);
+    int32 nodesPerAxisMaxRes = Octree::IntPow(8, depth);
     int32 sx = voxelsPerAxis * nodesPerAxisMaxRes, sy = voxelsPerAxis * nodesPerAxisMaxRes, sz = voxelsPerAxis * nodesPerAxisMaxRes;
     TArray<float> isovalueBuffer;
     TArray<uint8> typeBuffer;

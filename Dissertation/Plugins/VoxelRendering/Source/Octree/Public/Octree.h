@@ -23,13 +23,24 @@ public:
         return SubdivideFromBuffers(root, 0, isovalueBuffer, typeBuffer, 0, 0, 0, sizeX, sizeY, sizeZ);
     }
 
+    static int32 IntPow(int32 base, int32 exponent) {
+        int32 result = 1;
+        while (exponent > 0) {
+            if (exponent % 2 == 1)
+                result *= base;
+            base *= base;
+            exponent /= 2;
+        }
+        return result;
+    }
+
 private:
     inline int TypeIndex(int x, int y, int z, int sx, int sy) {
         return x + sx * (y + sy * z);
     }
 
-    inline int IsoIndex(int x, int y, int z, int sx, int sy) {
-        return x + (sx + 1) * (y + (sy + 1) * z);
+    inline int IsoIndex(int x, int y, int z, int strideY, int strideZ) {
+        return x + strideY * (y + strideZ * z);
     }
 
     bool SubdivideFromBuffers(OctreeNode* node, int depth, const TArray<float>& isoBuffer, const TArray<uint8>& typeBuffer, 
@@ -37,12 +48,19 @@ private:
 
         if (depth >= maxDepth || node->IsHomogeneousType()) {
             int typeStartIndex = TypeIndex(startX, startY, startZ, voxelsPerAxis, voxelsPerAxis);
-            int isoStartIndex = IsoIndex(startX, startY, startZ, voxelsPerAxis, voxelsPerAxis);
-            int typeCount = sizeX * sizeY * sizeZ;
-            int allotedIsoCount = (sizeX + 1) * (sizeY + 1) * (sizeZ + 1);
+            int nodesPerAxisMaxRes = IntPow(8, depth);
+            int fullStrideY = (voxelsPerAxis * nodesPerAxisMaxRes) + 1;
+            int fullStrideZ = (voxelsPerAxis * nodesPerAxisMaxRes) + 1;
+            int isoStartIndex = IsoIndex(startX, startY, startZ, fullStrideY, fullStrideZ);
 
-            return node->SampleValuesFromBuffers(isoBuffer, typeBuffer, typeStartIndex, typeStartIndex + typeCount - 1,
-                isoStartIndex, isoStartIndex + allotedIsoCount - 1);
+            int typeNum = sizeX * sizeY * sizeZ;
+            int isoNum = (sizeX + 1) * (sizeY + 1) * (sizeZ + 1);
+
+            return node->SampleValuesFromBuffers(
+                isoBuffer, typeBuffer,
+                typeStartIndex, typeStartIndex + typeNum - 1,
+                isoStartIndex, isoStartIndex + isoNum - 1
+            );
         }
 
         node->Subdivide();

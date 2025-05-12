@@ -106,8 +106,9 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     for (int32 i = 0; i < meshInfo.outVertices.Num(); i++) {
         const FVector& V = FVector(meshInfo.outVertices[i]);
         const FVector& N = FVector(meshInfo.outNormals[i]);
-
         if (N == FVector(-1, -1, -1)) continue;
+        UE_LOG(LogTemp, Warning, TEXT("Valid vector added: %d"), i);
+
         IndexRemap.Add(i, currentIndex);
         Vertices.Add(V);
         Normals.Add(N);
@@ -124,7 +125,8 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 
         if (A == -1 || B == -1 || C == -1) continue;
         if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) { 
-            UE_LOG(LogTemp, Warning, TEXT("Bad triangle, duplicate contains: %d"), A);
+            UE_LOG(LogTemp, Warning, TEXT("Too few vertices have been created for this triangle index to be valid: %d, %d, %d"), A, B, C);
+
             continue; 
         }
 

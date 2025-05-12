@@ -78,42 +78,58 @@ public:
         return mostCommonIndex;
     }
 
-    float GetAveragedIsoValue(int i, int averagePassCount, const TArray<float>& isovalueBuffer) {
-        float sum = 0.0f;
-        for (int j = 0; j < averagePassCount; j++)
-            sum += isovalueBuffer[i + j];
-        return sum / averagePassCount;
-    }
 
-    // Optimization::Could be made parallel
-    bool SampleValuesFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint8>& typeBuffer, int startTypeIndex, int endTypeIndex, int startIsoIndex, int endIsoIndex) {
-        int allocatedTypeCount = (endTypeIndex - startTypeIndex + 1);        
-        int allocatedIsoCount = (endIsoIndex - startIsoIndex + 1);
+    bool SampleValuesFromBuffers(const TArray<float> isovalueBuffer, const TArray<uint8> typeBuffer, int localVoxelsPerAxis) {
+        int allocatedTypeCount = localVoxelsPerAxis * localVoxelsPerAxis * localVoxelsPerAxis;
+        int highResCount = (localVoxelsPerAxis + 1) * (localVoxelsPerAxis + 1) * (localVoxelsPerAxis + 1);
+        int scale = localVoxelsPerAxis / voxelsPerAxis;
 
         if (allocatedTypeCount % nodeVoxelCount != 0) {
             UE_LOG(LogTemp, Warning, TEXT("Valid typeValues have not been provided for this level of detail"));
-            return false; 
+            return false;
         }
 
-        int x = allocatedIsoCount % isoCount;
-        if (allocatedIsoCount % isoCount != 0) {
-            UE_LOG(LogTemp, Warning, TEXT("Valid isoValues have not been provided for this level of detail: %d"), x);
-            UE_LOG(LogTemp, Warning, TEXT("The allocated isocount is not sufficient: %d"), allocatedIsoCount);
-
+        if (isovalueBuffer.Num() != highResCount) {
+            UE_LOG(LogTemp, Warning, TEXT("isovalueBuffer size mismatch"));
             return false;
         }
 
         int averagePassCount = allocatedTypeCount / nodeVoxelCount;
-
         for (int localIndex = 0; localIndex < nodeVoxelCount; ++localIndex) {
-            int baseIndex = startTypeIndex + localIndex * averagePassCount;
+            int baseIndex = localIndex * averagePassCount;
             typeValues[localIndex] = GetAverageType(baseIndex, averagePassCount, typeBuffer);
         }
 
-        int isoAveragePassCount = allocatedIsoCount / isoCount;
-        for (int localIndex = 0; localIndex < isoCount; ++localIndex) {
-            int baseIndex = startIsoIndex + localIndex * isoAveragePassCount;
-            isoAveragedValues[localIndex] = GetAveragedIsoValue(baseIndex, isoAveragePassCount, isovalueBuffer);
+        for (int z = 0; z <= voxelsPerAxis; ++z) {
+            for (int y = 0; y <= voxelsPerAxis; ++y) {
+                for (int x = 0; x <= voxelsPerAxis; ++x) {
+                    float sum = 0.0f;
+                    int count = 0;
+
+                    for (int dz = 0; dz < scale; ++dz) {
+                        for (int dy = 0; dy < scale; ++dy) {
+                            for (int dx = 0; dx < scale; ++dx) {
+                                int hx = x * scale + dx;
+                                int hy = y * scale + dy;
+                                int hz = z * scale + dz;
+
+                                if (hx < 0 || hy < 0 || hz < 0 ||
+                                    hx > localVoxelsPerAxis ||
+                                    hy > localVoxelsPerAxis ||
+                                    hz > localVoxelsPerAxis) {
+                                    continue;
+                                }
+                                int highIndex = hx + (voxelsPerAxis + 1) * (hy + (voxelsPerAxis + 1) * hz);
+
+                                sum += isovalueBuffer[highIndex];
+                                ++count;
+                            }
+                        }
+                    }
+                    int lowIndex = x + (voxelsPerAxis + 1) * (y + (voxelsPerAxis + 1) * z);
+                    isoAveragedValues[lowIndex] = sum / count;
+                }
+            }
         }
 
         return true;

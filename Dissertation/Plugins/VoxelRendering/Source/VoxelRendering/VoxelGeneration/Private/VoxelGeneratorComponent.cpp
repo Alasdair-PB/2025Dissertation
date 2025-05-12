@@ -32,32 +32,32 @@ void UVoxelGeneratorComponent::InitOctree() {
     tree = new Octree(bounds);
 
     int32 depth = 2; 
-    int32 nodesPerAxisMaxRes = Octree::IntPow(8, depth);
-    int32 sx = voxelsPerAxis * nodesPerAxisMaxRes, sy = voxelsPerAxis * nodesPerAxisMaxRes, sz = voxelsPerAxis * nodesPerAxisMaxRes;
+    int32 nodesPerAxisMaxRes = Octree::IntPow(2, depth);
+    int32 size = voxelsPerAxis * nodesPerAxisMaxRes;
     TArray<float> isovalueBuffer;
     TArray<uint8> typeBuffer;
 
-    typeBuffer.Reserve(sx * sy * sz);
-    isovalueBuffer.Reserve((sx + 1) * (sy + 1) * (sz + 1));
+    typeBuffer.Reserve(size * size * size);
+    isovalueBuffer.Reserve((size + 1) * (size + 1) * (size + 1));
 
-    for (int32 z = 0; z < sz; ++z) {
-        for (int32 y = 0; y < sy; ++y) {
-            for (int32 x = 0; x < sx; ++x) {
+    for (int32 z = 0; z < size; ++z) {
+        for (int32 y = 0; y < size; ++y) {
+            for (int32 x = 0; x < size; ++x) {
                 uint8 type = (x + y + z) % 2;
                 typeBuffer.Add(type);
             }
         }
     }
-    for (int32 z = 0; z <= sz; ++z) {
-        for (int32 y = 0; y <= sy; ++y) {
-            for (int32 x = 0; x <= sx; ++x) {
+    for (int32 z = 0; z <= size; ++z) {
+        for (int32 y = 0; y <= size; ++y) {
+            for (int32 x = 0; x <= size; ++x) {
                 float iso = (x + y + z) % 2 == 0 ? -1.0f : 1.0f;
                 isovalueBuffer.Add(iso);
             }
         }
     }
 
-    if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, sx, sy, sz, depth)) {
+    if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, size, depth)) {
         UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
     }
 }

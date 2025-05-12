@@ -124,7 +124,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 
         if (A == -1 || B == -1 || C == -1) continue;
         if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) { 
-            UE_LOG(LogTemp, Warning, TEXT("Bad triangle: %d"), A);
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle, duplicate contains: %d"), A);
             continue; 
         }
 
@@ -133,11 +133,11 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         int32 IC = IndexRemap[C];
 
         if (IA == IB || IB == IC || IC == IA) {
-            UE_LOG(LogTemp, Warning, TEXT("Bad triangle: %d"), A);
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle IA == IB || IB == IC || IC == IA : %d"), A);
             continue;
         }
         if (Vertices[IA] == Vertices[IB] || Vertices[IB] == Vertices[IC] || Vertices[IC] == Vertices[IA]) {
-            UE_LOG(LogTemp, Warning, TEXT("Bad triangle: %d"), A);
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %d"), A);
             continue;
         }
 

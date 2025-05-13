@@ -93,10 +93,6 @@ private:
     }
 
     bool SubdivideFromBuffers(OctreeNode* node, int depth, const TArray<float> isoBuffer, const TArray<uint8> typeBuffer, uint32 localVoxelsPerAxis) {
-
-        UE_LOG(LogTemp, Warning, TEXT("Nodes per axis: %d"), localVoxelsPerAxis);
-        UE_LOG(LogTemp, Warning, TEXT("Initi isoValueCount: %d"), isoBuffer.Num());
-
         if (depth >= maxDepth || IsHomogeneousType(typeBuffer, localVoxelsPerAxis))
             return node->SampleValuesFromBuffers(isoBuffer, typeBuffer, localVoxelsPerAxis);
 

@@ -9,8 +9,8 @@ int nodeIndex = 0;
 Buffer<float> isoValues;
 
 RWStructuredBuffer<float3> outVertices;
-RWStructuredBuffer<int> outTris;
 RWStructuredBuffer<float3> outNormals;
+RWStructuredBuffer<int> outTris;
 
 // Constants
 int voxelsPerAxis = 0;
@@ -22,27 +22,38 @@ int GetIsoIndex(int3 coord)
     return coord.x + coord.y * (voxelsPerAxis + 1) + coord.z * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
 }
 
-float3 calculateNormal(int3 coord)
+float GetDensity(int3 coord)
 {
-    float dx = isoValues[GetIsoIndex(coord + int3(1, 0, 0))] - isoValues[GetIsoIndex(coord - int3(1, 0, 0))];
-    float dy = isoValues[GetIsoIndex(coord + int3(0, 1, 0))] - isoValues[GetIsoIndex(coord - int3(0, 1, 0))];
-    float dz = isoValues[GetIsoIndex(coord + int3(0, 0, 1))] - isoValues[GetIsoIndex(coord - int3(0, 0, 1))];
+    return isoValues[GetIsoIndex(coord)];
+}
+
+float3 CalculateNormal(int3 coord)
+{
+    int3 offsetX = int3(1, 0, 0);
+    int3 offsetY = int3(0, 1, 0);
+    int3 offsetZ = int3(0, 0, 1);
+
+    float dx = GetDensity(coord + offsetX) - GetDensity(coord - offsetX);
+    float dy = GetDensity(coord + offsetY) - GetDensity(coord - offsetY);
+    float dz = GetDensity(coord + offsetZ) - GetDensity(coord - offsetZ);
+
     return normalize(float3(dx, dy, dz));
 }
 
-void createVertex(int indexA, int indexB, int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worldPos, int voxelIndex)
+void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worldPos, float scale)
 {
-    float3 posA = worldPos + cornerPosA; // float3 posA = worldPos + (cornerPosA * scale);
-
-    float3 posB = worldPos + cornerPosB;
-    float densityA = isoValues[GetIsoIndex(cornerPosA)];
-    float densityB = isoValues[GetIsoIndex(cornerPosB)];
+    float voxelScale = 4;
+    float3 posA = worldPos + (cornerPosA * voxelScale); // 1 => scale
+    float3 posB = worldPos + (cornerPosB * voxelScale);
+    
+    float densityA = GetDensity(cornerPosA);
+    float densityB = GetDensity(cornerPosB);
     
     float t = (isoLevel - densityA) / (densityB - densityA);
     float3 position = posA + t * (posB - posA);
     
-    float3 normalA = calculateNormal(cornerPosA);
-    float3 normalB = calculateNormal(cornerPosB);
+    float3 normalA = CalculateNormal(cornerPosA);
+    float3 normalB = CalculateNormal(cornerPosB);
     float3 normal = normalize(normalA + t * (normalB - normalA));
 
     outNormals[vertexIndex] = normal;
@@ -57,28 +68,27 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
     int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
     int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
-    int triangleStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
-    int vertexStartIndex = (globalVoxelIndex * voxelsPerLeaf * 15) + (localVoxelIndex * 15);
-    int vertexCounter = vertexStartIndex;
     
+    int triangleStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
+    int vertexStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
+        
     float scale = baseDepthScale / (1 + leafDepth);
     float3 worldPos = leafPosition + (id * scale);
-    
+
     int3 cornerCoords[8];
-    cornerCoords[0] = int3(0, 0, 0);
-    cornerCoords[1] = int3(1, 0, 0);
-    cornerCoords[2] = int3(1, 0, 1);
-    cornerCoords[3] = int3(0, 0, 1);
-    cornerCoords[4] = int3(0, 1, 0);
-    cornerCoords[5] = int3(1, 1, 0);
-    cornerCoords[6] = int3(1, 1, 1);
-    cornerCoords[7] = int3(0, 1, 1);
+    cornerCoords[0] = id + int3(0, 0, 0);
+    cornerCoords[1] = id + int3(1, 0, 0);
+    cornerCoords[2] = id + int3(1, 0, 1);
+    cornerCoords[3] = id + int3(0, 0, 1);
+    cornerCoords[4] = id + int3(0, 1, 0);
+    cornerCoords[5] = id + int3(1, 1, 0);
+    cornerCoords[6] = id + int3(1, 1, 1);
+    cornerCoords[7] = id + int3(0, 1, 1);
     
     int config = 0;
     for (int h = 0; h < 8; ++h)
     {
-        if (isoValues[GetIsoIndex(id + cornerCoords[h])] < isoLevel)
-            config |= (1 << h);
+        if (isoValues[GetIsoIndex(cornerCoords[h])] < isoLevel) { config |= (1 << h); }
     }
     
     const int edgeIndices[16] =
@@ -103,8 +113,7 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     
     for (int k = 0; k < 16; k += 3)
     {
-       if (edgeIndices[k] == -1 || edgeIndices[k + 1] == -1 || edgeIndices[k + 2] == -1)
-            break;
+        if (edgeIndices[k] == -1) { break; }
         
         int edgeIndexA = edgeIndices[k];
         int a0 = cornerIndexAFromEdge[edgeIndexA];
@@ -122,9 +131,9 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         int indexB = (vertexStartIndex + k + 1);
         int indexC = (vertexStartIndex + k + 2);
 
-        createVertex(a0, a1, id + cornerCoords[a0], id + cornerCoords[a1], indexA, worldPos, localVoxelIndex);
-        createVertex(b0, b1, id + cornerCoords[b0], id + cornerCoords[b1], indexB, worldPos, localVoxelIndex);
-        createVertex(c0, c1, id + cornerCoords[c0], id + cornerCoords[c1], indexC, worldPos, localVoxelIndex);
+        CreateVertex(cornerCoords[a0], cornerCoords[a1], indexA, worldPos, scale);
+        CreateVertex(cornerCoords[b0], cornerCoords[b1], indexB, worldPos, scale);
+        CreateVertex(cornerCoords[c0], cornerCoords[c1], indexC, worldPos, scale);
         
         outTris[triangleStartIndex] = indexC;
         outTris[triangleStartIndex + 1] = indexB;

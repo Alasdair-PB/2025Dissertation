@@ -23,18 +23,16 @@ class FMarchingCubes : public FGlobalShader
 	SHADER_USE_PARAMETER_STRUCT(FMarchingCubes, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER_RDG_BUFFER_SRV(Buffer<float>, isoValues)
 		SHADER_PARAMETER(FVector3f, leafPosition)
-		SHADER_PARAMETER(uint32, leafDepth)
-
-		SHADER_PARAMETER(uint32, voxelsPerAxis)
+		SHADER_PARAMETER(uint32, leafDepth)		
 		SHADER_PARAMETER(uint32, nodeIndex)
+		SHADER_PARAMETER_RDG_BUFFER_SRV(Buffer<float>, isoValues)
+		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<FVector>, outVertices)
+		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<FVector>, outNormals)
+		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<int>, outTris)
+		SHADER_PARAMETER(uint32, voxelsPerAxis)
 		SHADER_PARAMETER(float, baseDepthScale)
 		SHADER_PARAMETER(float, isoLevel)
-
-		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<FVector>, outVertices)
-		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<int>, outTris)
-		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<FVector>, outNormals)
 	END_SHADER_PARAMETER_STRUCT()
 
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {

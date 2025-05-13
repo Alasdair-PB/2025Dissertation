@@ -92,20 +92,21 @@ int UVoxelGeneratorComponent::GetLeafCount(OctreeNode* node) {
     return count;
 }
 
-void AddVertice(TArray<FVector>& Vertices, TArray<int32>& Indices, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents,
-    TArray<FLinearColor>& VertexColors, TMap<int32, int32>& IndexRemap, int i, int& includedVertIndex, FMarchingCubesOutput& meshInfo)
+void DrawProcMeshEdges(UProceduralMeshComponent* ProcMesh, TArray<FVector>& Vertices, TArray<int32>& Indices, float Duration = 5.0f, FColor LineColor = FColor::Green)
 {
-    FVector V = FVector(meshInfo.outVertices[i]);
-    FVector N = FVector(meshInfo.outNormals[i]);
+    for (int32 i = 0; i < Indices.Num(); i += 3)
+    {
+        FVector V0 = Vertices[Indices[i]];
+        FVector V1 = Vertices[Indices[i + 1]];
+        FVector V2 = Vertices[Indices[i + 2]];
 
-    IndexRemap.Add(i, includedVertIndex);
-    Vertices.Add(V);
-    Normals.Add(N);
-    UVs.Add(FVector2D(0, 0));
-    Tangents.Add(FProcMeshTangent(1, 0, 0));
-    VertexColors.Add(FColor::White);
-    includedVertIndex++;
+        DrawDebugLine(ProcMesh->GetWorld(), V0, V1, LineColor, false, Duration, 0, 1.0f);
+        DrawDebugLine(ProcMesh->GetWorld(), V1, V2, LineColor, false, Duration, 0, 1.0f);
+        DrawDebugLine(ProcMesh->GetWorld(), V2, V0, LineColor, false, Duration, 0, 1.0f);
+    }
 }
+
+const bool DebugVoxelMesh = true;
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput& meshInfo) {
     TArray<FVector> Vertices;
@@ -122,6 +123,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput& meshInfo) {
         FVector V = FVector(meshInfo.outVertices[i]);
         FVector N = FVector(meshInfo.outNormals[i]);
         if (V == FVector(-1, -1, -1)) continue; // Need a different null value indicator as a vector of -1,-1,-1 can exist
+        // if (N == FVector(-1, -1, -1)) { UE_LOG(LogTemp, Warning, TEXT("Huh neat..")); }
 
         IndexRemap.Add(i, includedVertIndex);
         Vertices.Add(V);
@@ -139,10 +141,10 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput& meshInfo) {
 
         if (A == -1 || B == -1 || C == -1) continue;
 
-        //if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) { 
-        //    UE_LOG(LogTemp, Warning, TEXT("Too few vertices have been created for this triangle index to be valid: %d, %d, %d"), A, B, C);
-        //    continue; 
-        //}
+        if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) { 
+            UE_LOG(LogTemp, Warning, TEXT("Too few vertices have been created for this triangle index to be valid: %d, %d, %d"), A, B, C);
+            continue; 
+        }
 
         int32 IA = IndexRemap[A];
         int32 IB = IndexRemap[B];
@@ -165,6 +167,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput& meshInfo) {
     if (!ProcMesh) return;
     if (IsEngineExitRequested()) return;
     ProcMesh->CreateMeshSection_LinearColor(0, Vertices, Indices, Normals, UVs, VertexColours, Tangents, true, false);
+    if (DebugVoxelMesh) DrawProcMeshEdges(ProcMesh, Vertices, Indices);
 }
 
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {

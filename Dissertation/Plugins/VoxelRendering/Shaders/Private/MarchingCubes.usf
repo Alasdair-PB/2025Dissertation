@@ -20,13 +20,13 @@ int GetIsoIndex(int3 coord)
 {
     int maxIsoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
     int index = coord.x + coord.y * (voxelsPerAxis + 1) + coord.z * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
-    return index; // max(0, min(index, maxIsoCount));
+    return max(0, min(index, maxIsoCount - 1));
 }
 
 float GetDensity(int3 coord)
 {
-    int3 safeCoord = clamp(coord, 0, voxelsPerAxis + 1);
-    return isoValues[(GetIsoIndex(safeCoord))];
+    int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
+    return isoValues[(GetIsoIndex(coord))];
 }
 
 float3 CalculateNormal(int3 coord)
@@ -36,28 +36,28 @@ float3 CalculateNormal(int3 coord)
     int3 offsetZ = int3(0, 0, 1);
 
     float dx = GetDensity(coord + offsetX) - GetDensity(coord - offsetX);
-    float dy = GetDensity(coord + offsetY) - GetDensity(coord - offsetY);
+    float dy = GetDensity(coord + offsetY) - GetDensity(coord - offsetY);    
     float dz = GetDensity(coord + offsetZ) - GetDensity(coord - offsetZ);
-    return normalize(float3(dx, dy, dz));
+    return abs(dx) > 0 && abs(dy) > 0 && abs(dz) > 0 ? normalize(float3(dx, dy, dz)) : float3(0.0f,0.0f,0.0f);
 }
 
 void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worldPos, float isoScale)
 {
     float3 posA = worldPos + (cornerPosA * isoScale);
     float3 posB = worldPos + (cornerPosB * isoScale);
-    
+
     float densityA = GetDensity(cornerPosA);
     float densityB = GetDensity(cornerPosB);
     
     float denom = densityB - densityA;
-    float t = abs(denom) > 0.0001f ? (isoLevel - densityA) / denom : 0.5f;
-    float3 position = posA + t * (posB - posA);
+    float t = (isoLevel - densityA) / denom;
+    float3 position = posA + (t * (posB - posA));
     
     float3 normalA = CalculateNormal(cornerPosA);
     float3 normalB = CalculateNormal(cornerPosB);
-    float3 normalRes = normalA + t * (normalB - normalA);
+    float3 normalRes = normalA + (t * (normalB - normalA));
 
-    outNormals[vertexIndex] = normalRes.x == 0 && normalRes.y == 0 && normalRes.z == 0 ? normalRes : float3(1, 1, 1);
+    outNormals[vertexIndex] = abs(denom) > 0 ? normalRes : float3(1, 1, 1);
     outVertices[vertexIndex] = position; 
 }
 
@@ -92,7 +92,7 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
     for (int h = 0; h < 8; ++h)
     {
         if (isoValues[GetIsoIndex(cornerCoords[h])] < isoLevel)
-            config |= (1 << h); 
+            config |= (1 << h);
     }
     
     const int edgeIndices[16] =

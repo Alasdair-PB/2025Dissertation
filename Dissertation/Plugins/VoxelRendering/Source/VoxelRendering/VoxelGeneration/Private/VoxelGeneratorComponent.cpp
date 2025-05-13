@@ -106,7 +106,7 @@ void DrawProcMeshEdges(UProceduralMeshComponent* ProcMesh, TArray<FVector>& Vert
     }
 }
 
-const bool DebugVoxelMesh = true;
+const bool DebugVoxelMesh = false;
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TArray<FVector> Vertices;
@@ -119,19 +119,14 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 
     int32 includedVertIndex = 0;
     bool flaggedIssue = false;
-    for (int32 i = 0; i < meshInfo.outVertices.Num(); i++) {
-        FVector V = FVector(meshInfo.outVertices[i]);
-        FVector N = FVector(meshInfo.outNormals[i]);
+    for (int32 outVertIndex = 0; outVertIndex < meshInfo.outVertices.Num(); outVertIndex++) {
+        FVector V = FVector(meshInfo.outVertices[outVertIndex]);
+        FVector N = FVector(meshInfo.outNormals[outVertIndex]);
 
-        if (V == FVector(-1, -1, -1)) { 
-            continue; // Need a different null value indicator as a vector of -1,-1,-1 can exist
-        }
+        if (V == FVector(-1, -1, -1) && N == FVector(-1, -1, -1)) { continue; }
+        if (N == FVector(-1, -1, -1)) { flaggedIssue = true; }
 
-        if (N == FVector(-1, -1, -1) && meshInfo.outNormals[i] == FVector3f(-1,-1,-1)) {
-            flaggedIssue = true;
-        }
-
-        IndexRemap.Add(i, includedVertIndex);
+        IndexRemap.Add(outVertIndex, includedVertIndex);
         Vertices.Add(V);
         Normals.Add(N);
         UVs.Add(FVector2D(0, 0));
@@ -190,7 +185,7 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
     Params.Input.baseDepthScale = 400.0f;
-    Params.Input.isoLevel = 1.0f;
+    Params.Input.isoLevel = 0.5f;
     Params.Input.voxelsPerAxis = voxelsPerAxis;
     Params.Input.tree = node;
     Params.Input.leafCount = leafCount;

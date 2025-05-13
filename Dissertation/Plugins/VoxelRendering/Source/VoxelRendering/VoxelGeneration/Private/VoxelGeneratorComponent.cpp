@@ -108,7 +108,7 @@ void DrawProcMeshEdges(UProceduralMeshComponent* ProcMesh, TArray<FVector>& Vert
 
 const bool DebugVoxelMesh = true;
 
-void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput& meshInfo) {
+void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TArray<FVector> Vertices;
     TArray<int32> Indices;
     TArray<FVector> Normals;
@@ -118,12 +118,18 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput& meshInfo) {
     TMap<int32, int32> IndexRemap;
 
     int32 includedVertIndex = 0;
-
+    bool flaggedIssue = false;
     for (int32 i = 0; i < meshInfo.outVertices.Num(); i++) {
         FVector V = FVector(meshInfo.outVertices[i]);
         FVector N = FVector(meshInfo.outNormals[i]);
-        if (V == FVector(-1, -1, -1)) continue; // Need a different null value indicator as a vector of -1,-1,-1 can exist
-        // if (N == FVector(-1, -1, -1)) { UE_LOG(LogTemp, Warning, TEXT("Huh neat..")); }
+
+        if (V == FVector(-1, -1, -1)) { 
+            continue; // Need a different null value indicator as a vector of -1,-1,-1 can exist
+        }
+
+        if (N == FVector(-1, -1, -1) && meshInfo.outNormals[i] == FVector3f(-1,-1,-1)) {
+            flaggedIssue = true;
+        }
 
         IndexRemap.Add(i, includedVertIndex);
         Vertices.Add(V);
@@ -134,12 +140,16 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput& meshInfo) {
         includedVertIndex++;
     }
 
+    if (flaggedIssue) {
+        UE_LOG(LogTemp, Warning, TEXT("A vertex has been initialised without a initialised normal value. (-1,-1,-1)"));
+    }
+
     for (int32 i = 0; i < meshInfo.outTris.Num(); i += 3) {
         int32 A = meshInfo.outTris[i];
         int32 B = meshInfo.outTris[i + 1];
         int32 C = meshInfo.outTris[i + 2];
 
-        if (A == -1 || B == -1 || C == -1) continue;
+        if (A == -1 || B == -1 || C == -1) { continue; }
 
         if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) { 
             UE_LOG(LogTemp, Warning, TEXT("Too few vertices have been created for this triangle index to be valid: %d, %d, %d"), A, B, C);
@@ -179,8 +189,8 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     }
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
-    Params.Input.baseDepthScale = 3.0f;
-    Params.Input.isoLevel = 0.5f;
+    Params.Input.baseDepthScale = 400.0f;
+    Params.Input.isoLevel = 1.0f;
     Params.Input.voxelsPerAxis = voxelsPerAxis;
     Params.Input.tree = node;
     Params.Input.leafCount = leafCount;

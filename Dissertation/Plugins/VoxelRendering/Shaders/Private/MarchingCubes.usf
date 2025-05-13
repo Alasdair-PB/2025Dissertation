@@ -25,7 +25,8 @@ int GetIsoIndex(int3 coord)
 
 float GetDensity(int3 coord)
 {
-    return isoValues[(GetIsoIndex(coord))];
+    int3 safeCoord = clamp(coord, 0, voxelsPerAxis + 1);
+    return isoValues[(GetIsoIndex(safeCoord))];
 }
 
 float3 CalculateNormal(int3 coord)
@@ -56,19 +57,18 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     float3 normalB = CalculateNormal(cornerPosB);
     float3 normalRes = normalA + t * (normalB - normalA);
 
-    outNormals[vertexIndex] = normalRes.x > 0 && normalRes.y > 0 && normalRes.z > 0 ? normalRes : float3(1, 1, 1);
+    outNormals[vertexIndex] = normalRes.x == 0 && normalRes.y == 0 && normalRes.z == 0 ? normalRes : float3(1, 1, 1);
     outVertices[vertexIndex] = position; 
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
-void MarchingCubes(uint3 id : SV_DispatchThreadID)
+void MarchingCubes(int3 id : SV_DispatchThreadID)
 {
-    if (id.x > voxelsPerAxis || id.y > voxelsPerAxis || id.z > voxelsPerAxis) { return; }
+    if (id.x > voxelsPerAxis - 1 || id.y > voxelsPerAxis - 1 || id.z > voxelsPerAxis - 1) { return; }
     
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
     int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
     int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
-    
     int triangleStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
     int vertexStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
     

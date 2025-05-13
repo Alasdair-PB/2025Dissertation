@@ -58,13 +58,14 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     float3 normalRes = normalA + (t * (normalB - normalA));
 
     outNormals[vertexIndex] = abs(denom) > 0 ? normalRes : float3(1, 1, 1);
-    outVertices[vertexIndex] = position; 
+    outVertices[vertexIndex] = abs(denom) > 0 ? position : posA;
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(int3 id : SV_DispatchThreadID)
 {
-    if (id.x > voxelsPerAxis - 1 || id.y > voxelsPerAxis - 1 || id.z > voxelsPerAxis - 1) { return; }
+    if (id.x >= voxelsPerAxis || id.y >= voxelsPerAxis || id.z >= voxelsPerAxis)
+        return;
     
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
     int globalVoxelIndex = nodeIndex * voxelsPerLeaf;

@@ -17,12 +17,6 @@ int voxelsPerAxis = 0;
 float baseDepthScale = 0;
 float isoLevel = 0;
 
-float MaxMinIndex(int index)
-{
-    return max(0, min(index, (voxelsPerAxis * voxelsPerAxis * voxelsPerAxis) - 1));
-
-}
-
 int GetIsoIndex(int3 coord)
 {
     return coord.x + coord.y * (voxelsPerAxis + 1) + coord.z * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
@@ -38,7 +32,8 @@ float3 calculateNormal(int3 coord)
 
 void createVertex(int indexA, int indexB, int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worldPos, int voxelIndex)
 {
-    float3 posA = worldPos + cornerPosA;
+    float3 posA = worldPos + cornerPosA; // float3 posA = worldPos + (cornerPosA * scale);
+
     float3 posB = worldPos + cornerPosB;
     float densityA = isoValues[GetIsoIndex(cornerPosA)];
     float densityB = isoValues[GetIsoIndex(cornerPosB)];
@@ -123,12 +118,16 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
         int c0 = cornerIndexAFromEdge[edgeIndexC];
         int c1 = cornerIndexBFromEdge[edgeIndexC];
         
-        createVertex(a0, a1, id + cornerCoords[a0], id + cornerCoords[a1], (vertexStartIndex + (3 * k)), worldPos, localVoxelIndex);
-        createVertex(b0, b1, id + cornerCoords[b0], id + cornerCoords[b1], (vertexStartIndex + (3 * k) + 1), worldPos, localVoxelIndex);
-        createVertex(c0, c1, id + cornerCoords[c0], id + cornerCoords[c1], (vertexStartIndex + (3 * k) + 2), worldPos, localVoxelIndex);
+        int indexA = (vertexStartIndex + k);
+        int indexB = (vertexStartIndex + k + 1);
+        int indexC = (vertexStartIndex + k + 2);
+
+        createVertex(a0, a1, id + cornerCoords[a0], id + cornerCoords[a1], indexA, worldPos, localVoxelIndex);
+        createVertex(b0, b1, id + cornerCoords[b0], id + cornerCoords[b1], indexB, worldPos, localVoxelIndex);
+        createVertex(c0, c1, id + cornerCoords[c0], id + cornerCoords[c1], indexC, worldPos, localVoxelIndex);
         
-        outTris[triangleStartIndex] = vertexStartIndex + (3 * k) + 2;
-        outTris[triangleStartIndex + 1] = vertexStartIndex + (3 * k) + 1;
-        outTris[triangleStartIndex + 2] = vertexStartIndex + (3 * k);
+        outTris[triangleStartIndex] = indexC;
+        outTris[triangleStartIndex + 1] = indexB;
+        outTris[triangleStartIndex + 2] = indexA;
     }
 }

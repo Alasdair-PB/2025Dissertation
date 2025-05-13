@@ -30,7 +30,7 @@ private:
 
 	void SampleExampleComputeShader();
 	void SwapBuffers();
-	void UpdateMesh(FMarchingCubesOutput meshInfo);
+	void UpdateMesh(FMarchingCubesOutput& meshInfo);
 
 	UVoxelRendererComponent* voxelRenderer;
 	Octree* tree;

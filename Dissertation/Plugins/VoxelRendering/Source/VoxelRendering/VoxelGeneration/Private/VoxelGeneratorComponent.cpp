@@ -106,6 +106,20 @@ void DrawProcMeshEdges(UProceduralMeshComponent* ProcMesh, TArray<FVector>& Vert
     }
 }
 
+
+void AddVertice(TArray<FVector>& Vertices, TArray<int32>& Indices, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents,
+    TArray<FLinearColor>& VertexColors, TMap<int32, int32>& IndexRemap, int outVertIndex, int* includedVertIndex, FMarchingCubesOutput& meshInfo){
+    FVector V = FVector(meshInfo.outVertices[outVertIndex]);
+    FVector N = FVector(meshInfo.outNormals[outVertIndex]);
+    IndexRemap.Add(outVertIndex, *includedVertIndex);
+    Vertices.Add(V);
+    Normals.Add(N);
+    UVs.Add(FVector2D(0, 0));
+    Tangents.Add(FProcMeshTangent(1, 0, 0));
+    VertexColors.Add(FColor::White);
+    (*includedVertIndex)++;
+}
+
 const bool DebugVoxelMesh = false;
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
@@ -118,7 +132,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TMap<int32, int32> IndexRemap;
 
     int32 includedVertIndex = 0;
-    bool flaggedIssue = false;
+    /*bool flaggedIssue = false;
     for (int32 outVertIndex = 0; outVertIndex < meshInfo.outVertices.Num(); outVertIndex++) {
         FVector V = FVector(meshInfo.outVertices[outVertIndex]);
         FVector N = FVector(meshInfo.outNormals[outVertIndex]);
@@ -137,7 +151,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 
     if (flaggedIssue) {
         UE_LOG(LogTemp, Warning, TEXT("A vertex has been initialised without a initialised normal value. (-1,-1,-1)"));
-    }
+    }*/
 
     for (int32 i = 0; i < meshInfo.outTris.Num(); i += 3) {
         int32 A = meshInfo.outTris[i];
@@ -145,6 +159,10 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         int32 C = meshInfo.outTris[i + 2];
 
         if (A == -1 || B == -1 || C == -1) { continue; }
+
+        AddVertice(Vertices, Indices, Normals, UVs, Tangents, VertexColours, IndexRemap, i, &includedVertIndex, meshInfo);
+        AddVertice(Vertices, Indices, Normals, UVs, Tangents, VertexColours, IndexRemap, i + 1, &includedVertIndex, meshInfo);
+        AddVertice(Vertices, Indices, Normals, UVs, Tangents, VertexColours, IndexRemap, i + 2, &includedVertIndex, meshInfo);
 
         if (!IndexRemap.Contains(A) || !IndexRemap.Contains(B) || !IndexRemap.Contains(C)) { 
             UE_LOG(LogTemp, Warning, TEXT("Too few vertices have been created for this triangle index to be valid: %d, %d, %d"), A, B, C);

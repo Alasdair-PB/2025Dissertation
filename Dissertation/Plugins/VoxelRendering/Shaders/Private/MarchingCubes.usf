@@ -1,12 +1,13 @@
 #pragma once
 #pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
-#include "MarchTables.usf"
+// #include "MarchTables.usf"
 #include "/Engine/Public/Platform.ush"
 
 float3 leafPosition = float3(0, 0, 0);
 int leafDepth = 0;
 int nodeIndex = 0;
 Buffer<float> isoValues;
+Buffer<int> marchLookUp;
 
 RWStructuredBuffer<float3> outVertices;
 RWStructuredBuffer<float3> outNormals;
@@ -15,6 +16,11 @@ RWStructuredBuffer<int> outTris;
 int voxelsPerAxis = 0;
 float baseDepthScale = 0;
 float isoLevel = 0;
+
+static const int offsets[256] = { 0, 0, 3, 6, 12, 15, 21, 27, 36, 39, 45, 51, 60, 66, 75, 84, 90, 93, 99, 105, 114, 120, 129, 138, 150, 156, 165, 174, 186, 195, 207, 219, 228, 231, 237, 243, 252, 258, 267, 276, 288, 294, 303, 312, 324, 333, 345, 357, 366, 372, 381, 390, 396, 405, 417, 429, 438, 447, 459, 471, 480, 492, 507, 522, 528, 531, 537, 543, 552, 558, 567, 576, 588, 594, 603, 612, 624, 633, 645, 657, 666, 672, 681, 690, 702, 711, 723, 735, 750, 759, 771, 783, 798, 810, 825, 840, 852, 858, 867, 876, 888, 897, 909, 915, 924, 933, 945, 957, 972, 984, 999, 1008, 1014, 1023, 1035, 1047, 1056, 1068, 1083, 1092, 1098, 1110, 1125, 1140, 1152, 1167, 1173, 1185, 1188, 1191, 1197, 1203, 1212, 1218, 1227, 1236, 1248, 1254, 1263, 1272, 1284, 1293, 1305, 1317, 1326, 1332, 1341, 1350, 1362, 1371, 1383, 1395, 1410, 1419, 1425, 1437, 1446, 1458, 1467, 1482, 1488, 1494, 1503, 1512, 1524, 1533, 1545, 1557, 1572, 1581, 1593, 1605, 1620, 1632, 1647, 1662, 1674, 1683, 1695, 1707, 1716, 1728, 1743, 1758, 1770, 1782, 1791, 1806, 1812, 1827, 1839, 1845, 1848, 1854, 1863, 1872, 1884, 1893, 1905, 1917, 1932, 1941, 1953, 1965, 1980, 1986, 1995, 2004, 2010, 2019, 2031, 2043, 2058, 2070, 2085, 2100, 2106, 2118, 2127, 2142, 2154, 2163, 2169, 2181, 2184, 2193, 2205, 2217, 2232, 2244, 2259, 2268, 2280, 2292, 2307, 2322, 2328, 2337, 2349, 2355, 2358, 2364, 2373, 2382, 2388, 2397, 2409, 2415, 2418, 2427, 2433, 2445, 2448, 2454, 2457, 2460 };
+static const int lengths[256] = { 0, 3, 3, 6, 3, 6, 6, 9, 3, 6, 6, 9, 6, 9, 9, 6, 3, 6, 6, 9, 6, 9, 9, 12, 6, 9, 9, 12, 9, 12, 12, 9, 3, 6, 6, 9, 6, 9, 9, 12, 6, 9, 9, 12, 9, 12, 12, 9, 6, 9, 9, 6, 9, 12, 12, 9, 9, 12, 12, 9, 12, 15, 15, 6, 3, 6, 6, 9, 6, 9, 9, 12, 6, 9, 9, 12, 9, 12, 12, 9, 6, 9, 9, 12, 9, 12, 12, 15, 9, 12, 12, 15, 12, 15, 15, 12, 6, 9, 9, 12, 9, 12, 6, 9, 9, 12, 12, 15, 12, 15, 9, 6, 9, 12, 12, 9, 12, 15, 9, 6, 12, 15, 15, 12, 15, 6, 12, 3, 3, 6, 6, 9, 6, 9, 9, 12, 6, 9, 9, 12, 9, 12, 12, 9, 6, 9, 9, 12, 9, 12, 12, 15, 9, 6, 12, 9, 12, 9, 15, 6, 6, 9, 9, 12, 9, 12, 12, 15, 9, 12, 12, 15, 12, 15, 15, 12, 9, 12, 12, 9, 12, 15, 15, 12, 12, 9, 15, 6, 15, 12, 6, 3, 6, 9, 9, 12, 9, 12, 12, 15, 9, 12, 12, 15, 6, 9, 9, 6, 9, 12, 12, 15, 12, 15, 15, 6, 12, 9, 15, 12, 9, 6, 12, 3, 9, 12, 12, 15, 12, 15, 9, 12, 12, 15, 15, 6, 9, 12, 6, 3, 6, 9, 9, 6, 9, 12, 6, 3, 9, 6, 12, 3, 6, 3, 3, 0 };
+static const int cornerIndexAFromEdge[12] = { 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3 };
+static const int cornerIndexBFromEdge[12] = { 1, 2, 3, 0, 5, 6, 7, 4, 4, 5, 6, 7 };
 
 int GetIsoIndex(int3 coord)
 {
@@ -96,44 +102,23 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
             config |= (1 << h);
     }
     
-    const int edgeIndices[16] =
-    {
-        triangulation[config][0],
-        triangulation[config][1],
-        triangulation[config][2],
-        triangulation[config][3],
-        triangulation[config][4],
-        triangulation[config][5],
-        triangulation[config][6],
-        triangulation[config][7],
-        triangulation[config][8],
-        triangulation[config][9],
-        triangulation[config][10],
-        triangulation[config][11],
-        triangulation[config][12],
-        triangulation[config][13],
-        triangulation[config][14],
-        triangulation[config][15]
-    };
+    int numIndices = lengths[config];
+    int offset = offsets[config];
     
-    for (int k = 0; k < 16; k += 3)
+    for (int k = 0; k < numIndices; k += 3)
     {
-        if (edgeIndices[k] == -1)
-        { 
-            break; 
-        }
-        
-        int edgeIndexA = edgeIndices[k];
-        int a0 = cornerIndexAFromEdge[edgeIndexA];
-        int a1 = cornerIndexBFromEdge[edgeIndexA];
+        int v0 = marchLookUp[offset + k];
+        int v1 = marchLookUp[offset + 1 + k];
+        int v2 = marchLookUp[offset + 2 + k];
 
-        int edgeIndexB = edgeIndices[k + 1];
-        int b0 = cornerIndexAFromEdge[edgeIndexB];
-        int b1 = cornerIndexBFromEdge[edgeIndexB];
+        int a0 = cornerIndexAFromEdge[v0];
+        int a1 = cornerIndexBFromEdge[v0];
 
-        int edgeIndexC = edgeIndices[k + 2];
-        int c0 = cornerIndexAFromEdge[edgeIndexC];
-        int c1 = cornerIndexBFromEdge[edgeIndexC];
+        int b0 = cornerIndexAFromEdge[v1];
+        int b1 = cornerIndexBFromEdge[v1];
+
+        int c0 = cornerIndexAFromEdge[v2];
+        int c1 = cornerIndexBFromEdge[v2];
         
         int indexA = (vertexStartIndex + k);
         int indexB = (vertexStartIndex + k + 1);
@@ -143,8 +128,8 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         CreateVertex(cornerCoords[b0], cornerCoords[b1], indexB, worldPos, isoScale);
         CreateVertex(cornerCoords[c0], cornerCoords[c1], indexC, worldPos, isoScale);
         
-        outTris[triangleStartIndex] = indexC;
-        outTris[triangleStartIndex + 1] = indexB;
-        outTris[triangleStartIndex + 2] = indexA;
+        outTris[triangleStartIndex + k] = indexC;
+        outTris[triangleStartIndex + k + 1] = indexB;
+        outTris[triangleStartIndex + k + 2] = indexA;
     }
 }

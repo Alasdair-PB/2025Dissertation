@@ -53,7 +53,7 @@ void UVoxelGeneratorComponent::BuildOctree(int size, int depth)
         }
     }
 
-    //for (float x : isovalueBuffer) UE_LOG(LogTemp, Warning, TEXT(": %f"), x);
+    for (float x : isovalueBuffer) UE_LOG(LogTemp, Warning, TEXT(": %f"), x);
 
     if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, size, depth))
         UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));

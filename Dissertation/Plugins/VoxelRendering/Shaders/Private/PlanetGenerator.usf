@@ -16,18 +16,18 @@ int GetIsoIndex(int3 coord)
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void PlanetGenerator(int3 id : SV_DispatchThreadID)
 {
-    if (any(id > size)) return;
-        
-    float centerDis = baseDepthScale / 2;
+    if (any(id >= size))
+        return;
+
     float isoScale = (baseDepthScale / (size));
-    
     float3 position = (id * isoScale);
+    float centerDis = isoScale * (size / 2);
     float3 center = float3(centerDis, centerDis, centerDis);
     
-    float3 diff = abs(position - center);
+    float3 diff = position - center;
     int NoiseIdx = GetIsoIndex(id);
     float distance = sqrt(dot(diff, diff));
-    distance = distance / 50;
+    distance = distance / 100;
     float isoValue = clamp(distance, 0.0, 1.0);
     outIsoValues[NoiseIdx] = isoValue;
 }

@@ -54,7 +54,7 @@ void AddSphereGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchP
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FPlanetGenerator> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(NUM_THREADS_PlanetGenerator_X, NUM_THREADS_PlanetGenerator_Y, NUM_THREADS_PlanetGenerator_Z), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(PassParams->size, PassParams->size, PassParams->size), FIntVector(1, 1, 1)); // FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Planet Generator"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
@@ -80,7 +80,7 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 			const int isoValueCount = Params.Input.size * Params.Input.size * Params.Input.size;
 
 			TArray<float> OutIsoValues;
-			OutIsoValues.Init(0, isoValueCount);
+			OutIsoValues.Init(-1, isoValueCount);
 
 			FRDGBufferRef OutIsoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(float), isoValueCount, OutIsoValues.GetData(), isoValueCount * sizeof(float));
 			FRDGBufferUAVRef OutIsoValuesUAV = GraphBuilder.CreateUAV(OutIsoValuesBuffer);

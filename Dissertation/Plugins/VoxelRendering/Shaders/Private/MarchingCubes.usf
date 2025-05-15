@@ -43,7 +43,7 @@ float3 CalculateNormal(int3 coord)
     int3 offsetZ = int3(0, 0, 1);
 
     float dx = GetDensity(coord + offsetX) - GetDensity(coord - offsetX);
-    float dy = GetDensity(coord + offsetY) - GetDensity(coord - offsetY);    
+    float dy = GetDensity(coord + offsetY) - GetDensity(coord - offsetY);
     float dz = GetDensity(coord + offsetZ) - GetDensity(coord - offsetZ);
     float3 delta = float3(dx, dy, dz);
     return all(delta == 0) ? float3(0.0f, 0.0f, 0.0f) : normalize(float3(dx, dy, dz));

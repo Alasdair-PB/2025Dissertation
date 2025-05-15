@@ -103,7 +103,7 @@ private:
         int nodeSize = typeBuffer.Num() / 8;
         int isoAxisSize = localVoxelsPerAxis / 2;
 
-        TArray<NodeData> isoChunks = SplitIsoBufferWithOverlap(isoBuffer, localVoxelsPerAxis);
+        TArray<NodeData> isoChunks = SplitIsoBufferWithOverlap(isoBuffer, (localVoxelsPerAxis + 1));
 
         //for (int i = 0; i < 8; ++i)
         //    UE_LOG(LogTemp, Warning, TEXT("Split isoValueCount: %d"), isoChunks[i].isoValues.Num());

@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 #include "AABB.h"
 
-static const int voxelsPerAxis = 3; 
+static const int voxelsPerAxis = 5; 
 static const int nodeVoxelCount = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
 static const int isoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
 

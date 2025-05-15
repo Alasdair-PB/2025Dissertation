@@ -76,25 +76,25 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 		bool bIsShaderValid = ComputeShader.IsValid();
 
 		if (bIsShaderValid) {
-			const int isoCount = Params.Input.size;
+			const int isoValueCount = Params.Input.size;
 
 			TArray<float> OutIsoValues;
-			OutIsoValues.Init(0, isoCount);
+			OutIsoValues.Init(0, isoValueCount);
 
-			FRDGBufferRef OutIsoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(float), isoCount, OutIsoValues.GetData(), isoCount * sizeof(float));
+			FRDGBufferRef OutIsoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(float), isoValueCount, OutIsoValues.GetData(), isoValueCount * sizeof(float));
 			FRDGBufferUAVRef OutIsoValuesUAV = GraphBuilder.CreateUAV(OutIsoValuesBuffer);
 			AddSphereGeneratorPass(GraphBuilder, Params, OutIsoValuesUAV);
 
 			FRHIGPUBufferReadback* isoReadback = new FRHIGPUBufferReadback(TEXT("PlanetGeneratorISO"));
 			AddEnqueueCopyPass(GraphBuilder, isoReadback, OutIsoValuesBuffer, 0u);
 
-			auto RunnerFunc = [isoReadback, AsyncCallback, isoCount](auto&& RunnerFunc) ->
+			auto RunnerFunc = [isoReadback, AsyncCallback, isoValueCount](auto&& RunnerFunc) ->
 				void {
 				if (isoReadback->IsReady()) {
 					FPlanetGeneratorOutput OutVal;
 
 					void* VBuf = isoReadback->Lock(0);
-					OutVal.outIsoValues.Append((float*)VBuf, isoCount);
+					OutVal.outIsoValues.Append((float*)VBuf, isoValueCount);
 					isoReadback->Unlock();
 
 					AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });

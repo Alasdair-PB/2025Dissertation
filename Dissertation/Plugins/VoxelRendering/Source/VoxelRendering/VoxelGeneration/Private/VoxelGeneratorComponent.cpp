@@ -24,6 +24,7 @@ void UVoxelGeneratorComponent::BeginPlay()
 void UVoxelGeneratorComponent::BeginDestroy() {
     Super::BeginDestroy();
     //voxelRenderer->DestroyComponent();
+    delete stopWatch;
     delete tree;
 }
 
@@ -136,7 +137,7 @@ const bool DebugVoxelMesh = false;
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 
-    double meshesGenerationStartTime = FPlatformTime::Seconds();
+    //double meshesGenerationStartTime = FPlatformTime::Seconds();
 
 
     TArray<FVector> Vertices;
@@ -188,9 +189,9 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     ProcMesh->CreateMeshSection_LinearColor(0, Vertices, Indices, Normals, UVs, VertexColours, Tangents, true, false);
     if (DebugVoxelMesh) DrawProcMeshEdges(ProcMesh, Vertices, Indices);
 
-    double meshesGenerationEndTime = FPlatformTime::Seconds();
-    double frameTime = meshesGenerationEndTime - meshesGenerationStartTime;
-    UE_LOG(LogTemp, Warning, TEXT("Mesh Generation frame time : %f"), frameTime);
+    //double meshesGenerationEndTime = FPlatformTime::Seconds();
+    //double frameTime = meshesGenerationEndTime - meshesGenerationStartTime;
+    //UE_LOG(LogTemp, Warning, TEXT("Mesh Generation frame time : %f"), frameTime);
 
 }
 
@@ -210,13 +211,22 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     Params.Input.leafCount = leafCount;
 
     int32 readBufferIndex = ReadBufferIndex;
+    double password = 0.0; 
+    stopWatch->TryStartSecureStopWatch(password);
+
     FMarchingCubesInterface::Dispatch(Params,
-        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), readBufferIndex](FMarchingCubesOutput OutputVal) {
+        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), readBufferIndex, password](FMarchingCubesOutput OutputVal) {
             if (!WeakThis.IsValid()) return;
             if (IsEngineExitRequested()) return;
 
             WeakThis->bBufferReady[readBufferIndex] = true;
             WeakThis->marchingCubesOutBuffer[readBufferIndex] = OutputVal;
+
+            double outVal;
+            if (WeakThis->stopWatch->TryGetSecureMeasurement(outVal, password)) {
+                UE_LOG(LogTemp, Warning, TEXT("Stop watch thread dispatch out : %f"), outVal);
+                WeakThis->stopWatch->ResetSecureStopWatch(password);
+            }
         });
 }
 

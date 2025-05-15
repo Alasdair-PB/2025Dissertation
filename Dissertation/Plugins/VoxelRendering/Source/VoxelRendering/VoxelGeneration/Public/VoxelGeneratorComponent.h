@@ -8,6 +8,7 @@
 #include "VoxelRendererComponent.h"
 #include "../../../MyShaders/Public/MarchingCubesDispatcher.h"
 #include "../../../MyShaders/Public/PlanetGeneratorDispatcher.h"
+#include "StopWatch.h"
 #include "VoxelGeneratorComponent.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -44,6 +45,7 @@ private:
 	uint32 ReadBufferIndex = 0;
 	uint32 WriteBufferIndex = 1;
 	uint32 nodeIndex = 0;
+	StopWatch* stopWatch = new StopWatch();
 
 	int leafCount = 0;
 	float SampleSDF(FVector3f p);

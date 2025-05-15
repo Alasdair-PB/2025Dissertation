@@ -78,8 +78,6 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);
-	//UE_LOG(LogTemp, Warning, TEXT("Set node index for dispatch: %d"), PassParams->leafDepth);
-
 	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis, voxelsPerAxis, voxelsPerAxis), FIntVector(1, 1, 1));
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), PassParams, ERDGPassFlags::AsyncCompute,

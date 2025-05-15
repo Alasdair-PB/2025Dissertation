@@ -27,7 +27,7 @@ void PlanetGenerator(int3 id : SV_DispatchThreadID)
     float3 diff = position - center;
     int NoiseIdx = GetIsoIndex(id);
     float distance = sqrt(dot(diff, diff));
-    distance = distance / 100;
+    distance = distance / 350;
     float isoValue = clamp(distance, 0.0, 1.0);
     outIsoValues[NoiseIdx] = isoValue;
 }

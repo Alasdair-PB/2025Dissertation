@@ -55,8 +55,8 @@ IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/MyShadersShaders/MarchingCubes.usf", "
 void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 depth, uint32* nodeIndex, FMarchingCubesDispatchParams& Params, FRDGBufferUAVRef OutTrisUAV, FRDGBufferUAVRef OutNormalsUAV, FRDGBufferUAVRef OutVerticiesUAV, FRDGBufferSRVRef InLookUpSRV) {
 
 	if (!node) return;
-	depth++;
-	if (!(node->isLeaf)) {
+	if (!(node->isLeaf)) {	
+		depth++;
 		for (OctreeNode* child : node->children)
 			AddOctreeMarchingPass(GraphBuilder, child, depth, nodeIndex, Params, OutTrisUAV, OutNormalsUAV, OutVerticiesUAV, InLookUpSRV);
 		return;
@@ -78,7 +78,7 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);
-	// UE_LOG(LogTemp, Warning, TEXT("Set node index for dispatch: %d"), PassParams->nodeIndex);
+	//UE_LOG(LogTemp, Warning, TEXT("Set node index for dispatch: %d"), PassParams->leafDepth);
 
 	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis, voxelsPerAxis, voxelsPerAxis), FIntVector(1, 1, 1));
 

@@ -130,28 +130,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TArray<FProcMeshTangent> Tangents;
     TArray<FLinearColor> VertexColours;
     TMap<int32, int32> IndexRemap;
-
     int32 includedVertIndex = 0;
-    /*bool flaggedIssue = false;
-    for (int32 outVertIndex = 0; outVertIndex < meshInfo.outVertices.Num(); outVertIndex++) {
-        FVector V = FVector(meshInfo.outVertices[outVertIndex]);
-        FVector N = FVector(meshInfo.outNormals[outVertIndex]);
-
-        if (V == FVector(-1, -1, -1) && N == FVector(-1, -1, -1)) { continue; }
-        if (N == FVector(-1, -1, -1)) { flaggedIssue = true; }
-
-        IndexRemap.Add(outVertIndex, includedVertIndex);
-        Vertices.Add(V);
-        Normals.Add(N);
-        UVs.Add(FVector2D(0, 0));
-        Tangents.Add(FProcMeshTangent(1, 0, 0));
-        VertexColours.Add(FColor::White);
-        includedVertIndex++;
-    }
-
-    if (flaggedIssue) {
-        UE_LOG(LogTemp, Warning, TEXT("A vertex has been initialised without a initialised normal value. (-1,-1,-1)"));
-    }*/
 
     for (int32 i = 0; i < meshInfo.outTris.Num(); i += 3) {
         int32 A = meshInfo.outTris[i];

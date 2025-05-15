@@ -15,7 +15,6 @@ void UVoxelGeneratorComponent::BeginPlay()
     voxelRenderer->RegisterComponent();
     InitOctree();
 
-    leafCount = GetLeafCount((*tree).root);
     ProcMesh = NewObject<UProceduralMeshComponent>(Owner);
     ProcMesh->RegisterComponent();
     ProcMesh->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
@@ -31,15 +30,20 @@ void UVoxelGeneratorComponent::BeginDestroy() {
 void UVoxelGeneratorComponent::InitOctree() {
     AABB bounds = { FVector3f(-200.0f), FVector3f(200.0f) };
     tree = new Octree(bounds);
+    leafCount = GetLeafCount((*tree).root);
 
-    int32 depth = 2; 
-    int32 nodesPerAxisMaxRes = Octree::IntPow(2, depth);
-    int32 size = voxelsPerAxis * nodesPerAxisMaxRes;
+    int depth = 2; 
+    int nodesPerAxisMaxRes = Octree::IntPow(2, depth);
+    int size = voxelsPerAxis * nodesPerAxisMaxRes;
+
+    DispatchIsoBuffer(size, depth);
+}
+
+
+void UVoxelGeneratorComponent::BuildOctree(int size, int depth)
+{
     TArray<uint8> typeBuffer;
-
     typeBuffer.Reserve(size * size * size);
-    isovalueBuffer.Reserve((size + 1) * (size + 1) * (size + 1));
-
     for (int32 z = 0; z < size; ++z) {
         for (int32 y = 0; y < size; ++y) {
             for (int32 x = 0; x < size; ++x) {
@@ -48,30 +52,29 @@ void UVoxelGeneratorComponent::InitOctree() {
             }
         }
     }
-    for (int32 z = 0; z <= size; ++z) {
-        for (int32 y = 0; y <= size; ++y) {
-            for (int32 x = 0; x <= size; ++x) {
-                float iso = (x + y + z) % 2 == 0 ? -1.0f : 1.0f;
-                isovalueBuffer.Add(iso);
-            }
-        }
-    }
 
-    if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, size, depth)) {
+    //for (float x : isovalueBuffer) UE_LOG(LogTemp, Warning, TEXT(": %f"), x);
+
+    if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, size, depth))
         UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
-    }
+    leafCount = GetLeafCount((*tree).root);
 }
 
+void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth) {
+    int isoSize = size + 1;
+    isovalueBuffer.Reserve(isoSize * isoSize * isoSize);
 
-void UVoxelGeneratorComponent::DispatchIsoBuffer(TArray<float>& isoValueBuffer, int size) {
-    FPlanetGeneratorDispatchParams Params(1, 1, 1);
+    FPlanetGeneratorDispatchParams Params(isoSize, isoSize, isoSize);
     Params.Input.baseDepthScale = 400.0f;
-    Params.Input.size = size;
+    Params.Input.size = isoSize;
 
     FPlanetGeneratorInterface::Dispatch(Params,
-        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this)](FPlanetGeneratorOutput OutputVal) {
+        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), size, depth](FPlanetGeneratorOutput OutputVal) {
             if (!WeakThis.IsValid()) return;
             if (IsEngineExitRequested()) return;
+
+            WeakThis->isovalueBuffer = OutputVal.outIsoValues;
+            WeakThis->BuildOctree(size, depth);
         });
 }
 
@@ -136,10 +139,6 @@ void AddVertice(TArray<FVector>& Vertices, TArray<int32>& Indices, TArray<FVecto
 const bool DebugVoxelMesh = false;
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
-
-    //double meshesGenerationStartTime = FPlatformTime::Seconds();
-
-
     TArray<FVector> Vertices;
     TArray<int32> Indices;
     TArray<FVector> Normals;
@@ -188,11 +187,6 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 
     ProcMesh->CreateMeshSection_LinearColor(0, Vertices, Indices, Normals, UVs, VertexColours, Tangents, true, false);
     if (DebugVoxelMesh) DrawProcMeshEdges(ProcMesh, Vertices, Indices);
-
-    //double meshesGenerationEndTime = FPlatformTime::Seconds();
-    //double frameTime = meshesGenerationEndTime - meshesGenerationStartTime;
-    //UE_LOG(LogTemp, Warning, TEXT("Mesh Generation frame time : %f"), frameTime);
-
 }
 
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
@@ -224,7 +218,7 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
             double outVal;
             if (WeakThis->stopWatch->TryGetSecureMeasurement(outVal, password)) {
-                UE_LOG(LogTemp, Warning, TEXT("Stop watch thread dispatch out : %f"), outVal);
+               // UE_LOG(LogTemp, Warning, TEXT("Stop watch thread dispatch out : %f"), outVal);
                 WeakThis->stopWatch->ResetSecureStopWatch(password);
             }
         });

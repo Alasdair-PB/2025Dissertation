@@ -4,16 +4,14 @@
 
 int size;
 float baseDepthScale;
-float3 objectPosition;
 RWStructuredBuffer<float> outIsoValues;
 
 int GetIsoIndex(int3 coord)
 {
     int maxIsoCount = (size) * (size) * (size);
     int index = coord.x + coord.y * (size) + coord.z * (size) * (size);
-    return max(0, min(index, maxIsoCount));
+    return max(0, min(index, maxIsoCount + 1));
 }
-
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void PlanetGenerator(int3 id : SV_DispatchThreadID)
@@ -22,11 +20,14 @@ void PlanetGenerator(int3 id : SV_DispatchThreadID)
         
     float centerDis = baseDepthScale / 2;
     float isoScale = (baseDepthScale / (size));
-    float3 worldPos = objectPosition - float3(centerDis, centerDis, centerDis);
-    float3 position = worldPos + (id * isoScale);
     
+    float3 position = (id * isoScale);
+    float3 center = float3(centerDis, centerDis, centerDis);
+    
+    float3 diff = abs(position - center);
     int NoiseIdx = GetIsoIndex(id);
-    float3 center = objectPosition;
-    float3 diff = position - center;
-    outIsoValues[NoiseIdx] = sqrt(dot(diff, diff));
+    float distance = sqrt(dot(diff, diff));
+    distance = distance / 50;
+    float isoValue = clamp(distance, 0.0, 1.0);
+    outIsoValues[NoiseIdx] = isoValue;
 }

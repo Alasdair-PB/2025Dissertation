@@ -25,7 +25,6 @@ class FPlanetGenerator : public FGlobalShader
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER(uint32, size)
 		SHADER_PARAMETER(float, baseDepthScale)
-		SHADER_PARAMETER(FVector3f, objectPosition)
 		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float>, outIsoValues)
 	END_SHADER_PARAMETER_STRUCT()
 
@@ -47,9 +46,11 @@ IMPLEMENT_GLOBAL_SHADER(FPlanetGenerator, "/MyShadersShaders/PlanetGenerator.usf
 
 void AddSphereGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchParams& Params, FRDGBufferUAVRef OutIsoUAV) {
 	FPlanetGenerator::FParameters* PassParams = GraphBuilder.AllocParameters<FPlanetGenerator::FParameters>();
-	PassParams->objectPosition = Params.Input.objectPosition;
 	PassParams->baseDepthScale = Params.Input.baseDepthScale;
+	PassParams->size = Params.Input.size;
 	PassParams->outIsoValues = OutIsoUAV;
+
+	UE_LOG(LogTemp, Warning, TEXT(": %d"), PassParams->size);
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FPlanetGenerator> ComputeShader(ShaderMap);
@@ -76,7 +77,7 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 		bool bIsShaderValid = ComputeShader.IsValid();
 
 		if (bIsShaderValid) {
-			const int isoValueCount = Params.Input.size;
+			const int isoValueCount = Params.Input.size * Params.Input.size * Params.Input.size;
 
 			TArray<float> OutIsoValues;
 			OutIsoValues.Init(0, isoValueCount);
@@ -96,7 +97,6 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 					void* VBuf = isoReadback->Lock(0);
 					OutVal.outIsoValues.Append((float*)VBuf, isoValueCount);
 					isoReadback->Unlock();
-
 					AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });
 					delete isoReadback;
 	

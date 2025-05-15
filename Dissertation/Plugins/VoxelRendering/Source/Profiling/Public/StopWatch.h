@@ -5,7 +5,7 @@
 
 class StopWatch : Measurement {
 public:
-	StopWatch() : isLocked(false), isSecure(false), timeProfileStart(0.0), key(0.0), historyLog(History()){}
+	StopWatch() : timeProfileStart(0.0f), isLocked(false), isSecure(false), key(0.0f), historyLog(History()) {}
 	bool TryStartStopWatch(){
 		if (isLocked) return false;
 		isLocked = true;

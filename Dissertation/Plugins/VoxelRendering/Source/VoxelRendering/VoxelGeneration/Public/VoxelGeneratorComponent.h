@@ -33,11 +33,11 @@ private:
 	void SampleExampleComputeShader();
 	void SwapBuffers();
 	void UpdateMesh(FMarchingCubesOutput meshInfo);
-	void DispatchIsoBuffer(TArray<float>& isoValueBuffer, int size);
-
+	void DispatchIsoBuffer(int size, int depth);
+	void BuildOctree(int size, int depth);
 	UVoxelRendererComponent* voxelRenderer;
 	Octree* tree;
-
+	float SampleSDF(FVector3f p);
 	FMarchingCubesOutput marchingCubesOutBuffer[2];
 	bool bBufferReady[2] = { false, false };
 
@@ -48,6 +48,4 @@ private:
 	StopWatch* stopWatch = new StopWatch();
 
 	int leafCount = 0;
-	float SampleSDF(FVector3f p);
-
 };

@@ -25,7 +25,7 @@ int GetIsoIndex(int3 coord)
 {
     int maxIsoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
     int index = coord.x + coord.y * (voxelsPerAxis + 1) + coord.z * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
-    return max(0, min(index, maxIsoCount));
+    return max(0, min(index, maxIsoCount + 1));
 }
 
 float GetDensity(int3 coord)

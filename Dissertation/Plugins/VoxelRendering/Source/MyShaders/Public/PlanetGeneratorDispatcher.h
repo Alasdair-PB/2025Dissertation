@@ -67,7 +67,6 @@ class MYSHADERS_API UPlanetGeneratorLibrary_AsyncExecution : public UBlueprintAs
 public:
 	virtual void Activate() override {
 		FPlanetGeneratorDispatchParams Params(1, 1, 1);
-		Params.Input.objectPosition = Args.objectPosition;
 		Params.Input.size = Args.size;
 		Params.Input.baseDepthScale = Args.baseDepthScale;
 

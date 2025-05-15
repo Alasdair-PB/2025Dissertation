@@ -34,7 +34,6 @@ void UVoxelGeneratorComponent::InitOctree() {
     int32 depth = 2; 
     int32 nodesPerAxisMaxRes = Octree::IntPow(2, depth);
     int32 size = voxelsPerAxis * nodesPerAxisMaxRes;
-    TArray<float> isovalueBuffer;
     TArray<uint8> typeBuffer;
 
     typeBuffer.Reserve(size * size * size);
@@ -62,6 +61,18 @@ void UVoxelGeneratorComponent::InitOctree() {
     }
 }
 
+
+void UVoxelGeneratorComponent::DispatchIsoBuffer(TArray<float>& isoValueBuffer, int size) {
+    FPlanetGeneratorDispatchParams Params(1, 1, 1);
+    Params.Input.baseDepthScale = 400.0f;
+    Params.Input.size = size;
+
+    FPlanetGeneratorInterface::Dispatch(Params,
+        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this)](FPlanetGeneratorOutput OutputVal) {
+            if (!WeakThis.IsValid()) return;
+            if (IsEngineExitRequested()) return;
+        });
+}
 
 float UVoxelGeneratorComponent::SampleSDF(FVector3f p) {
     return (p.Length()) - 1.0f;
@@ -94,6 +105,7 @@ int UVoxelGeneratorComponent::GetLeafCount(OctreeNode* node) {
 
 void DrawProcMeshEdges(UProceduralMeshComponent* ProcMesh, TArray<FVector>& Vertices, TArray<int32>& Indices, float Duration = 5.0f, FColor LineColor = FColor::Green)
 {
+    double x= FPlatformTime::Seconds();
     for (int32 i = 0; i < Indices.Num(); i += 3)
     {
         FVector V0 = Vertices[Indices[i]];
@@ -123,6 +135,10 @@ void AddVertice(TArray<FVector>& Vertices, TArray<int32>& Indices, TArray<FVecto
 const bool DebugVoxelMesh = false;
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
+
+    double meshesGenerationStartTime = FPlatformTime::Seconds();
+
+
     TArray<FVector> Vertices;
     TArray<int32> Indices;
     TArray<FVector> Normals;
@@ -168,8 +184,14 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
 
     if (!ProcMesh) return;
     if (IsEngineExitRequested()) return;
+
     ProcMesh->CreateMeshSection_LinearColor(0, Vertices, Indices, Normals, UVs, VertexColours, Tangents, true, false);
     if (DebugVoxelMesh) DrawProcMeshEdges(ProcMesh, Vertices, Indices);
+
+    double meshesGenerationEndTime = FPlatformTime::Seconds();
+    double frameTime = meshesGenerationEndTime - meshesGenerationStartTime;
+    UE_LOG(LogTemp, Warning, TEXT("Mesh Generation frame time : %f"), frameTime);
+
 }
 
 void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {

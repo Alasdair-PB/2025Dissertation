@@ -1,0 +1,32 @@
+#pragma once
+#pragma COMPUTE_SHADER_ENTRYPOINT(PlanetGenerator)
+#include "/Engine/Public/Platform.ush"
+
+int size;
+float baseDepthScale;
+float3 objectPosition;
+RWStructuredBuffer<float> outIsoValues;
+
+int GetIsoIndex(int3 coord)
+{
+    int maxIsoCount = (size) * (size) * (size);
+    int index = coord.x + coord.y * (size) + coord.z * (size) * (size);
+    return max(0, min(index, maxIsoCount));
+}
+
+
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+void PlanetGenerator(int3 id : SV_DispatchThreadID)
+{
+    if (any(id > size)) return;
+        
+    float centerDis = baseDepthScale / 2;
+    float isoScale = (baseDepthScale / (size));
+    float3 worldPos = objectPosition - float3(centerDis, centerDis, centerDis);
+    float3 position = worldPos + (id * isoScale);
+    
+    int NoiseIdx = GetIsoIndex(id);
+    float3 center = objectPosition;
+    float3 diff = position - center;
+    outIsoValues[NoiseIdx] = sqrt(dot(diff, diff));
+}

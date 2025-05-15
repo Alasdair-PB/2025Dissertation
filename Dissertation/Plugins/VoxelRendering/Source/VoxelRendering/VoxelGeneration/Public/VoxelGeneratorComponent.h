@@ -7,6 +7,7 @@
 #include "ProceduralMeshComponent.h"
 #include "VoxelRendererComponent.h"
 #include "../../../MyShaders/Public/MarchingCubesDispatcher.h"
+#include "../../../MyShaders/Public/PlanetGeneratorDispatcher.h"
 #include "VoxelGeneratorComponent.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -31,12 +32,15 @@ private:
 	void SampleExampleComputeShader();
 	void SwapBuffers();
 	void UpdateMesh(FMarchingCubesOutput meshInfo);
+	void DispatchIsoBuffer(TArray<float>& isoValueBuffer, int size);
 
 	UVoxelRendererComponent* voxelRenderer;
 	Octree* tree;
 
 	FMarchingCubesOutput marchingCubesOutBuffer[2];
 	bool bBufferReady[2] = { false, false };
+
+	TArray<float> isovalueBuffer;
 	uint32 ReadBufferIndex = 0;
 	uint32 WriteBufferIndex = 1;
 	uint32 nodeIndex = 0;

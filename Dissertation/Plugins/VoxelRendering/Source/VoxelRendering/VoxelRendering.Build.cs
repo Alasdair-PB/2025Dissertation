@@ -17,7 +17,7 @@ public class VoxelRendering : ModuleRules
                 Path.Combine(ModuleDirectory, "VoxelGeneration", "Private"),
             });
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "MyShaders", "Octree", "CoreUObject", "Engine", "InputCore", "ProceduralMeshComponent" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "MyShaders", "Octree", "Profiling", "CoreUObject", "Engine", "InputCore", "ProceduralMeshComponent" });
         PrivateDependencyModuleNames.AddRange(new string[] { "CoreUObject", "Engine","Slate", "SlateCore" });
 		DynamicallyLoadedModuleNames.AddRange(new string[]{});
 	}

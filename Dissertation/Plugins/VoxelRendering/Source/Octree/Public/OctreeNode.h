@@ -128,9 +128,6 @@ public:
                     }
                     int lowIndex = x + (voxelsPerAxis + 1) * (y + (voxelsPerAxis + 1) * z);
                     isoAveragedValues[lowIndex] = sum / count;
-
-                    //for (int i = 0; i < 8; ++i)
-                     //UE_LOG(LogTemp, Warning, TEXT("Split isoValueCount: %f"), isoAveragedValues[lowIndex]);
                 }
             }
         }

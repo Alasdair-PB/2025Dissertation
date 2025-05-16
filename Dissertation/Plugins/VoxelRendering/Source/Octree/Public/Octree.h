@@ -104,9 +104,6 @@ private:
 
         TArray<NodeData> isoChunks = SplitIsoBufferWithOverlap(isoBuffer, (localVoxelsPerAxis + 1));
 
-        //for (int i = 0; i < 8; ++i)
-        //    UE_LOG(LogTemp, Warning, TEXT("Split isoValueCount: %d"), isoChunks[i].isoValues.Num());
-
         for (int i = 0; i < 8; ++i) {
             TArray<float>& newIsoBuffer = isoChunks[i].isoValues;
             TArray<uint8> newTypeBuffer;

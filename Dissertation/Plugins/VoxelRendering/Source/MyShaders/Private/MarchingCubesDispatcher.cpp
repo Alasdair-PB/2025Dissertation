@@ -143,6 +143,10 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 						OutVal.outVertices.Append((FVector3f*)VBuf, vertexCount);
 						VerticesReadback->Unlock();
 
+						UE_LOG(LogTemp, Warning, TEXT("First value: %f %f %f"), OutVal.outVertices[0].X, OutVal.outVertices[0].Y, OutVal.outVertices[0].Z);
+						UE_LOG(LogTemp, Warning, TEXT("Second value: %f %f %f"), OutVal.outVertices[1].X, OutVal.outVertices[1].Y, OutVal.outVertices[1].Z);
+						UE_LOG(LogTemp, Warning, TEXT("Third value: %f %f %f"), OutVal.outVertices[2].X, OutVal.outVertices[2].Y, OutVal.outVertices[2].Z);
+
 						void* IBuf = TrianglesReadback->Lock(0);
 						OutVal.outTris.Append((int32*)IBuf, triCount);
 						TrianglesReadback->Unlock();

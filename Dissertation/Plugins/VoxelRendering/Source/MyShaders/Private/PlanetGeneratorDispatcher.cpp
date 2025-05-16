@@ -93,13 +93,11 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 				void {
 				if (isoReadback->IsReady()) {
 					FPlanetGeneratorOutput OutVal;
-
 					void* VBuf = isoReadback->Lock(0);
 					OutVal.outIsoValues.Append((float*)VBuf, isoValueCount);
 					isoReadback->Unlock();
 					AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });
 					delete isoReadback;
-	
 				}
 				else {
 					AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {

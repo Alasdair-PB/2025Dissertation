@@ -38,7 +38,6 @@ void UVoxelGeneratorComponent::InitOctree() {
     DispatchIsoBuffer(size, depth);
 }
 
-
 void UVoxelGeneratorComponent::BuildOctree(int size, int depth)
 {
     TArray<uint8> typeBuffer;
@@ -119,7 +118,6 @@ void DrawProcMeshEdges(UProceduralMeshComponent* ProcMesh, TArray<FVector>& Vert
     }
 }
 
-
 void AddVertice(TArray<FVector>& Vertices, TArray<int32>& Indices, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents,
     TArray<FLinearColor>& VertexColors, TMap<int32, int32>& IndexRemap, int outVertIndex, int* includedVertIndex, FMarchingCubesOutput& meshInfo){
     FVector V = FVector(meshInfo.outVertices[outVertIndex]);
@@ -133,7 +131,7 @@ void AddVertice(TArray<FVector>& Vertices, TArray<int32>& Indices, TArray<FVecto
     (*includedVertIndex)++;
 }
 
-const bool DebugVoxelMesh = true;
+const bool DebugVoxelMesh = false;
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TArray<FVector> Vertices;
@@ -171,7 +169,11 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
         }
         if (Vertices[IA] == Vertices[IB] || Vertices[IB] == Vertices[IC] || Vertices[IC] == Vertices[IA]) {
             UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %f %f %f"), Vertices[IA].X, Vertices[IA].Y, Vertices[IA].Z);
-            continue;
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %f %f %f"), Vertices[IB].X, Vertices[IB].Y, Vertices[IB].Z);
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %f %f %f"), Vertices[IC].X, Vertices[IC].Y, Vertices[IC].Z);
+
+            UE_LOG(LogTemp, Warning, TEXT("More debug info: %d %d %d"), IA, IB, IC);
+            break;
         }
 
         Indices.Add(IA);

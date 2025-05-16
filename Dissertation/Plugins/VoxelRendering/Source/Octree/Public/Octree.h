@@ -49,8 +49,7 @@ private:
         int chunkNodeCount = halfNodePerAxis + 1; 
 
         auto getIndex = [&](int xi, int yi, int zi) {
-            return zi * nodesPerAxs * nodesPerAxs + yi * nodesPerAxs + xi;
-            };
+            return (zi * nodesPerAxs * nodesPerAxs) + (yi * nodesPerAxs) + xi;};
 
         for (int cz = 0; cz < 2; ++cz) {
             for (int cy = 0; cy < 2; ++cy) {
@@ -65,14 +64,14 @@ private:
                     chunk.size = FIntVector(chunkNodeCount, chunkNodeCount, chunkNodeCount);
                     chunk.isoValues.SetNumUninitialized(chunkNodeCount * chunkNodeCount * chunkNodeCount);
 
-                    for (int z = 0; z < chunkNodeCount; ++z) {
-                        for (int y = 0; y < chunkNodeCount; ++y) {
-                            for (int x = 0; x < chunkNodeCount; ++x) {
+                    for (int z = 0; z < chunkNodeCount; z++) {
+                        for (int y = 0; y < chunkNodeCount; y++) {
+                            for (int x = 0; x < chunkNodeCount; x++) {
                                 int globalX = startX + x;
                                 int globalY = startY + y;
                                 int globalZ = startZ + z;
 
-                                int localIdx = z * chunkNodeCount * chunkNodeCount + y * chunkNodeCount + x;
+                                int localIdx = (z * chunkNodeCount * chunkNodeCount) + (y * chunkNodeCount) + x;
                                 chunk.isoValues[localIdx] = isoBuffer[getIndex(globalX, globalY, globalZ)];
                             }
                         }

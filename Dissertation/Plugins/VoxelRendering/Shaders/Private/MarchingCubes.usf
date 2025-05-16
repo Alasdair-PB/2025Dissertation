@@ -30,7 +30,7 @@ int GetIsoIndex(int3 coord)
 
 float GetDensity(int3 coord)
 {
-    bool isEdge = any(coord <= 0) || any(coord >= voxelsPerAxis);
+    bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
     if (isEdge) return isoLevel;
     int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
     return isoValues[(GetIsoIndex(coord))];
@@ -72,8 +72,7 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MarchingCubes(int3 id : SV_DispatchThreadID)
 {
-    if (id.x >= voxelsPerAxis || id.y >= voxelsPerAxis || id.z >= voxelsPerAxis)
-        return;
+    if (any(id >= voxelsPerAxis)) return;
     
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
     int globalVoxelIndex = nodeIndex * voxelsPerLeaf;

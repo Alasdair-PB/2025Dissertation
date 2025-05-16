@@ -5,7 +5,6 @@
 static const int voxelsPerAxis = 5; 
 static const int nodeVoxelCount = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
 static const int isoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
-static const int isoSpillCount = ((voxelsPerAxis + 2) * (voxelsPerAxis + 2) * (voxelsPerAxis + 2)) - isoCount;
 
 class OctreeNode {
 public:
@@ -17,7 +16,6 @@ public:
     int32 allocatedIndexEnd; 
 
     float isoAveragedValues[isoCount];
-    float isoAveragedSpillValues[isoSpillCount];
     float typeValues[nodeVoxelCount];
 
     OctreeNode(const AABB& b) : bounds(b), isLeaf(true) {
@@ -130,6 +128,9 @@ public:
                     }
                     int lowIndex = x + (voxelsPerAxis + 1) * (y + (voxelsPerAxis + 1) * z);
                     isoAveragedValues[lowIndex] = sum / count;
+
+                    //for (int i = 0; i < 8; ++i)
+                     //UE_LOG(LogTemp, Warning, TEXT("Split isoValueCount: %f"), isoAveragedValues[lowIndex]);
                 }
             }
         }

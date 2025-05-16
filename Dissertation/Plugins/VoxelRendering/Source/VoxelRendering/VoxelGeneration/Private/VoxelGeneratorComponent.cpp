@@ -2,8 +2,7 @@
 #include "MySimpleComputeShader.h"
 #include "Logging/LogMacros.h"
 
-UVoxelGeneratorComponent::UVoxelGeneratorComponent()
-{
+UVoxelGeneratorComponent::UVoxelGeneratorComponent() {
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
@@ -56,6 +55,7 @@ void UVoxelGeneratorComponent::BuildOctree(int size, int depth)
     if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, size, depth))
         UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
     leafCount = GetLeafCount((*tree).root);
+    dispathShader = true;
 }
 
 void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth) {
@@ -86,8 +86,7 @@ void UVoxelGeneratorComponent::SampleExampleComputeShader() {
     Params.Input[1] = 5;
 
     FMySimpleComputeShaderInterface::Dispatch(Params, [](int OutputVal) {
-        UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), OutputVal);
-        });
+        UE_LOG(LogTemp, Warning, TEXT("This is a debug message with value: %d"), OutputVal);});
 }
 
 void UVoxelGeneratorComponent::SwapBuffers() {
@@ -134,7 +133,7 @@ void AddVertice(TArray<FVector>& Vertices, TArray<int32>& Indices, TArray<FVecto
     (*includedVertIndex)++;
 }
 
-const bool DebugVoxelMesh = false;
+const bool DebugVoxelMesh = true;
 
 void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
     TArray<FVector> Vertices;
@@ -171,7 +170,7 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
             continue;
         }
         if (Vertices[IA] == Vertices[IB] || Vertices[IB] == Vertices[IC] || Vertices[IC] == Vertices[IA]) {
-            UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %d"), A);
+            UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %f %f %f"), Vertices[IA].X, Vertices[IA].Y, Vertices[IA].Z);
             continue;
         }
 
@@ -195,31 +194,33 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
         SwapBuffers();
     }
 
-    FMarchingCubesDispatchParams Params(1, 1, 1);
-    Params.Input.baseDepthScale = 400.0f;
-    Params.Input.isoLevel = 0.5f;
-    Params.Input.voxelsPerAxis = voxelsPerAxis;
-    Params.Input.tree = node;
-    Params.Input.leafCount = leafCount;
+    if (dispathShader) {
+        FMarchingCubesDispatchParams Params(1, 1, 1);
+        Params.Input.baseDepthScale = 400.0f;
+        Params.Input.isoLevel = 0.5f;
+        Params.Input.voxelsPerAxis = voxelsPerAxis;
+        Params.Input.tree = node;
+        Params.Input.leafCount = leafCount;
 
-    int32 readBufferIndex = ReadBufferIndex;
-    double password = 0.0; 
-    stopWatch->TryStartSecureStopWatch(password);
+        int32 readBufferIndex = ReadBufferIndex;
+        double password = 0.0;
+        stopWatch->TryStartSecureStopWatch(password);
+        dispathShader = false;
+        FMarchingCubesInterface::Dispatch(Params,
+            [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), readBufferIndex, password](FMarchingCubesOutput OutputVal) {
+                if (!WeakThis.IsValid()) return;
+                if (IsEngineExitRequested()) return;
 
-    FMarchingCubesInterface::Dispatch(Params,
-        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), readBufferIndex, password](FMarchingCubesOutput OutputVal) {
-            if (!WeakThis.IsValid()) return;
-            if (IsEngineExitRequested()) return;
+                WeakThis->bBufferReady[readBufferIndex] = true;
+                WeakThis->marchingCubesOutBuffer[readBufferIndex] = OutputVal;
 
-            WeakThis->bBufferReady[readBufferIndex] = true;
-            WeakThis->marchingCubesOutBuffer[readBufferIndex] = OutputVal;
-
-            double outVal;
-            if (WeakThis->stopWatch->TryGetSecureMeasurement(outVal, password)) {
-               // UE_LOG(LogTemp, Warning, TEXT("Stop watch thread dispatch out : %f"), outVal);
-                WeakThis->stopWatch->ResetSecureStopWatch(password);
-            }
-        });
+                double outVal;
+                if (WeakThis->stopWatch->TryGetSecureMeasurement(outVal, password)) {
+                    // UE_LOG(LogTemp, Warning, TEXT("Stop watch thread dispatch out : %f"), outVal);
+                    WeakThis->stopWatch->ResetSecureStopWatch(password);
+                }
+            });
+    }
 }
 
 void UVoxelGeneratorComponent::TraverseAndDraw(OctreeNode* node) {

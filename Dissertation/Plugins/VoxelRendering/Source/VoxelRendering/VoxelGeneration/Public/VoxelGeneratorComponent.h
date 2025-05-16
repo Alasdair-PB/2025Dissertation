@@ -41,6 +41,7 @@ private:
 	FMarchingCubesOutput marchingCubesOutBuffer[2];
 	bool bBufferReady[2] = { false, false };
 
+	bool dispathShader = false;
 	TArray<float> isovalueBuffer;
 	uint32 ReadBufferIndex = 0;
 	uint32 WriteBufferIndex = 1;

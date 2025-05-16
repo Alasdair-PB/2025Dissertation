@@ -44,9 +44,9 @@ class FMarchingCubes : public FGlobalShader
 	{
 		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 		const FPermutationDomain PermutationVector(Parameters.PermutationId);
-		OutEnvironment.SetDefine(TEXT("THREADS_X"), voxelsPerAxis);
-		OutEnvironment.SetDefine(TEXT("THREADS_Y"), voxelsPerAxis);
-		OutEnvironment.SetDefine(TEXT("THREADS_Z"), voxelsPerAxis);
+		OutEnvironment.SetDefine(TEXT("THREADS_X"), NUM_THREADS_MarchingCubes_X);
+		OutEnvironment.SetDefine(TEXT("THREADS_Y"), NUM_THREADS_MarchingCubes_Y);
+		OutEnvironment.SetDefine(TEXT("THREADS_Z"), NUM_THREADS_MarchingCubes_Z);
 	}
 };
 
@@ -78,13 +78,11 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis, voxelsPerAxis, voxelsPerAxis), FIntVector(1, 1, 1));
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis), FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
-			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); }
-	);
-
+			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); });
 	(*nodeIndex)++;
 }
 
@@ -138,37 +136,36 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 			auto RunnerFunc = [VerticesReadback, TrianglesReadback, NormalsReadback, AsyncCallback, vertexCount, triCount](auto&& RunnerFunc) ->
 				void {
-				if (VerticesReadback->IsReady() && TrianglesReadback->IsReady() && NormalsReadback->IsReady()) {
-					FMarchingCubesOutput OutVal;
+					if (VerticesReadback->IsReady() && TrianglesReadback->IsReady() && NormalsReadback->IsReady()) {
+						FMarchingCubesOutput OutVal;
 
-					void* VBuf = VerticesReadback->Lock(0);
-					OutVal.outVertices.Append((FVector3f*)VBuf, vertexCount);
-					VerticesReadback->Unlock();
+						void* VBuf = VerticesReadback->Lock(0);
+						OutVal.outVertices.Append((FVector3f*)VBuf, vertexCount);
+						VerticesReadback->Unlock();
 
-					void* IBuf = TrianglesReadback->Lock(0);
-					OutVal.outTris.Append((int32*)IBuf, triCount);
-					TrianglesReadback->Unlock();
+						void* IBuf = TrianglesReadback->Lock(0);
+						OutVal.outTris.Append((int32*)IBuf, triCount);
+						TrianglesReadback->Unlock();
 
-					void* NBuf = NormalsReadback->Lock(0);
-					OutVal.outNormals.Append((FVector3f*)NBuf, vertexCount);
-					NormalsReadback->Unlock();
+						void* NBuf = NormalsReadback->Lock(0);
+						OutVal.outNormals.Append((FVector3f*)NBuf, vertexCount);
+						NormalsReadback->Unlock();
 
-					AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });
+						AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });
 
-					delete VerticesReadback;
-					delete TrianglesReadback;
-					delete NormalsReadback;
-				}
-				else {
-					AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {
-						RunnerFunc(RunnerFunc); });
-				}
+						delete VerticesReadback;
+						delete TrianglesReadback;
+						delete NormalsReadback;
+					}
+					else {
+						AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {
+							RunnerFunc(RunnerFunc); });
+					}
 				};
 			AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {
 				RunnerFunc(RunnerFunc); });
 		}
-		else {} // We silently exit here as we don't want to crash the game if the shader is not found or has an error.
-
+		else {}
 	}
 	GraphBuilder.Execute();
 }

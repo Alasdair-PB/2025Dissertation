@@ -5,8 +5,8 @@
 float3 leafPosition;
 int leafDepth;
 int nodeIndex;
-Buffer<float> isoValues;
-Buffer<int> marchLookUp;
+StructuredBuffer<float> isoValues;
+StructuredBuffer<int> marchLookUp;
 
 RWStructuredBuffer<float3> outVertices;
 RWStructuredBuffer<float3> outNormals;

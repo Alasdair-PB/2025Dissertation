@@ -7,7 +7,6 @@
 #include "../../Octree/Public/OctreeNode.h"
 #include "MarchingCubesDispatcher.generated.h"
 
-
 USTRUCT(BlueprintType)
 struct FMarchingCubesOutput
 {

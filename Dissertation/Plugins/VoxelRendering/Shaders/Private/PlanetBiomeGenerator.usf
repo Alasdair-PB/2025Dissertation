@@ -1,0 +1,30 @@
+#pragma once
+#pragma COMPUTE_SHADER_ENTRYPOINT(PlanetBiomeGenerator)
+#include "/Engine/Public/Platform.ush"
+#include "PlanetGeneratorHelpers.usf"
+
+int size;
+int seed;
+
+float isoLevel; 
+float baseDepthScale;
+float planetScaleRatio;
+
+StructuredBuffer<float> isoValues;
+RWStructuredBuffer<int> outTypeValues;
+
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+void PlanetBiomeGenerator(int3 id : SV_DispatchThreadID)
+{
+    if (any(id >= size))
+        return;
+
+    float isoScale = (baseDepthScale / (size));
+    float3 position = (id * isoScale);
+
+    int NoiseIndex = GetIsoIndex(id, size);
+
+    float isoValue = isoValues[NoiseIndex];
+    int typeValue = isoValue > isoLevel ? 1 : 0;
+    outTypeValues[NoiseIndex] = typeValue;
+}

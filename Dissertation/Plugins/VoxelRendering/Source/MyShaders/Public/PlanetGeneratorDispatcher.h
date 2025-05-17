@@ -12,6 +12,8 @@ struct FPlanetGeneratorOutput
 {
 	GENERATED_BODY()
 	UPROPERTY(BlueprintReadOnly) TArray<float> outIsoValues;
+	TArray<uint32> outTypeValues;
+
 };
 
 USTRUCT(BlueprintType)
@@ -19,9 +21,10 @@ struct FPlanetGeneratorInput
 {
 	GENERATED_BODY()
 	UPROPERTY(BlueprintReadOnly) int size = 0;
+	UPROPERTY(BlueprintReadOnly) int seed = 0;
 	UPROPERTY(BlueprintReadOnly) float baseDepthScale = 0;
-	UPROPERTY(BlueprintReadOnly) FVector3f objectPosition = FVector3f();
-
+	UPROPERTY(BlueprintReadOnly) float isoLevel = 0;
+	UPROPERTY(BlueprintReadOnly) float planetScaleRatio = 0;
 };
 
 struct MYSHADERS_API FPlanetGeneratorDispatchParams

@@ -43,6 +43,8 @@ private:
 
 	bool dispathShader = false;
 	TArray<float> isovalueBuffer;
+	TArray<uint32> typeValueBuffer;
+
 	uint32 ReadBufferIndex = 0;
 	uint32 WriteBufferIndex = 1;
 	uint32 nodeIndex = 0;

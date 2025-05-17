@@ -2,6 +2,8 @@
 #include "MySimpleComputeShader.h"
 #include "Logging/LogMacros.h"
 
+static const float isoLevel = 0.5f;
+
 UVoxelGeneratorComponent::UVoxelGeneratorComponent() {
 	PrimaryComponentTick.bCanEverTick = true;
 }
@@ -40,30 +42,24 @@ void UVoxelGeneratorComponent::InitOctree() {
 
 void UVoxelGeneratorComponent::BuildOctree(int size, int depth)
 {
-    TArray<uint8> typeBuffer;
-    typeBuffer.Reserve(size * size * size);
-    for (int32 z = 0; z < size; ++z) {
-        for (int32 y = 0; y < size; ++y) {
-            for (int32 x = 0; x < size; ++x) {
-                uint8 type = (x + y + z) % 2;
-                typeBuffer.Add(type);
-            }
-        }
-    }
-
-    if (!tree->BuildFromBuffers(isovalueBuffer, typeBuffer, size, depth))
+    if (!tree->BuildFromBuffers(isovalueBuffer, typeValueBuffer, size, depth))
         UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
     leafCount = GetLeafCount((*tree).root);
+    // Get vertex count?
     dispathShader = true;
 }
 
 void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth) {
     int isoSize = size + 1;
     isovalueBuffer.Reserve(isoSize * isoSize * isoSize);
+    typeValueBuffer.Reserve(isoSize * isoSize * isoSize);
 
     FPlanetGeneratorDispatchParams Params(isoSize, isoSize, isoSize);
     Params.Input.baseDepthScale = 400.0f;
     Params.Input.size = isoSize;
+    Params.Input.isoLevel = isoLevel;
+    Params.Input.planetScaleRatio = 0.9;
+    Params.Input.seed = 0;
 
     FPlanetGeneratorInterface::Dispatch(Params,
         [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), size, depth](FPlanetGeneratorOutput OutputVal) {
@@ -71,6 +67,7 @@ void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth) {
             if (IsEngineExitRequested()) return;
 
             WeakThis->isovalueBuffer = OutputVal.outIsoValues;
+            WeakThis->typeValueBuffer = OutputVal.outTypeValues;
             WeakThis->BuildOctree(size, depth);
         });
 }
@@ -171,7 +168,6 @@ void UVoxelGeneratorComponent::UpdateMesh(FMarchingCubesOutput meshInfo) {
             UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %f %f %f"), Vertices[IA].X, Vertices[IA].Y, Vertices[IA].Z);
             UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %f %f %f"), Vertices[IB].X, Vertices[IB].Y, Vertices[IB].Z);
             UE_LOG(LogTemp, Warning, TEXT("Bad triangle, vertices[IA] == Vertices[IB]: %f %f %f"), Vertices[IC].X, Vertices[IC].Y, Vertices[IC].Z);
-
             UE_LOG(LogTemp, Warning, TEXT("More debug info: %d %d %d"), IA, IB, IC);
             break;
         }
@@ -199,7 +195,7 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
     if (dispathShader) {
         FMarchingCubesDispatchParams Params(1, 1, 1);
         Params.Input.baseDepthScale = 400.0f;
-        Params.Input.isoLevel = 0.5f;
+        Params.Input.isoLevel = isoLevel;
         Params.Input.voxelsPerAxis = voxelsPerAxis;
         Params.Input.tree = node;
         Params.Input.leafCount = leafCount;

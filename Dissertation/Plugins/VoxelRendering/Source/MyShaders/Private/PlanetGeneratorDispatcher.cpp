@@ -17,14 +17,16 @@
 DECLARE_STATS_GROUP(TEXT("PlanetGenerator"), STATGROUP_PlanetGenerator, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("PlanetGenerator Execute"), STAT_PlanetGenerator_Execute, STATGROUP_PlanetGenerator);
 
-class FPlanetGenerator : public FGlobalShader
+class FPlanetNoiseGenerator : public FGlobalShader
 {
-	DECLARE_GLOBAL_SHADER(FPlanetGenerator);
-	SHADER_USE_PARAMETER_STRUCT(FPlanetGenerator, FGlobalShader);
+	DECLARE_GLOBAL_SHADER(FPlanetNoiseGenerator);
+	SHADER_USE_PARAMETER_STRUCT(FPlanetNoiseGenerator, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER(uint32, size)
+		SHADER_PARAMETER(uint32, seed)
 		SHADER_PARAMETER(float, baseDepthScale)
+		SHADER_PARAMETER(float, planetScaleRatio)
 		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float>, outIsoValues)
 	END_SHADER_PARAMETER_STRUCT()
 
@@ -42,21 +44,72 @@ class FPlanetGenerator : public FGlobalShader
 	}
 };
 
-IMPLEMENT_GLOBAL_SHADER(FPlanetGenerator, "/MyShadersShaders/PlanetGenerator.usf", "PlanetGenerator", SF_Compute);
+class FPlanetBiomeGenerator : public FGlobalShader
+{
+	DECLARE_GLOBAL_SHADER(FPlanetBiomeGenerator);
+	SHADER_USE_PARAMETER_STRUCT(FPlanetBiomeGenerator, FGlobalShader);
+
+	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
+		SHADER_PARAMETER(uint32, size)
+		SHADER_PARAMETER(uint32, seed)
+		SHADER_PARAMETER(float, isoLevel)
+		SHADER_PARAMETER(float, baseDepthScale)
+		SHADER_PARAMETER(float, planetScaleRatio)
+		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float>, isoValues)
+		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float>, outTypeValues)
+	END_SHADER_PARAMETER_STRUCT()
+
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
+		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+	}
+
+	static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
+	{
+		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+		const FPermutationDomain PermutationVector(Parameters.PermutationId);
+		OutEnvironment.SetDefine(TEXT("THREADS_X"), NUM_THREADS_PlanetGenerator_X);
+		OutEnvironment.SetDefine(TEXT("THREADS_Y"), NUM_THREADS_PlanetGenerator_Y);
+		OutEnvironment.SetDefine(TEXT("THREADS_Z"), NUM_THREADS_PlanetGenerator_Z);
+	}
+};
+
+IMPLEMENT_GLOBAL_SHADER(FPlanetNoiseGenerator, "/MyShadersShaders/PlanetNoiseGenerator.usf", "PlanetNoiseGenerator", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FPlanetBiomeGenerator, "/MyShadersShaders/PlanetBiomeGenerator.usf", "PlanetBiomeGenerator", SF_Compute);
 
 void AddSphereGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchParams& Params, FRDGBufferUAVRef OutIsoUAV) {
-	FPlanetGenerator::FParameters* PassParams = GraphBuilder.AllocParameters<FPlanetGenerator::FParameters>();
-	PassParams->baseDepthScale = Params.Input.baseDepthScale;
+	FPlanetNoiseGenerator::FParameters* PassParams = GraphBuilder.AllocParameters<FPlanetNoiseGenerator::FParameters>();
 	PassParams->size = Params.Input.size;
+	PassParams->seed = Params.Input.seed;
+	PassParams->baseDepthScale = Params.Input.baseDepthScale;
+	PassParams->planetScaleRatio = Params.Input.planetScaleRatio;
 	PassParams->outIsoValues = OutIsoUAV;
 
-	UE_LOG(LogTemp, Warning, TEXT(": %d"), PassParams->size);
-
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-	const TShaderMapRef<FPlanetGenerator> ComputeShader(ShaderMap);
+	const TShaderMapRef<FPlanetNoiseGenerator> ComputeShader(ShaderMap);
 	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(PassParams->size, PassParams->size, PassParams->size), FComputeShaderUtils::kGolden2DGroupSize);
 
-	GraphBuilder.AddPass(RDG_EVENT_NAME("Planet Generator"), PassParams, ERDGPassFlags::AsyncCompute,
+	GraphBuilder.AddPass(RDG_EVENT_NAME("Planet Noise Generator"), PassParams, ERDGPassFlags::AsyncCompute,
+		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
+			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); }
+	);
+
+}
+
+void AddBiomeGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchParams& Params, FRDGBufferUAVRef OutTypeUAV, FRDGBufferSRVRef InIsoSRV) {
+	FPlanetBiomeGenerator::FParameters* PassParams = GraphBuilder.AllocParameters<FPlanetBiomeGenerator::FParameters>();
+	PassParams->size = Params.Input.size;
+	PassParams->seed = Params.Input.seed;
+	PassParams->isoLevel = Params.Input.isoLevel;
+	PassParams->baseDepthScale = Params.Input.baseDepthScale;
+	PassParams->planetScaleRatio = Params.Input.planetScaleRatio;
+	PassParams->isoValues = InIsoSRV;
+	PassParams->outTypeValues = OutTypeUAV;
+
+	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+	const TShaderMapRef<FPlanetBiomeGenerator> ComputeShader(ShaderMap);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(PassParams->size, PassParams->size, PassParams->size), FComputeShaderUtils::kGolden2DGroupSize);
+
+	GraphBuilder.AddPass(RDG_EVENT_NAME("Planet Biome Generator"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
 			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); }
 	);
@@ -72,30 +125,52 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 		RDG_EVENT_SCOPE(GraphBuilder, "PlanetGenerator");
 		RDG_GPU_STAT_SCOPE(GraphBuilder, PlanetGenerator);
 
-		typename FPlanetGenerator::FPermutationDomain PermutationVector;
-		TShaderMapRef<FPlanetGenerator> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), PermutationVector);
-		bool bIsShaderValid = ComputeShader.IsValid();
+		typename FPlanetNoiseGenerator::FPermutationDomain NoisePermutationVector;
+		TShaderMapRef<FPlanetNoiseGenerator> NoiseComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), NoisePermutationVector);
+		bool bIsNoiseShaderValid = NoiseComputeShader.IsValid();
 
-		if (bIsShaderValid) {
+		typename FPlanetBiomeGenerator::FPermutationDomain BiomePermutationVector;
+		TShaderMapRef<FPlanetBiomeGenerator> BiomeComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), BiomePermutationVector);
+		bool bIsBiomeShaderValid = BiomeComputeShader.IsValid();
+
+		if (bIsNoiseShaderValid && bIsBiomeShaderValid) {
 			const int isoValueCount = Params.Input.size * Params.Input.size * Params.Input.size;
 
 			TArray<float> OutIsoValues;
+			TArray<float> OutTypeValues;
+
 			OutIsoValues.Init(-1, isoValueCount);
+			OutTypeValues.Init(-1, isoValueCount);
 
 			FRDGBufferRef OutIsoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(float), isoValueCount, OutIsoValues.GetData(), isoValueCount * sizeof(float));
+			FRDGBufferRef OutTypeValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), isoValueCount, OutIsoValues.GetData(), isoValueCount * sizeof(int));
+
 			FRDGBufferUAVRef OutIsoValuesUAV = GraphBuilder.CreateUAV(OutIsoValuesBuffer);
+			FRDGBufferUAVRef OutTypeValuesUAV = GraphBuilder.CreateUAV(OutTypeValuesBuffer);
+			FRDGBufferSRVRef IsoValuesSRV = GraphBuilder.CreateSRV(OutIsoValuesBuffer);
+
 			AddSphereGeneratorPass(GraphBuilder, Params, OutIsoValuesUAV);
+			AddBiomeGeneratorPass(GraphBuilder, Params, OutTypeValuesUAV, IsoValuesSRV);
 
 			FRHIGPUBufferReadback* isoReadback = new FRHIGPUBufferReadback(TEXT("PlanetGeneratorISO"));
-			AddEnqueueCopyPass(GraphBuilder, isoReadback, OutIsoValuesBuffer, 0u);
+			FRHIGPUBufferReadback* typeReadback = new FRHIGPUBufferReadback(TEXT("PlanetGeneratorTYPE"));
 
-			auto RunnerFunc = [isoReadback, AsyncCallback, isoValueCount](auto&& RunnerFunc) ->
+			AddEnqueueCopyPass(GraphBuilder, isoReadback, OutIsoValuesBuffer, 0u);
+			AddEnqueueCopyPass(GraphBuilder, typeReadback, OutTypeValuesBuffer, 0u);
+
+			auto RunnerFunc = [isoReadback, typeReadback, AsyncCallback, isoValueCount](auto&& RunnerFunc) ->
 				void {
-				if (isoReadback->IsReady()) {
+				if (isoReadback->IsReady() && typeReadback->IsReady()) {
 					FPlanetGeneratorOutput OutVal;
+
 					void* VBuf = isoReadback->Lock(0);
 					OutVal.outIsoValues.Append((float*)VBuf, isoValueCount);
 					isoReadback->Unlock();
+
+					void* VTypeBuf = typeReadback->Lock(0);
+					OutVal.outTypeValues.Append((uint32*)VTypeBuf, isoValueCount);
+					typeReadback->Unlock();
+
 					AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });
 					delete isoReadback;
 				}

@@ -1,0 +1,27 @@
+#pragma once
+#pragma COMPUTE_SHADER_ENTRYPOINT(PlanetNoiseGenerator)
+#include "/Engine/Public/Platform.ush"
+#include "PlanetGeneratorHelpers.usf"
+
+int size;
+int seed;
+float baseDepthScale;
+float planetScaleRatio;
+RWStructuredBuffer<float> outIsoValues;
+
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+void PlanetNoiseGenerator(int3 id : SV_DispatchThreadID)
+{
+    if (any(id >= size))
+        return;
+
+    float isoScale = (baseDepthScale / (size));
+    float3 position = (id * isoScale) + (isoScale / 2);
+    float distance = GetCenterDistance(position, isoScale, size, baseDepthScale);
+    float distanceMult = 380 * clamp(planetScaleRatio, 0.01, 1.0);
+    distance = distance / distanceMult;
+
+    int NoiseIdx = GetIsoIndex(id, size);
+    float isoValue = clamp(distance, 0.0, 1.0);
+    outIsoValues[NoiseIdx] = isoValue;
+}

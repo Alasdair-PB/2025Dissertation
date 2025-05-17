@@ -1,0 +1,18 @@
+#pragma once
+
+static float GetCenterDistance(float3 position, float isoScale, float size, float baseDepthScale)
+{
+    float centerDis = isoScale * (size / 2);
+    float3 center = float3(centerDis, centerDis, centerDis);
+    float3 diff = position - center;
+    float distance = sqrt(dot(diff, diff));
+    return distance;
+}
+
+
+static int GetIsoIndex(int3 coord, float size)
+{
+    int maxIsoCount = (size) * (size) * (size);
+    int index = coord.x + coord.y * (size) + coord.z * (size) * (size);
+    return max(0, min(index, maxIsoCount + 1));
+}

@@ -2,9 +2,15 @@
 #include "CoreMinimal.h"
 #include "AABB.h"
 
-static const int voxelsPerAxis = 5; 
+static const int voxelsPerAxis = 5;
+static const int isoValuesPerAxis = voxelsPerAxis + 1;
 static const int nodeVoxelCount = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
-static const int isoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
+static const int isoCount = isoValuesPerAxis * isoValuesPerAxis * isoValuesPerAxis;
+
+struct IsoCorner {
+    float isoValue; 
+    int typeValue;
+};
 
 class OctreeNode {
 public:
@@ -14,17 +20,17 @@ public:
 
     int32 allocatedIndexStart;
     int32 allocatedIndexEnd; 
-
-    float isoAveragedValues[isoCount];
-    float typeValues[nodeVoxelCount];
+    float isoValues[isoCount];
+    uint32 typeValues[isoCount];
 
     OctreeNode(const AABB& b) : bounds(b), isLeaf(true) {
         for (int i = 0; i < 8; ++i)
             children[i] = nullptr;
 
-        for (int i = 0; i < isoCount; ++i)
-            isoAveragedValues[i] = 1.0f;
-        FMemory::Memzero(typeValues, sizeof(float) * voxelsPerAxis * voxelsPerAxis * voxelsPerAxis);
+        for (int i = 0; i < isoCount; ++i) {
+            isoValues[i] = 1.0f;
+            typeValues[i] = 0;
+        }
     }
 
     ~OctreeNode() {
@@ -33,8 +39,8 @@ public:
     }
 
     bool IsHomogeneousType() const {
-        uint8 firstType = typeValues[0];
-        for (int i = 1; i < voxelsPerAxis * voxelsPerAxis * voxelsPerAxis; ++i) {
+        uint32 firstType = typeValues[0];
+        for (int i = 1; i < isoValuesPerAxis * isoValuesPerAxis * isoValuesPerAxis; ++i) {
             if (typeValues[i] != firstType) {
                 return false;
             }
@@ -79,12 +85,12 @@ public:
     }
 
 
-    bool SampleValuesFromBuffers(const TArray<float> isovalueBuffer, const TArray<uint8> typeBuffer, int localVoxelsPerAxis) {
+    bool SampleValuesFromBuffers(const TArray<float> isovalueBuffer, const TArray<uint32> typeBuffer, int localVoxelsPerAxis) {
         int allocatedTypeCount = localVoxelsPerAxis * localVoxelsPerAxis * localVoxelsPerAxis;
         int highResCount = (localVoxelsPerAxis + 1) * (localVoxelsPerAxis + 1) * (localVoxelsPerAxis + 1);
         int scale = localVoxelsPerAxis / voxelsPerAxis;
 
-        if (allocatedTypeCount % nodeVoxelCount != 0) {
+        if (typeBuffer.Num() != highResCount) {
             UE_LOG(LogTemp, Warning, TEXT("Valid typeValues have not been provided for this level of detail"));
             return false;
         }
@@ -94,17 +100,15 @@ public:
             return false;
         }
 
-        int averagePassCount = allocatedTypeCount / nodeVoxelCount;
-        for (int localIndex = 0; localIndex < nodeVoxelCount; ++localIndex) {
-            int baseIndex = localIndex * averagePassCount;
-            typeValues[localIndex] = GetAverageType(baseIndex, averagePassCount, typeBuffer);
-        }
-
         for (int z = 0; z <= voxelsPerAxis; ++z) {
             for (int y = 0; y <= voxelsPerAxis; ++y) {
                 for (int x = 0; x <= voxelsPerAxis; ++x) {
                     float sum = 0.0f;
                     int count = 0;
+
+                    int mostCommonTypeIndex = 0;
+                    int maxTypeCount = 0;
+                    TMap<int, int> frequencyMap;
 
                     for (int dz = 0; dz < scale; ++dz) {
                         for (int dy = 0; dy < scale; ++dy) {
@@ -121,13 +125,26 @@ public:
                                 }
                                 int highIndex = hx + (voxelsPerAxis + 1) * (hy + (voxelsPerAxis + 1) * hz);
 
+                                int value = typeBuffer[highIndex];
+                                frequencyMap.FindOrAdd(value)++;
+
                                 sum += isovalueBuffer[highIndex];
                                 ++count;
                             }
                         }
                     }
+
+                    for (const auto& pair : frequencyMap) {
+                        if (pair.Value > maxTypeCount) {
+                            mostCommonTypeIndex = pair.Key;
+                            maxTypeCount = pair.Value;
+                        }
+                    }
+
                     int lowIndex = x + (voxelsPerAxis + 1) * (y + (voxelsPerAxis + 1) * z);
-                    isoAveragedValues[lowIndex] = sum / count;
+                    isoValues[lowIndex] = sum / count;
+                    typeValues[lowIndex] = mostCommonTypeIndex;
+
                 }
             }
         }

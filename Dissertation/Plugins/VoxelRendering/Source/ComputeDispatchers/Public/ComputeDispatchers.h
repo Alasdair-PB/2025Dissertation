@@ -7,7 +7,7 @@
 #include "RenderGraphResources.h"
 #include "Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h"
 
-class MYSHADERS_API FMyShadersModule : public IModuleInterface
+class COMPUTEDISPATCHERS_API FComputeDispatchersModule : public IModuleInterface
 {
 public:
 

@@ -26,12 +26,17 @@
 			"LoadingPhase": "Default"
 		},
 		{
-			"Name": "MyShaders",
+			"Name": "ComputeDispatchers",
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit"
 		},
 		{
 			"Name": "Profiling",
+			"Type": "Runtime",
+			"LoadingPhase": "PostConfigInit"
+		},
+		{
+			"Name": "VoxelGeneration",
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit"
 		}

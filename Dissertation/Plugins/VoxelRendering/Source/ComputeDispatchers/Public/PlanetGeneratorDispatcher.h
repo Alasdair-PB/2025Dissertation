@@ -27,7 +27,7 @@ struct FPlanetGeneratorInput
 	UPROPERTY(BlueprintReadOnly) float planetScaleRatio = 0;
 };
 
-struct MYSHADERS_API FPlanetGeneratorDispatchParams
+struct COMPUTEDISPATCHERS_API FPlanetGeneratorDispatchParams
 {
 	int X = 1;
 	int Y = 1;
@@ -40,7 +40,7 @@ struct MYSHADERS_API FPlanetGeneratorDispatchParams
 		X(x),Y(y),Z(z){}
 };
 
-class MYSHADERS_API FPlanetGeneratorInterface {
+class COMPUTEDISPATCHERS_API FPlanetGeneratorInterface {
 public:
 	static void DispatchRenderThread(FRHICommandListImmediate& RHICmdList,
 		FPlanetGeneratorDispatchParams Params,TFunction<void(FPlanetGeneratorOutput OutputVal)> AsyncCallback);
@@ -64,7 +64,7 @@ public:
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlanetGeneratorLibrary_AsyncExecutionCompleted, const FPlanetGeneratorOutput, Value);
 
 UCLASS()
-class MYSHADERS_API UPlanetGeneratorLibrary_AsyncExecution : public UBlueprintAsyncActionBase
+class COMPUTEDISPATCHERS_API UPlanetGeneratorLibrary_AsyncExecution : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()
 public:

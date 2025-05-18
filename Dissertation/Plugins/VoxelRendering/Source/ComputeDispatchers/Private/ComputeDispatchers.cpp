@@ -1,4 +1,4 @@
-#include "MyShaders.h"
+#include "ComputeDispatchers.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "RHI.h"
@@ -9,17 +9,17 @@
 #include "Modules/ModuleManager.h"
 #include "Interfaces/IPluginManager.h"
 
-#define LOCTEXT_NAMESPACE "MyShadersModule"
+#define LOCTEXT_NAMESPACE "ComputeDispatchersModule"
 
-void FMyShadersModule::StartupModule()
+void FComputeDispatchersModule::StartupModule()
 {
 	FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("VoxelRendering"))->GetBaseDir(), TEXT("Shaders/Private"));
-	AddShaderSourceDirectoryMapping(TEXT("/MyShadersShaders"), PluginShaderDir);
+	AddShaderSourceDirectoryMapping(TEXT("/ComputeDispatchersShaders"), PluginShaderDir);
 }
 
-void FMyShadersModule::ShutdownModule()
+void FComputeDispatchersModule::ShutdownModule()
 {
 }
 
 #undef LOCTEXT_NAMESPACE
-IMPLEMENT_MODULE(FMyShadersModule, MyShaders)
+IMPLEMENT_MODULE(FComputeDispatchersModule, ComputeDispatchers)

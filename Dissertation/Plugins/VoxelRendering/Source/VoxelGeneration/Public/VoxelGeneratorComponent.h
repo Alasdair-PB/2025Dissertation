@@ -2,17 +2,17 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "../../../Octree/Public/Octree.h"
-#include "../../../Octree/Public/OctreeNode.h"
+#include "../../Octree/Public/Octree.h"
+#include "../../Octree/Public/OctreeNode.h"
 #include "ProceduralMeshComponent.h"
 #include "VoxelRendererComponent.h"
-#include "../../../MyShaders/Public/MarchingCubesDispatcher.h"
-#include "../../../MyShaders/Public/PlanetGeneratorDispatcher.h"
+#include "../../ComputeDispatchers/Public/MarchingCubesDispatcher.h"
+#include "../../ComputeDispatchers/Public/PlanetGeneratorDispatcher.h"
 #include "StopWatch.h"
 #include "VoxelGeneratorComponent.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class VOXELRENDERING_API UVoxelGeneratorComponent : public UActorComponent
+class VOXELGENERATION_API UVoxelGeneratorComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

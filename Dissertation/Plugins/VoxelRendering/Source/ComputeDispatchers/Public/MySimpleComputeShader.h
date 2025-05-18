@@ -5,7 +5,7 @@
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "MySimpleComputeShader.generated.h"
 
-struct MYSHADERS_API FMySimpleComputeShaderDispatchParams
+struct COMPUTEDISPATCHERS_API FMySimpleComputeShaderDispatchParams
 {
 	int X;
 	int Y;
@@ -21,7 +21,7 @@ struct MYSHADERS_API FMySimpleComputeShaderDispatchParams
 };
 
 // This is a public interface that we define so outside code can invoke our compute shader.
-class MYSHADERS_API FMySimpleComputeShaderInterface {
+class COMPUTEDISPATCHERS_API FMySimpleComputeShaderInterface {
 public:
 	// Executes this shader on the render thread
 	static void DispatchRenderThread(
@@ -60,7 +60,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMySimpleComputeShaderLibrary_Asyn
 
 
 UCLASS()
-class MYSHADERS_API UMySimpleComputeShaderLibrary_AsyncExecution : public UBlueprintAsyncActionBase
+class COMPUTEDISPATCHERS_API UMySimpleComputeShaderLibrary_AsyncExecution : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()
 public:

@@ -1,8 +1,8 @@
 #include "PlanetGeneratorDispatcher.h"
-#include "MyShaders.h"
+#include "ComputeDispatchers.h"
 #include "CommonRenderResources.h"
 #include "RenderGraph.h"
-#include "MyShaders/Public/PlanetGeneratorDispatcher.h"
+#include "ComputeDispatchers/Public/PlanetGeneratorDispatcher.h"
 #include "PixelShaderUtils.h"
 #include "Runtime/RenderCore/Public/RenderGraphUtils.h"
 #include "MeshPassProcessor.inl"
@@ -73,8 +73,8 @@ class FPlanetBiomeGenerator : public FGlobalShader
 	}
 };
 
-IMPLEMENT_GLOBAL_SHADER(FPlanetNoiseGenerator, "/MyShadersShaders/PlanetNoiseGenerator.usf", "PlanetNoiseGenerator", SF_Compute);
-IMPLEMENT_GLOBAL_SHADER(FPlanetBiomeGenerator, "/MyShadersShaders/PlanetBiomeGenerator.usf", "PlanetBiomeGenerator", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FPlanetNoiseGenerator, "/ComputeDispatchersShaders/PlanetNoiseGenerator.usf", "PlanetNoiseGenerator", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FPlanetBiomeGenerator, "/ComputeDispatchersShaders/PlanetBiomeGenerator.usf", "PlanetBiomeGenerator", SF_Compute);
 
 void AddSphereGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchParams& Params, FRDGBufferUAVRef OutIsoUAV) {
 	FPlanetNoiseGenerator::FParameters* PassParams = GraphBuilder.AllocParameters<FPlanetNoiseGenerator::FParameters>();

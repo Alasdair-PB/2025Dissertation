@@ -1,6 +1,6 @@
 #include "MySimpleComputeShader.h"
-#include "MyShaders.h"
-#include "MyShaders/Public/MySimpleComputeShader.h"
+#include "ComputeDispatchers.h"
+#include "ComputeDispatchers/Public/MySimpleComputeShader.h"
 #include "PixelShaderUtils.h"
 #include "Runtime/RenderCore/Public/RenderGraphUtils.h"
 #include "MeshPassProcessor.inl"
@@ -15,7 +15,7 @@
 DECLARE_STATS_GROUP(TEXT("MySimpleComputeShader"), STATGROUP_MySimpleComputeShader, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("MySimpleComputeShader Execute"), STAT_MySimpleComputeShader_Execute, STATGROUP_MySimpleComputeShader);
 
-class MYSHADERS_API FMySimpleComputeShader : public FGlobalShader
+class COMPUTEDISPATCHERS_API FMySimpleComputeShader : public FGlobalShader
 {
 public:
 	DECLARE_GLOBAL_SHADER(FMySimpleComputeShader);
@@ -47,7 +47,7 @@ public:
 private:
 };
 
-IMPLEMENT_GLOBAL_SHADER(FMySimpleComputeShader, "/MyShadersShaders/MySimpleComputeShader.usf", "MySimpleComputeShader", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FMySimpleComputeShader, "/ComputeDispatchersShaders/MySimpleComputeShader.usf", "MySimpleComputeShader", SF_Compute);
 
 void FMySimpleComputeShaderInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FMySimpleComputeShaderDispatchParams Params, TFunction<void(int OutputVal)> AsyncCallback) {
 	FRDGBuilder GraphBuilder(RHICmdList);

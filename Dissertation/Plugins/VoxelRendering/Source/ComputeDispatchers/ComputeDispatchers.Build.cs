@@ -1,9 +1,9 @@
 using System.IO;
 using UnrealBuildTool;
 
-public class MyShaders : ModuleRules
+public class ComputeDispatchers : ModuleRules
 {
-    public MyShaders(ReadOnlyTargetRules Target) : base(Target)
+    public ComputeDispatchers(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 

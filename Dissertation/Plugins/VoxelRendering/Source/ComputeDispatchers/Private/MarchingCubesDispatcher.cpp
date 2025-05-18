@@ -1,8 +1,8 @@
 #include "MarchingCubesDispatcher.h"
-#include "MyShaders.h"
+#include "ComputeDispatchers.h"
 #include "CommonRenderResources.h"
 #include "RenderGraph.h"
-#include "MyShaders/Public/MarchingCubesDispatcher.h"
+#include "ComputeDispatchers/Public/MarchingCubesDispatcher.h"
 #include "PixelShaderUtils.h"
 #include "Runtime/RenderCore/Public/RenderGraphUtils.h"
 #include "MeshPassProcessor.inl"
@@ -50,7 +50,7 @@ class FMarchingCubes : public FGlobalShader
 	}
 };
 
-IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/MyShadersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
 
 void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 depth, uint32* nodeIndex, FMarchingCubesDispatchParams& Params, FRDGBufferUAVRef OutTrisUAV, FRDGBufferUAVRef OutNormalsUAV, FRDGBufferUAVRef OutVerticiesUAV, FRDGBufferSRVRef InLookUpSRV) {
 

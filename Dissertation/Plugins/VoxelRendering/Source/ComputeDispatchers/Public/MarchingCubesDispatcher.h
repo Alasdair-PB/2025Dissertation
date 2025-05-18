@@ -31,7 +31,7 @@ struct FMarchingCubesInput
 	UPROPERTY(BlueprintReadOnly) TArray<float> isoValues;
 };
 
-struct MYSHADERS_API FMarchingCubesDispatchParams
+struct COMPUTEDISPATCHERS_API FMarchingCubesDispatchParams
 {
 	int X = 1;
 	int Y = 1;
@@ -44,7 +44,7 @@ struct MYSHADERS_API FMarchingCubesDispatchParams
 		X(x),Y(y),Z(z){}
 };
 
-class MYSHADERS_API FMarchingCubesInterface {
+class COMPUTEDISPATCHERS_API FMarchingCubesInterface {
 public:
 	static void DispatchRenderThread(FRHICommandListImmediate& RHICmdList,
 		FMarchingCubesDispatchParams Params,TFunction<void(FMarchingCubesOutput OutputVal)> AsyncCallback);
@@ -68,7 +68,7 @@ public:
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMarchingCubesLibrary_AsyncExecutionCompleted, const FMarchingCubesOutput, Value);
 
 UCLASS()
-class MYSHADERS_API UMarchingCubesLibrary_AsyncExecution : public UBlueprintAsyncActionBase
+class COMPUTEDISPATCHERS_API UMarchingCubesLibrary_AsyncExecution : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()
 public:

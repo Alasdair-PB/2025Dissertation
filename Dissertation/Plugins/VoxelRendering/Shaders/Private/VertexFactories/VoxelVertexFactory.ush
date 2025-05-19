@@ -1,0 +1,20 @@
+#include "/Engine/Generated/VertexFactoryCommon.ush"
+
+
+struct FMyVertexFactoryInput
+{
+    float3 Position : POSITION;
+    float3 Normal : NORMAL;
+};
+
+
+void VoxelVertexFactory_VertexShader(
+    in FMyVertexFactoryInput Input,
+    out float4 OutPosition,
+    out float3 OutNormal)
+{
+    //half3x3 LocalToWorld = GetLocalToWorld3x3(Intermediates.PrimitiveId);
+
+    //OutPosition = mul(GetLocalToWorld(), float4(Input.Position, 1.0));
+    //OutNormal = mul((float3x3) GetLocalToWorld(), Input.Normal);
+}

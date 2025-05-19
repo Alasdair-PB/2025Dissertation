@@ -254,7 +254,6 @@ void UVoxelGeneratorComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     TraverseAndDraw((*tree).root);
-    //SampleExampleComputeShader();
     InvokeVoxelRenderer((*tree).root);
 }
 

@@ -5,16 +5,11 @@
 #include "MeshMaterialShader.h"
 #include "ShaderParameters.h"
 #include "RHIUtilities.h"
-#include "VertexFactory.h"
 #include "FVoxelSceneProxy.h"
-#include "FVoxelVertexFactoryShaderParameters.h"
-
-class FVoxelVertexFactoryShaderParameters;
 
 struct FVoxelVertexInfo
 {
 	FVoxelVertexInfo() {}
-
 	FVoxelVertexInfo(const FVector& InPosition, const FVector& InNormal, const FColor& InColor) :
 		Position(InPosition),
 		Color(InColor)
@@ -51,38 +46,32 @@ class FVoxelVertexFactory : FVertexFactory
 public:
 
 	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel) : FVertexFactory(InFeatureLevel){}
-		
-	struct DataType
+
+	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
+	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
+	static void GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements);
+
+	void InitRHI(FRHICommandListBase& RHICmdList) override final;
+	void ReleaseRHI() override;
+
+	void SetVertexBuffer(const FVertexBuffer* InBuffer, uint32 StreamOffset, uint32 Stride);
+	ENGINE_API void SetDynamicParameterBuffer(const FVertexBuffer* InDynamicParameterBuffer, uint32 StreamOffset, uint32 Stride);
+
+	inline void SetUsesDynamicParameter(bool bInUsesDynamicParameter)
 	{
-		FVertexStreamComponent PositionComponent;
-		FVertexStreamComponent ColorComponent;
-	};
-
-	void InitRHI(FRHICommandListBase& RHICmdList) override final {
-
+		bUsesDynamicParameter = bInUsesDynamicParameter;
 	}
 
-	void ReleaseRHI() override {
-		FVertexFactory::ReleaseRHI();
+	FIndexBuffer*& GetIndexBuffer()
+	{
+		return IndexBuffer;
 	}
-
-	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters) { return false; }
-	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {}
-	static bool ShouldCache(EShaderPlatform Platform, const class FMaterial* Material, const class FShaderType* ShaderType) { return false; }
-
-	inline void SetTransformIndex(uint16 Index) { TransformIndex = Index; }
-	inline void SetSceneProxy(FVoxelSceneProxy* Proxy) { SceneProxy = Proxy; }
-
-	void Init(const FVoxelVertexBuffer* VertexBuffer) {}
-	void SetData(const DataType& InData) {}
-
-	static FVoxelVertexFactoryShaderParameters* ConstructShaderParameters(EShaderFrequency ShaderFrequency);
 
 private:
-	DataType Data;
-
-	uint16 TransformIndex;
-	FVoxelSceneProxy* SceneProxy;
-	friend class FVoxelVertexFactoryShaderParameters;
+	FIndexBuffer* IndexBuffer;
 	TGlobalResource<FVoxelVertexBuffer, FRenderResource::EInitPhase::Pre> GVoxelVertexBuffer;
+	FVoxelSceneProxy* SceneProxy;
+	uint32 FirstIndex;
+	int32 OutTriangleCount;
+	bool bUsesDynamicParameter;
 };

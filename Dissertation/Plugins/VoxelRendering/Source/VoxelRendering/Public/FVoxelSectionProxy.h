@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "RenderResource.h"
 #include "VertexFactory.h"
-#include "LocalVertexFactory.h"
 #include "RHI.h"
 #include "RHIResources.h"
 #include "UniformBuffer.h"
@@ -13,18 +12,22 @@
 #include "SceneManagement.h"
 #include "FVoxelVertexFactory.h"
 
-class FVoxelSectionProxy {
+struct FVoxelProxySection
+{
 public:
 	UMaterialInterface* Material;
+	FStaticMeshVertexBuffers VertexBuffers;
 	FRawStaticIndexBuffer IndexBuffer;
-	FVoxelVertexFactory VertexFactory;
-
+	FLocalVertexFactory VertexFactory;
 	bool bSectionVisible;
-	uint32 MaxVertexIndex;
 
-	FVoxelSectionProxy(ERHIFeatureLevel::Type InFeatureLevel)
-		: Material(NULL)
-		, VertexFactory(InFeatureLevel)
-		, bSectionVisible(true)
-	{}
+	FVoxelProxySection(ERHIFeatureLevel::Type InFeatureLevel) : Material(NULL), VertexFactory(InFeatureLevel, "FVoxelProxySection"), bSectionVisible(true) {}
+
+	~FVoxelProxySection() {
+		this->VertexBuffers.PositionVertexBuffer.ReleaseResource();
+		this->VertexBuffers.StaticMeshVertexBuffer.ReleaseResource();
+		this->VertexBuffers.ColorVertexBuffer.ReleaseResource();
+		this->IndexBuffer.ReleaseResource();
+		this->VertexFactory.ReleaseResource();
+	}
 };

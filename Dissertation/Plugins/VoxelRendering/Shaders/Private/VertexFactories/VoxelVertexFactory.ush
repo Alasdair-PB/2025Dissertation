@@ -1,20 +1,120 @@
-#include "/Engine/Generated/VertexFactoryCommon.ush"
+#include "VertexFactoryCommon.ush"
+#include "VertexFactoryDefaultInterface.ush"
 
-
-struct FMyVertexFactoryInput
+struct FVertexFactoryInput
 {
-    float3 Position : POSITION;
-    float3 Normal : NORMAL;
+    float4 Position : ATTRIBUTE0;
+    float3 OldPosition : ATTRIBUTE1;
+    float4 Normal : ATTRIBUTE2;
+    float4 TexCoord : ATTRIBUTE3;
+    float4 Color : ATTRIBUTE4;
+	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
-
-void VoxelVertexFactory_VertexShader(
-    in FMyVertexFactoryInput Input,
-    out float4 OutPosition,
-    out float3 OutNormal)
+struct FVertexFactoryIntermediates
 {
-    //half3x3 LocalToWorld = GetLocalToWorld3x3(Intermediates.PrimitiveId);
+    float4 Color;
+    FSceneDataIntermediates SceneData;
+};
 
-    //OutPosition = mul(GetLocalToWorld(), float4(Input.Position, 1.0));
-    //OutNormal = mul((float3x3) GetLocalToWorld(), Input.Normal);
+float3 SafeNormalize(float3 V)
+{
+    return V / sqrt(max(dot(V, V), 0.01));
+}
+
+FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
+{
+    FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
+    return Result;
+}
+
+FPrimitiveSceneData GetPrimitiveData(FVertexFactoryIntermediates Intermediates)
+{
+    return Intermediates.SceneData.Primitive;
+}
+
+float4 CalcWorldPosition(FVertexFactoryInput Input)
+{
+    return SimulationToTranslatedWorld(Input.Position.xyz);
+}
+
+void GetTangents(FVertexFactoryInput Input, out float4 Right, out float4 Up)
+{
+    
+}
+
+float3x3 CalcTangentBasis(FVertexFactoryInput Input)
+{
+    float4 Right,
+			Up;
+    GetTangents(Input, Right, Up);
+    return float3x3(
+			Right.xyz,
+			Up.xyz,
+			-normalize(cross(Right.xyz, Up.xyz))
+			);
+}
+
+FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
+{
+    FVertexFactoryInterpolantsVSToPS Interpolants;
+    return Interpolants;
+}
+
+FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
+{
+    FVertexFactoryIntermediates Intermediates;
+    Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
+    Intermediates.Color = Input.Color;
+    return Intermediates;
+}
+
+float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+    return CalcWorldPosition(Input);
+}
+
+float3 VertexFactoryGetInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+    return Input.Position.xyz;
+}
+
+float3 VertexFactoryGetWorldNormal(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+    return CalcTangentBasis(Input)[2];
+}
+
+float4 VertexFactoryGetRasterizedWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, float4 InWorldPosition)
+{
+    return InWorldPosition;
+}
+
+float3 VertexFactoryGetPositionForVertexLighting(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, float3 TranslatedWorldPosition)
+{
+    return TranslatedWorldPosition;
+}
+
+float4 VertexFactoryGetPreviousWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+    return VertexFactoryGetWorldPosition(Input, Intermediates);
+}
+
+float3 VertexFactoryGetPreviousInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+    return Input.Position.xyz;
+}
+
+float3x3 VertexFactoryGetTangentToLocal(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+    return CalcTangentBasis(Input);
+}
+
+float4 VertexFactoryGetTranslatedPrimitiveVolumeBounds(FVertexFactoryInterpolantsVSToPS Interpolants)
+{
+    return 0;
+}
+
+uint VertexFactoryGetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
+{
+    return 0;
 }

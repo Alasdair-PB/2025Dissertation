@@ -6,12 +6,12 @@
 
 IMPLEMENT_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters);
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Vertex, FVoxelVertexFactoryShaderParameters);
-IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelVertexFactory.ush", true, true, true, true, true);
+IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelVertexFactory.ush", false, false, false, false, false);
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
-	//if (!SceneProxy){}
-		//return new FVoxelSceneProxy(this);
-	//else
+	if (!SceneProxy)
+		return new FVoxelSceneProxy();
+	else
 		return SceneProxy;
 }

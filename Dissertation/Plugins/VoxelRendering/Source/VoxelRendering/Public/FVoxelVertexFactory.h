@@ -34,10 +34,11 @@ public:
 	FVoxelIndexBuffer() = default;
 	~FVoxelIndexBuffer() = default;
 
-	TArray<uint32> Indices;
+	int32 NumIndices = 0;
+
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
 	{
-		uint32 Size = sizeof(uint32) * Indices.Num();
+		uint32 Size = sizeof(uint32) * NumIndices;
 		FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
 
 		IndexBufferRHI = RHICmdList.CreateBuffer(
@@ -49,9 +50,10 @@ public:
 		);
 
 		void* LockedData = RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
-		FMemory::Memcpy(LockedData, Indices.GetData(), Size);
+		FMemory::Memzero(LockedData, Size);
 		RHICmdList.UnlockBuffer(IndexBufferRHI);
 	}
+
 };
 
 
@@ -60,12 +62,11 @@ class FVoxelVertexBuffer : public FVertexBuffer
 public:
 	FVoxelVertexBuffer() = default;
 	~FVoxelVertexBuffer() = default;
-
-	TArray<FVoxelVertexInfo> Vertices;
+	int32 NumVertices = 0;
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
 	{
-		uint32 Size = sizeof(FVoxelVertexInfo) * Vertices.Num();
+		uint32 Size = sizeof(FVoxelVertexInfo) * NumVertices;
 		FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
 
 		VertexBufferRHI = RHICmdList.CreateBuffer(
@@ -77,12 +78,12 @@ public:
 		);
 
 		void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
-		FMemory::Memcpy(LockedData, Vertices.GetData(), Size);
+		FMemory::Memzero(LockedData, Size);		//FMemory::Memcpy(LockedData, Vertices.GetData(), Size);
 		RHICmdList.UnlockBuffer(VertexBufferRHI);
 	}
 };
 
-class FVoxelVertexFactory : FVertexFactory
+class FVoxelVertexFactory : public FVertexFactory
 {
 	DECLARE_VERTEX_FACTORY_TYPE(FVoxelVertexFactory);
 public:
@@ -117,10 +118,12 @@ public:
 	{
 		return RHICmdList.CreateUnorderedAccessView(
 			GVoxelIndexBuffer.IndexBufferRHI,
-			sizeof(uint32),
-			PF_Unknown
+			PF_R32_UINT
 		);
 	}
+
+	FVoxelVertexBuffer const* GetVertexBuffer() const { return &GVoxelVertexBuffer; }
+	FVoxelIndexBuffer const* GetIndexBuffer() const { return &GVoxelIndexBuffer; }
 
 private:
 	FVoxelVertexFactoryParameters Params;

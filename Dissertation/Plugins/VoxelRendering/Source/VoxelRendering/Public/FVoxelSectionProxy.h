@@ -12,12 +12,15 @@
 #include "SceneManagement.h"
 #include "FVoxelVertexFactory.h"
 
+/*
 struct FVoxelProxySection
 {
 public:
 	UMaterialInterface* Material;
+
 	FStaticMeshVertexBuffers VertexBuffers;
 	FRawStaticIndexBuffer IndexBuffer;
+
 	FLocalVertexFactory VertexFactory;
 	bool bSectionVisible;
 
@@ -30,4 +33,4 @@ public:
 		this->IndexBuffer.ReleaseResource();
 		this->VertexFactory.ReleaseResource();
 	}
-};
+};*/

@@ -25,10 +25,9 @@ UVoxelMeshComponent::UVoxelMeshComponent()
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
-    if (!VertexBuffer || !MaterialInstance)
+    if (!MaterialInstance)
         return nullptr;
-
-    return new FVoxelSceneProxy(this, VertexBuffer.Get(), IndexBuffer.Get(), MaterialInstance);
+    return new FVoxelSceneProxy(this, MaterialInstance);
 }
 
 FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld) const

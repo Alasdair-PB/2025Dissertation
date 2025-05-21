@@ -21,7 +21,5 @@ public:
     void UpdateMesh(const TArray<FVoxelVertexInfo>& Vertices, const TArray<uint32>& Indices);
 
 private:
-    TUniquePtr<FVoxelVertexBuffer> VertexBuffer;
-    //TUniquePtr<FVoxelIndexBuffer> IndexBuffer;
     UMaterialInstanceDynamic* MaterialInstance;
 };

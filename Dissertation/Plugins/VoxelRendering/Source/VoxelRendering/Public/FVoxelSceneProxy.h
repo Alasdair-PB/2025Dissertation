@@ -3,17 +3,17 @@
 #include "CoreMinimal.h"
 #include "PrimitiveSceneProxy.h"
 #include "FVoxelSectionProxy.h"
+#include "Materials/MaterialRelevance.h"
 
 class FVoxelSceneProxy : public FPrimitiveSceneProxy {
 public:
-	FVoxelSceneProxy(UPrimitiveComponent* Component, ERHIFeatureLevel::Type InFeatureLevel)
-		: FPrimitiveSceneProxy(Component), VertexFactory(InFeatureLevel)
-	{
-	}
+	FVoxelSceneProxy(UPrimitiveComponent* Component)
+		: FPrimitiveSceneProxy(Component)
+	{}
 
 	FORCENOINLINE virtual void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override;
-	void DrawDynamicElements(const FVoxelProxySection* Section, FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
-	void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, FVoxelProxySection* Section, int LODIndex);
+	void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
+	void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, int LODIndex);
 
 	virtual FPrimitiveViewRelevance GetViewRelevance(const FSceneView* View) const override;
 
@@ -26,8 +26,10 @@ public:
 	virtual void CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
+
+	class FVoxelVertexFactory* VertexFactory;
+
 protected:
-	FVertexFactory VertexFactory;
 	FMaterialRelevance MaterialRelevance;
-	TArray<FVoxelProxySection> Sections;
+	UMaterialInterface* Material;
 };

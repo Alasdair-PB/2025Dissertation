@@ -9,6 +9,33 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 	return Result;
 }
 
+FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const
+{
+	for (const FVoxelProxySection& Section : Sections)
+	{
+		FMaterialRenderProxy* renderProxy = Section.Material->GetRenderProxy();
+		for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
+		{
+			if (!(VisibilityMap & (1 << ViewIndex))) continue;
+			FMeshBatch& Mesh = Collector.AllocateMesh();
+			DrawDynamicElements(&Section, Mesh, renderProxy, false, 0);
+			Collector.AddMesh(ViewIndex, Mesh);
+		}
+	}
+}
+
+void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
+	FPrimitiveSceneProxy::CreateRenderThreadResources(RHICmdList);
+}
+
+void FVoxelSceneProxy::DestroyRenderThreadResources() {
+	FPrimitiveSceneProxy::DestroyRenderThreadResources();
+}
+
+void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
+	FPrimitiveSceneProxy::OnTransformChanged(RHICmdList);
+}
+
 void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, FVoxelProxySection* Section, int LODIndex) {
 	if (RuntimeVirtualTextureMaterialTypes.Num() == 0) return;
 
@@ -61,19 +88,4 @@ FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(const FVoxelProxySection*
 	Mesh.Type = PT_TriangleList;
 	Mesh.DepthPriorityGroup = SDPG_World;
 	Mesh.bCanApplyViewModeOverrides = false;
-}
-
-FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const
-{
-	for (const FVoxelProxySection& Section : Sections)
-	{
-		FMaterialRenderProxy* renderProxy = Section.Material->GetRenderProxy();
-		for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
-		{
-			if (!(VisibilityMap & (1 << ViewIndex))) continue;
-			FMeshBatch& Mesh = Collector.AllocateMesh();
-			DrawDynamicElements(&Section, Mesh, renderProxy, false, 0);
-			Collector.AddMesh(ViewIndex, Mesh);
-		}
-	}
 }

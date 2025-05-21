@@ -31,6 +31,9 @@ struct FVoxelVertexInfo
 class FVoxelIndexBuffer : public FIndexBuffer
 {
 public:
+	FVoxelIndexBuffer() = default;
+	~FVoxelIndexBuffer() = default;
+
 	TArray<uint32> Indices;
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
 	{
@@ -101,6 +104,24 @@ public:
 		bUsesDynamicParameter = bInUsesDynamicParameter;
 	}
 
+	FRHIUnorderedAccessView* GetVertexBufferUAV(FRHICommandListBase& RHICmdList) const
+	{
+		return RHICmdList.CreateUnorderedAccessView(
+			GVoxelVertexBuffer.VertexBufferRHI,
+			sizeof(FVoxelVertexInfo),
+			PF_Unknown
+		);
+	}
+
+	FRHIUnorderedAccessView* GetIndexBufferUAV(FRHICommandListBase& RHICmdList) const
+	{
+		return RHICmdList.CreateUnorderedAccessView(
+			GVoxelIndexBuffer.IndexBufferRHI,
+			sizeof(uint32),
+			PF_Unknown
+		);
+	}
+
 private:
 	FVoxelVertexFactoryParameters Params;
 	FVoxelVertexFactoryBufferRef UniformBuffer;
@@ -108,6 +129,5 @@ private:
 	TGlobalResource<FVoxelVertexBuffer, FRenderResource::EInitPhase::Pre> GVoxelVertexBuffer;
 	uint32 FirstIndex;
 	bool bUsesDynamicParameter;
-
 	friend class FVoxelVertexFactoryShaderParameters;
 };

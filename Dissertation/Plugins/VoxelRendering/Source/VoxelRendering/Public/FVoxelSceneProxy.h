@@ -23,7 +23,9 @@ public:
 	}
 
 	virtual uint32 GetMemoryFootprint() const override { return(sizeof(*this) + GetAllocatedSize()); }
-
+	virtual void CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
+	virtual void DestroyRenderThreadResources() override;
+	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
 protected:
 	FVertexFactory VertexFactory;
 	FMaterialRelevance MaterialRelevance;

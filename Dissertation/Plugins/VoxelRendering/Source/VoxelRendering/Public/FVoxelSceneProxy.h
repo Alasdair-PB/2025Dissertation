@@ -6,7 +6,11 @@
 
 class FVoxelSceneProxy : public FPrimitiveSceneProxy {
 public:
-	FVoxelSceneProxy():FPrimitiveSceneProxy(){}
+	FVoxelSceneProxy(UPrimitiveComponent* Component, ERHIFeatureLevel::Type InFeatureLevel)
+		: FPrimitiveSceneProxy(Component), VertexFactory(InFeatureLevel)
+	{
+	}
+
 	FORCENOINLINE virtual void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override;
 	void DrawDynamicElements(const FVoxelProxySection* Section, FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
 	void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, FVoxelProxySection* Section, int LODIndex);
@@ -23,4 +27,5 @@ public:
 protected:
 	FVertexFactory VertexFactory;
 	FMaterialRelevance MaterialRelevance;
+	TArray<FVoxelProxySection> Sections;
 };

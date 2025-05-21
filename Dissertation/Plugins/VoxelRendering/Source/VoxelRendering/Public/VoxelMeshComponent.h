@@ -1,22 +1,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/MeshComponent.h"
-
-// Placeholder headers
-#include "CoreMinimal.h"
-#include "UObject/ObjectMacros.h"
-#include "Interfaces/Interface_CollisionDataProvider.h"
-#include "PhysicsEngine/ConvexElem.h"
-#include "Engine/StaticMesh.h"
-// end placeholder
-
+#include "Components/PrimitiveComponent.h"
+#include "FVoxelVertexFactory.h"
 #include "VoxelMeshComponent.generated.h"
+
 class FPrimitiveSceneProxy;
 
 UCLASS()
 class VOXELRENDERING_API UVoxelMeshComponent : public UMeshComponent
 {
-	GENERATED_BODY()
-	virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
+    GENERATED_BODY()
+
+public:
+    UVoxelMeshComponent();
+
+    virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
+    virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
+
+    void UpdateMesh(const TArray<FVoxelVertexInfo>& Vertices, const TArray<uint32>& Indices);
+
+private:
+    TUniquePtr<FVoxelVertexBuffer> VertexBuffer;
+    //TUniquePtr<FVoxelIndexBuffer> IndexBuffer;
+    UMaterialInstanceDynamic* MaterialInstance;
 };

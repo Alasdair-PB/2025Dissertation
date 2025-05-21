@@ -3,13 +3,12 @@
 
 struct FVertexFactoryInput
 {
-    float4 Position : ATTRIBUTE0;
-    float3 OldPosition : ATTRIBUTE1;
-    float4 Normal : ATTRIBUTE2;
-    float4 TexCoord : ATTRIBUTE3;
-    float4 Color : ATTRIBUTE4;
-	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+    float3 Position : ATTRIBUTE0; // Position
+    float3 Normal : ATTRIBUTE1; // Normal
+    float4 Color : ATTRIBUTE2; // Color
+    VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
+
 
 struct FVertexFactoryIntermediates
 {
@@ -40,7 +39,11 @@ float4 CalcWorldPosition(FVertexFactoryInput Input)
 
 void GetTangents(FVertexFactoryInput Input, out float4 Right, out float4 Up)
 {
-    
+    float3 N = SafeNormalize(Input.Normal);
+    float3 T = SafeNormalize(cross(N, float3(0, 0, 1)));
+    float3 B = cross(N, T);
+    Right = float4(T, 1);
+    Up = float4(B, 1);
 }
 
 float3x3 CalcTangentBasis(FVertexFactoryInput Input)
@@ -58,6 +61,7 @@ float3x3 CalcTangentBasis(FVertexFactoryInput Input)
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
     FVertexFactoryInterpolantsVSToPS Interpolants;
+    Interpolants.Color = Intermediates.Color;
     return Interpolants;
 }
 

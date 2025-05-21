@@ -7,6 +7,14 @@
 #include "RHIUtilities.h"
 #include "FVoxelSceneProxy.h"
 
+class FVoxelVertexFactoryShaderParameters;
+struct FShaderCompilerEnvironment;
+
+BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryParameters, )
+	SHADER_PARAMETER_SRV(Texture2D<float>, NoiseTexture)
+END_GLOBAL_SHADER_PARAMETER_STRUCT()
+typedef TUniformBufferRef<FVoxelVertexFactoryParameters> FVoxelVertexFactoryBufferRef;
+
 struct FVoxelVertexInfo
 {
 	FVoxelVertexInfo() {}
@@ -19,6 +27,30 @@ struct FVoxelVertexInfo
 	FVector Normal;
 	FColor Color;
 };
+
+class FVoxelIndexBuffer : public FIndexBuffer
+{
+public:
+	TArray<uint32> Indices;
+	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
+	{
+		uint32 Size = sizeof(uint32) * Indices.Num();
+		FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
+
+		IndexBufferRHI = RHICmdList.CreateBuffer(
+			Size,
+			BUF_UnorderedAccess | BUF_ShaderResource | BUF_IndexBuffer,
+			0,
+			ERHIAccess::UAVCompute | ERHIAccess::SRVCompute,
+			CreateInfo
+		);
+
+		void* LockedData = RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
+		FMemory::Memcpy(LockedData, Indices.GetData(), Size);
+		RHICmdList.UnlockBuffer(IndexBufferRHI);
+	}
+};
+
 
 class FVoxelVertexBuffer : public FVertexBuffer
 {
@@ -33,9 +65,16 @@ public:
 		uint32 Size = sizeof(FVoxelVertexInfo) * Vertices.Num();
 		FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
 
-		VertexBufferRHI = RHICmdList.CreateBuffer(Size, BUF_Static | BUF_VertexBuffer | BUF_ShaderResource, 0, ERHIAccess::VertexOrIndexBuffer | ERHIAccess::SRVMask, CreateInfo);
+		VertexBufferRHI = RHICmdList.CreateBuffer(
+			Size,
+			BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer,
+			0,
+			ERHIAccess::UAVCompute | ERHIAccess::SRVCompute,
+			CreateInfo
+		);
+
 		void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
-		FMemory::Memzero(LockedData, Size);
+		FMemory::Memcpy(LockedData, Vertices.GetData(), Size);
 		RHICmdList.UnlockBuffer(VertexBufferRHI);
 	}
 };
@@ -45,7 +84,7 @@ class FVoxelVertexFactory : FVertexFactory
 	DECLARE_VERTEX_FACTORY_TYPE(FVoxelVertexFactory);
 public:
 
-	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel) : FVertexFactory(InFeatureLevel){}
+	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel) : FVertexFactory(InFeatureLevel);
 
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
@@ -62,16 +101,13 @@ public:
 		bUsesDynamicParameter = bInUsesDynamicParameter;
 	}
 
-	FIndexBuffer*& GetIndexBuffer()
-	{
-		return IndexBuffer;
-	}
-
 private:
-	FIndexBuffer* IndexBuffer;
+	FVoxelVertexFactoryParameters Params;
+	FVoxelVertexFactoryBufferRef UniformBuffer;
+	TGlobalResource<FVoxelIndexBuffer, FRenderResource::EInitPhase::Pre> GVoxelIndexBuffer;
 	TGlobalResource<FVoxelVertexBuffer, FRenderResource::EInitPhase::Pre> GVoxelVertexBuffer;
-	FVoxelSceneProxy* SceneProxy;
 	uint32 FirstIndex;
-	int32 OutTriangleCount;
 	bool bUsesDynamicParameter;
+
+	friend class FVoxelVertexFactoryShaderParameters;
 };

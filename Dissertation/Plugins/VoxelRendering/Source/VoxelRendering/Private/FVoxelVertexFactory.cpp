@@ -1,48 +1,84 @@
 #include "FVoxelVertexFactory.h"
+#include "MaterialDomain.h"
+#include "MeshDrawShaderBindings.h"
+#include "MeshMaterialShader.h"
+#include "DataDrivenShaderPlatformInfo.h"
+#include "RHIResourceUtils.h"
 
 class FVoxelVertexFactoryShaderParameters : public FVertexFactoryShaderParameters {
 	DECLARE_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters, NonVirtual);
 public:
 	void GetElementShaderBindings(
-		const FSceneInterface* Scene,
-		const FSceneView* View,
-		const FMeshMaterialShader* Shader,
+		const class FSceneInterface* Scene,
+		const class FSceneView* View,
+		const class FMeshMaterialShader* Shader,
 		const EVertexInputStreamType InputStreamType,
 		ERHIFeatureLevel::Type FeatureLevel,
-		const FVertexFactory* VertexFactory,
-		const FMeshBatchElement& BatchElement,
+		const class FVertexFactory* InVertexFactory,
+		const struct FMeshBatchElement& BatchElement,
 		class FMeshDrawSingleShaderBindings& ShaderBindings,
 		FVertexInputStreamArray& VertexStreams) const
 	{
-
-		FVoxelVertexFactory* VoxelVF = (FVoxelVertexFactory*)VertexFactory;
+		FVoxelVertexFactory* VoxelVF = (FVoxelVertexFactory*)InVertexFactory;
 		const uint32 Index = VoxelVF->FirstIndex;
-		//ShaderBindings.Add(TransformIndex, Index);
+		ShaderBindings.Add(Shader->GetUniformBufferParameter<FVoxelVertexFactoryParameters>(), VoxelVF->UniformBuffer);
 	}
 
 	void Bind(const FShaderParameterMap& ParameterMap)
 	{
-		//TransformIndex.Bind(ParameterMap, TEXT("TransformIndex"), SPF_Optional);
-		//TransformsSRV.Bind(ParameterMap, TEXT("Transforms"), SPF_Optional);
+		//MySRV.Bind(ParameterMap, TEXT("Data"), SPF_Optional);
 	};
 
 
 private:
-	//LAYOUT_FIELD(FShaderParameter, TransformIndex);
-	//LAYOUT_FIELD(FShaderResourceParameter, TransformsSRV);
+	//LAYOUT_FIELD(FShaderResourceParameter, MySRV);
 };
 
-bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters) { return false; }
+IMPLEMENT_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters);
+IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactoryShaderParameters, SF_Vertex, FVoxelVertexFactoryShaderParameters);
+IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactoryShaderParameters, SF_Pixel, FVoxelVertexFactoryShaderParameters);
+
+IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelVertexFactory.ush",
+	EVertexFactoryFlags::UsedWithMaterials
+	| EVertexFactoryFlags::SupportsDynamicLighting
+	| EVertexFactoryFlags::SupportsPositionOnly
+	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
+);
+
+bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters) { return true; }
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {
-	OutEnvironment.SetDefine(TEXT("VOXEL_MESH"), TEXT("0"));
+	OutEnvironment.SetDefine(TEXT("VOXEL_MESH"), TEXT("1"));
 	FVertexFactory::ModifyCompilationEnvironment(Parameters, OutEnvironment);
-
 }
-void FVoxelVertexFactory::GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements) {}
 
-void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList){}
-void FVoxelVertexFactory::ReleaseRHI() {}
+void FVoxelVertexFactory::GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements)
+{
+	const uint32 Stride = sizeof(FVoxelVertexInfo);
+	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Position), VET_Float3, 0, Stride)); // POSITION
+	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Normal), VET_Float3, 1, Stride));   // NORMAL
+	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Color), VET_Color, 2, Stride));     // COLOR
+}
 
-void FVoxelVertexFactory::SetVertexBuffer(const FVertexBuffer* InBuffer, uint32 StreamOffset, uint32 Stride) {}
-void FVoxelVertexFactory::SetDynamicParameterBuffer(const FVertexBuffer* InDynamicParameterBuffer, uint32 StreamOffset, uint32 Stride) {}
+void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
+{
+	FVertexDeclarationElementList Elements;
+	GetPSOPrecacheVertexFetchElements(EVertexInputStreamType::Default, Elements);
+	InitDeclaration(Elements);
+}
+
+void FVoxelVertexFactory::ReleaseRHI()
+{
+	UniformBuffer.SafeRelease();
+	FVertexFactory::ReleaseRHI();
+}
+
+void FVoxelVertexFactory::SetVertexBuffer(const FVertexBuffer* InBuffer, uint32 StreamOffset, uint32 Stride)
+{
+	// Optional
+}
+
+void FVoxelVertexFactory::SetDynamicParameterBuffer(const FVertexBuffer* InDynamicParameterBuffer, uint32 StreamOffset, uint32 Stride)
+{
+	// Optional
+}

@@ -37,13 +37,6 @@ FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld)
 
 void UVoxelMeshComponent::UpdateMesh(const TArray<FVoxelVertexInfo>& Vertices, const TArray<uint32>& Indices)
 {
-    VertexBuffer = MakeUnique<FVoxelVertexBuffer>();
-    VertexBuffer->Vertices = Vertices;
-    VertexBuffer->InitResource();
-
-    IndexBuffer = MakeUnique<FVoxelIndexBuffer>();
-    IndexBuffer->Indices = Indices;
-    IndexBuffer->InitResource();
 
     MarkRenderStateDirty();
 }

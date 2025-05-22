@@ -88,7 +88,10 @@ class FVoxelVertexFactory : public FVertexFactory
 	DECLARE_VERTEX_FACTORY_TYPE(FVoxelVertexFactory);
 public:
 
-	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel) : FVertexFactory(InFeatureLevel);
+	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, FVoxelVertexFactoryParameters UniformParams) : FVertexFactory(InFeatureLevel)
+	{
+
+	}
 
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);

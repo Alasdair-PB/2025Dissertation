@@ -37,6 +37,9 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const F
 }
 
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
+
+	FVoxelVertexFactoryParameters UniformParams;
+
 	VertexFactory = new FVoxelVertexFactory(GetScene().GetFeatureLevel());
 	VertexFactory->InitResource(RHICmdList);
 	FPrimitiveSceneProxy::CreateRenderThreadResources(RHICmdList);
@@ -49,7 +52,6 @@ void FVoxelSceneProxy::DestroyRenderThreadResources() {
 		delete VertexFactory;
 		VertexFactory = nullptr;
 	}
-	FPrimitiveSceneProxy::DestroyRenderThreadResources();
 }
 
 void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {

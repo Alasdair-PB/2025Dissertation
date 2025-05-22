@@ -28,8 +28,7 @@ public:
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
 
 	class FVoxelVertexFactory* VertexFactory;
+	UMaterialInterface* Material;
 
 protected:
-	FMaterialRelevance MaterialRelevance;
-	UMaterialInterface* Material;
 };

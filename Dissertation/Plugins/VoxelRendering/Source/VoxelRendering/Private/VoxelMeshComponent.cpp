@@ -22,7 +22,6 @@ void UVoxelMeshComponent::BeginDestroy() {
 }
 
 void UVoxelMeshComponent::InitVoxelMesh(AABB bounds, int depth, TArray<float>& isovalueBuffer, TArray<uint32>& typeValueBuffer) {
-    sceneProxy = CreateSceneProxy();
     int nodesPerAxisMaxRes = Octree::IntPow(2, depth);
     int size = voxelsPerAxis * nodesPerAxisMaxRes;
     BuildOctree(bounds, size, depth);
@@ -39,7 +38,8 @@ FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
     if (!MaterialInstance)
         return nullptr;
-	return new FVoxelSceneProxy(this); //, GetWorld()->GetFeatureLevel()
+    sceneProxy = new FVoxelSceneProxy(this);
+	return sceneProxy; //, GetWorld()->GetFeatureLevel()
 }
 
 FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld) const
@@ -52,11 +52,14 @@ float UVoxelMeshComponent::SampleSDF(FVector3f p) {
 }
 
 void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
+
     FMarchingCubesDispatchParams Params(1, 1, 1);
     Params.Input.baseDepthScale = 400.0f;
     Params.Input.isoLevel = isoLevel;
     Params.Input.voxelsPerAxis = voxelsPerAxis;
     Params.Input.tree = node;
+    Params.Input.VertexBufferUAV = sceneProxy->GetVertexFactor()->GetVertexPooledBuffer();
+    //Params.Input.IndexBufferUAV = sceneProxy->GetVertexFactor()->GetIndexBufferUAV();
     Params.Input.leafCount = tree->GetLeafCount(); // Note this may not need to be done every dispatch
 
     FMarchingCubesInterface::Dispatch(Params,

@@ -75,7 +75,7 @@ void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, in
 	Mesh.bDitheredLODTransition = false;
 
 	FMeshBatchElement& meshBatch = Mesh.Elements[0];
-	meshBatch.IndexBuffer = VertexFactory->GetIndexBuffer();
+	meshBatch.IndexBuffer = VertexFactory->GetIndexPooledBuffer()->GetIndexBuffer();
 	meshBatch.FirstIndex = 0;
 	meshBatch.NumPrimitives = 0; // IndexBuffer.GetIndexDataSize() / 3;
 	meshBatch.MinVertexIndex = 0;

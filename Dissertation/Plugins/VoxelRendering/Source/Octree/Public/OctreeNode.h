@@ -65,26 +65,6 @@ public:
         }
     }
 
-    int GetAverageType(int i, int averagePassCount, const TArray<uint8>& typeBuffer) {
-        int mostCommonIndex = 0;
-        int maxCount = 0;
-        TMap<int, int> frequencyMap;
-
-        for (int j = 0; j < averagePassCount; j++) {
-            int value = typeBuffer[i + j];
-            frequencyMap.FindOrAdd(value)++;
-        }
-
-        for (const auto& pair : frequencyMap) {
-            if (pair.Value > maxCount) {
-                mostCommonIndex = pair.Key;
-                maxCount = pair.Value;
-            }
-        }
-        return mostCommonIndex;
-    }
-
-
     bool SampleValuesFromBuffers(const TArray<float> isovalueBuffer, const TArray<uint32> typeBuffer, int localVoxelsPerAxis) {
         int allocatedTypeCount = localVoxelsPerAxis * localVoxelsPerAxis * localVoxelsPerAxis;
         int highResCount = (localVoxelsPerAxis + 1) * (localVoxelsPerAxis + 1) * (localVoxelsPerAxis + 1);

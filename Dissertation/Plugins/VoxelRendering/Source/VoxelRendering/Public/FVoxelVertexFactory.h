@@ -4,8 +4,24 @@
 #include "UniformBuffer.h"
 #include "MeshMaterialShader.h"
 #include "ShaderParameters.h"
+#include "RHI.h"
 #include "RHIUtilities.h"
 #include "FVoxelSceneProxy.h"
+
+
+#include "ComputeDispatchers.h"
+#include "CommonRenderResources.h"
+#include "RenderGraph.h"
+#include "PixelShaderUtils.h"
+#include "Runtime/RenderCore/Public/RenderGraphUtils.h"
+#include "MeshPassProcessor.inl"
+#include "StaticMeshResources.h"
+#include "DynamicMeshBuilder.h"
+#include "RenderGraphResources.h"
+#include "GlobalShader.h"
+#include "UnifiedBuffer.h"
+#include "CanvasTypes.h"
+#include "MaterialShader.h"
 
 class FVoxelVertexFactoryShaderParameters;
 struct FShaderCompilerEnvironment;
@@ -33,27 +49,22 @@ class FVoxelIndexBuffer : public FIndexBuffer
 public:
 	FVoxelIndexBuffer() = default;
 	~FVoxelIndexBuffer() = default;
-
-	int32 NumIndices = 0;
+	FVoxelIndexBuffer(int32 InNumIndices) : NumIndices(InNumIndices) {}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
 	{
 		uint32 Size = sizeof(uint32) * NumIndices;
 		FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
+		EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_IndexBuffer;
+		const ERHIAccess InitialState = ERHIAccess::UAVCompute | ERHIAccess::SRVCompute;
 
-		IndexBufferRHI = RHICmdList.CreateBuffer(
-			Size,
-			BUF_UnorderedAccess | BUF_ShaderResource | BUF_IndexBuffer,
-			0,
-			ERHIAccess::UAVCompute | ERHIAccess::SRVCompute,
-			CreateInfo
-		);
-
+		IndexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, InitialState, CreateInfo);
 		void* LockedData = RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
 		FMemory::Memzero(LockedData, Size);
 		RHICmdList.UnlockBuffer(IndexBufferRHI);
 	}
-
+private:
+	int32 NumIndices = 0;
 };
 
 
@@ -62,25 +73,23 @@ class FVoxelVertexBuffer : public FVertexBuffer
 public:
 	FVoxelVertexBuffer() = default;
 	~FVoxelVertexBuffer() = default;
-	int32 NumVertices = 0;
+	FVoxelVertexBuffer(int32 InNumVertices) : NumVertices(InNumVertices) {}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
 	{
 		uint32 Size = sizeof(FVoxelVertexInfo) * NumVertices;
 		FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
+		EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
+		const ERHIAccess InitialState = ERHIAccess::UAVCompute | ERHIAccess::SRVCompute;
 
-		VertexBufferRHI = RHICmdList.CreateBuffer(
-			Size,
-			BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer,
-			0,
-			ERHIAccess::UAVCompute | ERHIAccess::SRVCompute,
-			CreateInfo
-		);
-
+		VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, InitialState, CreateInfo);
 		void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
 		FMemory::Memzero(LockedData, Size);		//FMemory::Memcpy(LockedData, Vertices.GetData(), Size);
 		RHICmdList.UnlockBuffer(VertexBufferRHI);
 	}
+
+private:
+	int32 NumVertices = 0;
 };
 
 class FVoxelVertexFactory : public FVertexFactory
@@ -111,7 +120,7 @@ public:
 	FRHIUnorderedAccessView* GetVertexBufferUAV(FRHICommandListBase& RHICmdList) const
 	{
 		return RHICmdList.CreateUnorderedAccessView(
-			GVoxelVertexBuffer.VertexBufferRHI,
+			VertexBuffer.VertexBufferRHI,
 			sizeof(FVoxelVertexInfo),
 			PF_Unknown
 		);
@@ -120,19 +129,20 @@ public:
 	FRHIUnorderedAccessView* GetIndexBufferUAV(FRHICommandListBase& RHICmdList) const
 	{
 		return RHICmdList.CreateUnorderedAccessView(
-			GVoxelIndexBuffer.IndexBufferRHI,
+			IndexBuffer.IndexBufferRHI,
 			PF_R32_UINT
 		);
 	}
 
-	FVoxelVertexBuffer const* GetVertexBuffer() const { return &GVoxelVertexBuffer; }
-	FVoxelIndexBuffer const* GetIndexBuffer() const { return &GVoxelIndexBuffer; }
-
+	FVoxelVertexBuffer const* GetVertexBuffer() const { return &VertexBuffer; }
+	FVoxelIndexBuffer const* GetIndexBuffer() const { return &IndexBuffer; }
 private:
 	FVoxelVertexFactoryParameters Params;
 	FVoxelVertexFactoryBufferRef UniformBuffer;
-	TGlobalResource<FVoxelIndexBuffer, FRenderResource::EInitPhase::Pre> GVoxelIndexBuffer;
-	TGlobalResource<FVoxelVertexBuffer, FRenderResource::EInitPhase::Pre> GVoxelVertexBuffer;
+
+	FVoxelIndexBuffer IndexBuffer;
+	FVoxelVertexBuffer VertexBuffer;
+
 	uint32 FirstIndex;
 	bool bUsesDynamicParameter;
 	friend class FVoxelVertexFactoryShaderParameters;

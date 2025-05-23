@@ -105,33 +105,53 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			const int vertexCount = maxVoxelCount * 15;
 			const int triCount = maxVoxelCount * 15; 
 
-			TArray<FVector3f> OutVertices;
+			//TArray<FVector3f> OutVertices;
 			TArray<FVector3f> OutNormals;
 			TArray<int32> OutTris;
 
-			OutVertices.Init(FVector3f(-1, -1, -1), vertexCount);
+			//OutVertices.Init(FVector3f(-1, -1, -1), vertexCount);
 			OutNormals.Init(FVector3f(-1, -1, -1), vertexCount);
 			OutTris.Init(-1, triCount);
 
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
-			FRDGBufferRef OutVerticesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutVertices_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutVertices.GetData(), vertexCount * sizeof(FVector3f));
+			//FRDGBufferRef OutVerticesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutVertices_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutVertices.GetData(), vertexCount * sizeof(FVector3f));
 			FRDGBufferRef OutNormalsBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutNormals_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutNormals.GetData(), vertexCount * sizeof(FVector3f));
 			FRDGBufferRef OutTrisBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutTris_StructuredBuffer"), sizeof(int32), triCount, OutTris.GetData(), triCount * sizeof(int32));
+
+
+			// Testing
+			FRHIUnorderedAccessView* accessView = Params.Input.VertexBufferUAV;
+			FRHIBuffer* BufferRHI = accessView->GetBuffer();
+			FRDGBuffer* VertexToEdgeBuffer;
+			TRefCountPtr<FRDGPooledBuffer> VertexBuffer = GraphBuilder.ConvertToExternalBuffer(VertexToEdgeBuffer);
+			FRDGBufferRef RDGVertexBuffer = GraphBuilder.RegisterExternalBuffer(VertexBuffer, TEXT("ExternalVertexBuffer"));
+			//TRefCountPtr<FRDGPooledBuffer> PooledBufferRef = *Params.Input.VertexBufferUAV;
+
 
 			FRDGBufferSRVRef InLookUpSRV = GraphBuilder.CreateSRV(isoValuesBuffer);
 			FRDGBufferUAVRef OutTrisUAV = GraphBuilder.CreateUAV(OutTrisBuffer);
 			FRDGBufferUAVRef OutNormalsUAV = GraphBuilder.CreateUAV(OutNormalsBuffer);
-			FRDGBufferUAVRef OutVerticiesUAV = GraphBuilder.CreateUAV(OutVerticesBuffer);
+			FRDGBufferUAVRef OutVerticiesUAV = GraphBuilder.CreateUAV(RDGVertexBuffer);//GraphBuilder.CreateUAV(OutVerticesBuffer);
 
 			uint32 nodeIndex = 0;
 			AddOctreeMarchingPass(GraphBuilder, Params.Input.tree, 0, &nodeIndex, Params, OutTrisUAV, OutNormalsUAV, OutVerticiesUAV, InLookUpSRV);
 
-			FRHIGPUBufferReadback* VerticesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesVertices"));
+			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->
+				void {
+					FMarchingCubesOutput OutVal;
+					AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });
+				};
+			AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {
+				RunnerFunc(RunnerFunc); });
+		}
+		else {}
+
+			/*FRHIGPUBufferReadback* VerticesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesVertices"));
 			FRHIGPUBufferReadback* TrianglesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesIndices"));
 			FRHIGPUBufferReadback* NormalsReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesNormals"));
 
 			AddEnqueueCopyPass(GraphBuilder, NormalsReadback, OutNormalsBuffer, 0u);
-			AddEnqueueCopyPass(GraphBuilder, VerticesReadback, OutVerticesBuffer, 0u);
+			AddEnqueueCopyPass(GraphBuilder, VerticesReadback, RDGVertexBuffer, 0u);
 			AddEnqueueCopyPass(GraphBuilder, TrianglesReadback, OutTrisBuffer, 0u);
 
 			auto RunnerFunc = [VerticesReadback, TrianglesReadback, NormalsReadback, AsyncCallback, vertexCount, triCount](auto&& RunnerFunc) ->
@@ -165,7 +185,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {
 				RunnerFunc(RunnerFunc); });
 		}
-		else {}
+		else {}*/
 	}
 	GraphBuilder.Execute();
 }

@@ -12,8 +12,6 @@ public:
 	{}
 
 	FORCENOINLINE virtual void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override;
-	void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
-	void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, int LODIndex);
 
 	virtual FPrimitiveViewRelevance GetViewRelevance(const FSceneView* View) const override;
 
@@ -27,8 +25,15 @@ public:
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
 
+	FVoxelVertexFactory* GetVertexFactor() {
+		return VertexFactory;
+	}
+
 	class FVoxelVertexFactory* VertexFactory;
 	UMaterialInterface* Material;
 
-protected:
+protected:	
+	void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
+	void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, int LODIndex);
+
 };

@@ -5,6 +5,8 @@
 #include "GenericPlatform/GenericPlatformMisc.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "../../Octree/Public/OctreeNode.h"
+#include "RenderGraphResources.h"
+
 #include "MarchingCubesDispatcher.generated.h"
 
 USTRUCT(BlueprintType)
@@ -21,6 +23,9 @@ struct FMarchingCubesInput
 {
 	GENERATED_BODY()
 	OctreeNode* tree;
+	//FBufferRHIRef* VertexBufferRHI;
+	//FRHIUnorderedAccessView* IndexBufferUAV;
+	FRHIUnorderedAccessView* VertexBufferUAV;
 	UPROPERTY(BlueprintReadOnly) int leafCount = 0;
 	UPROPERTY(BlueprintReadOnly) FVector3f leafPosition = FVector3f();
 	UPROPERTY(BlueprintReadOnly) int leafDepth = 0;
@@ -29,6 +34,7 @@ struct FMarchingCubesInput
 	UPROPERTY(BlueprintReadOnly) float baseDepthScale = 0;
 	UPROPERTY(BlueprintReadOnly) float isoLevel = 0;
 	UPROPERTY(BlueprintReadOnly) TArray<float> isoValues;
+
 };
 
 struct COMPUTEDISPATCHERS_API FMarchingCubesDispatchParams

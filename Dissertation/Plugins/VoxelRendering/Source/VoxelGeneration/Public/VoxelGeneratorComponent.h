@@ -5,10 +5,10 @@
 #include "../../Octree/Public/Octree.h"
 #include "../../Octree/Public/OctreeNode.h"
 #include "ProceduralMeshComponent.h"
-#include "VoxelRendererComponent.h"
 #include "../../ComputeDispatchers/Public/MarchingCubesDispatcher.h"
 #include "../../ComputeDispatchers/Public/PlanetGeneratorDispatcher.h"
 #include "StopWatch.h"
+#include "VoxelMeshComponent.h"
 #include "VoxelGeneratorComponent.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -25,30 +25,15 @@ protected:
 	virtual void BeginDestroy() override;
 private:
 	void TraverseAndDraw(OctreeNode* node);
-	void InitOctree();
-	void InvokeVoxelRenderer(OctreeNode* node);
-	int GetLeafCount(OctreeNode* node);
+	void InitIsoDispatch();
 	UProceduralMeshComponent* ProcMesh;
 
-	void SampleExampleComputeShader();
-	void SwapBuffers();
-	void UpdateMesh(FMarchingCubesOutput meshInfo);
 	void DispatchIsoBuffer(int size, int depth);
-	void BuildOctree(int size, int depth);
-	UVoxelRendererComponent* voxelRenderer;
-	Octree* tree;
-	float SampleSDF(FVector3f p);
-	FMarchingCubesOutput marchingCubesOutBuffer[2];
-	bool bBufferReady[2] = { false, false };
+	void InitVoxelMesh(int size, int depth);
+	UVoxelMeshComponent* voxelMesh;
 
-	bool dispathShader = false;
-	TArray<float> isovalueBuffer;
+	AABB bounds;
+	TArray<float> isoValueBuffer;
 	TArray<uint32> typeValueBuffer;
-
-	uint32 ReadBufferIndex = 0;
-	uint32 WriteBufferIndex = 1;
-	uint32 nodeIndex = 0;
 	StopWatch* stopWatch = new StopWatch();
-
-	int leafCount = 0;
 };

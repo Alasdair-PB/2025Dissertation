@@ -35,11 +35,24 @@ public:
         return result;
     }
 
+    int GetLeafCount() {
+        return GetLeafCountRecursive(root);
+    }
+
 private:
     struct NodeData {
         TArray<float> isoValues;
         TArray<uint32> typeValues;
     };
+
+    int GetLeafCountRecursive(OctreeNode* node) {
+        if (!node) return 0;
+        if (node->isLeaf) return 1;
+        int count = 0;
+        for (int i = 0; i < 8; ++i)
+            count += GetLeafCountRecursive(node->children[i]);
+        return count;
+    }
 
     TArray<NodeData> SplitIsoBufferWithOverlap(const TArray<float>& isoBuffer, const TArray<uint32>& typeBuffer, int nodesPerAxs) {
         TArray<NodeData> chunks;

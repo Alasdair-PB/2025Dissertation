@@ -58,7 +58,7 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 	if (!(node->isLeaf)) {	
 		depth++;
 		for (OctreeNode* child : node->children)
-			AddOctreeMarchingPass(GraphBuilder, child, depth, nodeIndex, Params, OutTrisUAV, OutNormalsUAV, OutVerticiesUAV, InLookUpSRV);
+			AddOctreeMarchingPass(GraphBuilder, child, depth, nodeIndex, Params, OutTrisUAV, OutInfoUAV, InLookUpSRV);
 		return;
 	}
 
@@ -100,19 +100,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		bool bIsShaderValid = ComputeShader.IsValid();
 
 		if (bIsShaderValid) {
-			const int maxVoxelCount = nodeVoxelCount * Params.Input.leafCount;
-			const int vertexCount = maxVoxelCount * 15;
-			const int triCount = maxVoxelCount * 15; 
-
-			//TArray<FVector3f> OutVertices;
-			TArray<int32> OutTris;
-
-			//OutVertices.Init(FVector3f(-1, -1, -1), vertexCount);
-			OutTris.Init(-1, triCount);
-
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
-			//FRDGBufferRef OutVerticesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutVertices_StructuredBuffer"), sizeof(FVector3f), vertexCount, OutVertices.GetData(), vertexCount * sizeof(FVector3f));
-			//FRDGBufferRef OutTrisBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutTris_StructuredBuffer"), sizeof(int32), triCount, OutTris.GetData(), triCount * sizeof(int32));
 
 			uint32 indexNumElements = Params.Input.indexBufferRHIRef.NumElements;
 			uint32 vertexNumElements = Params.Input.vertexBufferRHIRef.NumElements;

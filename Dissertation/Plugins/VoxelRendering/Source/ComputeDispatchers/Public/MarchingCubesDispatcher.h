@@ -6,21 +6,21 @@
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "../../Octree/Public/OctreeNode.h"
 #include "RenderGraphResources.h"
-
 #include "MarchingCubesDispatcher.generated.h"
 
 USTRUCT(BlueprintType)
 struct FMarchingCubesOutput
 {
 	GENERATED_BODY()
-	UPROPERTY(BlueprintReadOnly) TArray<FVector3f> outVertices;
-	UPROPERTY(BlueprintReadOnly) TArray<int> outTris;
-	UPROPERTY(BlueprintReadOnly) TArray<FVector3f> outNormals;
+	//UPROPERTY(BlueprintReadOnly) TArray<FVector3f> outVertices;
+	//UPROPERTY(BlueprintReadOnly) TArray<int> outTris;
+	//UPROPERTY(BlueprintReadOnly) TArray<FVector3f> outNormals;
 };
 
 USTRUCT(BlueprintType)
 struct FVoxelComputeShaderDispatchData
 {
+	GENERATED_BODY()
 	FVoxelComputeShaderDispatchData(FBufferRHIRef inBufferRHI, uint32 inNumElements, uint32 inSizeInBites) : 
 		BufferRHI(inBufferRHI), NumElements(inNumElements), SizeInBytes(inSizeInBites) {}
 	FBufferRHIRef BufferRHI;

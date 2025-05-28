@@ -4,6 +4,7 @@
 #include "PrimitiveSceneProxy.h"
 #include "FVoxelVertexFactory.h"
 #include "Materials/MaterialRelevance.h"
+class FVoxelVertexFactory;
 
 class FVoxelSceneProxy : public FPrimitiveSceneProxy {
 public:
@@ -25,14 +26,11 @@ public:
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
 
-	FVoxelVertexFactory* GetVertexFactor() {
-		return VertexFactory;
-	}
-
-	class FVoxelVertexFactory* VertexFactory;
+	FVoxelVertexFactory* GetVertexFactor();
 	UMaterialInterface* Material;
 
 protected:	
+	FVoxelVertexFactory* VertexFactory;
 	void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
 	void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, int LODIndex);
 

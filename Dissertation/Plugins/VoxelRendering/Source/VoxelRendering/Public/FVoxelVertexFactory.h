@@ -34,7 +34,7 @@ class FVoxelIndexBuffer : public FIndexBuffer
 public:
 	FVoxelIndexBuffer() = default;
 	~FVoxelIndexBuffer() = default;
-	FVoxelIndexBuffer(int32 InNumIndices) : numIndices(InNumIndices) {}
+	FVoxelIndexBuffer(uint32 InNumIndices) : numIndices(InNumIndices) {}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
 	{
@@ -49,9 +49,10 @@ public:
 		RHICmdList.UnlockBuffer(IndexBufferRHI);
 	}
 	uint32 GetIndexCount() const { return numIndices; }
+	void SetElementCount(uint32 InNumIndices) { numIndices = InNumIndices; }
 
 private:
-	int32 numIndices = 0;
+	uint32 numIndices = 0;
 };
 
 class FVoxelVertexBuffer : public FVertexBuffer
@@ -59,7 +60,7 @@ class FVoxelVertexBuffer : public FVertexBuffer
 public:
 	FVoxelVertexBuffer() = default;
 	~FVoxelVertexBuffer() = default;
-	FVoxelVertexBuffer(int32 InNumVertices) : numVertices(InNumVertices) {}
+	FVoxelVertexBuffer(uint32 InNumVertices) : numVertices(InNumVertices) {}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
 	{
@@ -74,8 +75,9 @@ public:
 		RHICmdList.UnlockBuffer(VertexBufferRHI);
 	}
 	uint32 GetVertexCount() const { return numVertices;}
+	void SetElementCount(uint32 InNumVertices) { numVertices = InNumVertices; }
 private:
-	int32 numVertices = 0;
+	uint32 numVertices = 0;
 };
 
 class FVoxelVertexFactory : public FVertexFactory
@@ -83,9 +85,10 @@ class FVoxelVertexFactory : public FVertexFactory
 	DECLARE_VERTEX_FACTORY_TYPE(FVoxelVertexFactory);
 public:
 
-	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, FVoxelVertexFactoryParameters UniformParams) : FVertexFactory(InFeatureLevel) //, FVoxelVertexFactoryParameters UniformParams
+	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel) //, FVoxelVertexFactoryParameters UniformParams
 	{
-
+		vertexBuffer.SetElementCount(bufferSize);
+		indexBuffer.SetElementCount(bufferSize);
 	}
 
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
@@ -94,11 +97,6 @@ public:
 
 	void InitRHI(FRHICommandListBase& RHICmdList) override final;
 	void ReleaseRHI() override;
-
-	void SetVertexBuffer(const FVertexBuffer* InBuffer, uint32 StreamOffset, uint32 Stride);
-	ENGINE_API void SetDynamicParameterBuffer(const FVertexBuffer* InDynamicParameterBuffer, uint32 StreamOffset, uint32 Stride);
-
-	inline void SetUsesDynamicParameter(bool bInUsesDynamicParameter) { bUsesDynamicParameter = bInUsesDynamicParameter;}
 
 	FBufferRHIRef GetVertexBufferRHIRef() const { return vertexBuffer.GetRHI();}
 	FBufferRHIRef GetIndexBufferRHIRef() const { return indexBuffer.GetRHI();}
@@ -109,7 +107,7 @@ public:
 	uint32 GetVertexBufferElementsCount() const { return vertexBuffer.GetVertexCount(); }
 	uint32 GetIndexBufferElementsCount() const { return indexBuffer.GetIndexCount(); }
 
-	FRHIUnorderedAccessView* GetVertexBufferUAV(FRHICommandListBase& RHICmdList) const
+	/*FRHIUnorderedAccessView* GetVertexBufferUAV(FRHICommandListBase& RHICmdList) const
 	{
 		return RHICmdList.CreateUnorderedAccessView(
 			vertexBuffer.VertexBufferRHI,
@@ -124,10 +122,10 @@ public:
 			indexBuffer.IndexBufferRHI,
 			PF_R32_UINT
 		);
-	}
+	}*/
 
-	FVoxelVertexBuffer const* GetVertexBuffer() const { return &vertexBuffer; }
-	FVoxelIndexBuffer const* GetIndexBuffer() const { return &indexBuffer; }
+	FVoxelVertexBuffer* GetVertexBuffer() { return &vertexBuffer; }
+	FVoxelIndexBuffer* GetIndexBuffer() { return &indexBuffer; }
 private:
 	FVoxelVertexFactoryParameters params;
 	FVoxelVertexFactoryBufferRef uniformBuffer;

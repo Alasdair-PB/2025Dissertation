@@ -71,12 +71,3 @@ void FVoxelVertexFactory::ReleaseRHI()
 	FVertexFactory::ReleaseRHI();
 }
 
-void FVoxelVertexFactory::SetVertexBuffer(const FVertexBuffer* InBuffer, uint32 StreamOffset, uint32 Stride)
-{
-	// Optional
-}
-
-void FVoxelVertexFactory::SetDynamicParameterBuffer(const FVertexBuffer* InDynamicParameterBuffer, uint32 StreamOffset, uint32 Stride)
-{
-	// Optional
-}

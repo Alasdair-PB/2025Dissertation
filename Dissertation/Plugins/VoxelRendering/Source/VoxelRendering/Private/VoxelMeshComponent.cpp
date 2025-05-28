@@ -2,6 +2,7 @@
 #include "FVoxelVertexFactory.h"
 #include "FVoxelSceneProxy.h"
 #include "FVoxelVertexFactoryShaderParameters.h"
+#include "MarchingCubesDispatcher.h"
 
 UVoxelMeshComponent::UVoxelMeshComponent()
 {
@@ -20,6 +21,15 @@ void UVoxelMeshComponent::BeginDestroy() {
     delete tree;
     Super::BeginDestroy();
 }
+
+void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    if (!tree) return;
+    TraverseAndDraw(tree->root);
+    InvokeVoxelRenderer(tree->root);
+}
+
 
 void UVoxelMeshComponent::InitVoxelMesh(AABB bounds, int depth, TArray<float>& isovalueBuffer, TArray<uint32>& typeValueBuffer) {
     int nodesPerAxisMaxRes = Octree::IntPow(2, depth);
@@ -54,12 +64,23 @@ float UVoxelMeshComponent::SampleSDF(FVector3f p) {
 void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
+
+    FVoxelComputeShaderDispatchData indexDispathBuffer = FVoxelComputeShaderDispatchData(
+        sceneProxy->GetVertexFactor()->GetIndexBufferRHIRef(),
+        sceneProxy->GetVertexFactor()->GetIndexBufferElementsCount(),
+        sceneProxy->GetVertexFactor()->GetIndexBufferBytesPerElement());
+
+    FVoxelComputeShaderDispatchData vertexDispatchBuffer = FVoxelComputeShaderDispatchData(
+        sceneProxy->GetVertexFactor()->GetVertexBufferRHIRef(),
+        sceneProxy->GetVertexFactor()->GetVertexBufferElementsCount(),
+        sceneProxy->GetVertexFactor()->GetVertexBufferBytesPerElement());
+
     Params.Input.baseDepthScale = 400.0f;
     Params.Input.isoLevel = isoLevel;
     Params.Input.voxelsPerAxis = voxelsPerAxis;
     Params.Input.tree = node;
-    Params.Input.VertexBufferUAV = sceneProxy->GetVertexFactor()->GetVertexPooledBuffer();
-    //Params.Input.IndexBufferUAV = sceneProxy->GetVertexFactor()->GetIndexBufferUAV();
+    Params.Input.vertexBufferRHIRef = vertexDispatchBuffer;
+    Params.Input.indexBufferRHIRef = indexDispathBuffer;
     Params.Input.leafCount = tree->GetLeafCount(); // Note this may not need to be done every dispatch
 
     FMarchingCubesInterface::Dispatch(Params,

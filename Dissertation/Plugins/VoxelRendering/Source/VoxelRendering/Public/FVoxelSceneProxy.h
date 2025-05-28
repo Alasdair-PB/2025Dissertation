@@ -2,7 +2,7 @@
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
 #include "PrimitiveSceneProxy.h"
-#include "FVoxelSectionProxy.h"
+#include "FVoxelVertexFactory.h"
 #include "Materials/MaterialRelevance.h"
 
 class FVoxelSceneProxy : public FPrimitiveSceneProxy {

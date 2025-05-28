@@ -21,6 +21,8 @@ public:
     void InitVoxelMesh(AABB bounds, int depth, TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer);
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 protected:
     virtual void BeginPlay() override;
     virtual void BeginDestroy() override;

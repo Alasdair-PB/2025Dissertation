@@ -20,8 +20,8 @@ public:
 		FVertexInputStreamArray& VertexStreams) const
 	{
 		FVoxelVertexFactory* VoxelVF = (FVoxelVertexFactory*)InVertexFactory;
-		const uint32 Index = VoxelVF->FirstIndex;
-		ShaderBindings.Add(Shader->GetUniformBufferParameter<FVoxelVertexFactoryParameters>(), VoxelVF->UniformBuffer);
+		const uint32 Index = VoxelVF->firstIndex;
+		//ShaderBindings.Add(Shader->GetUniformBufferParameter<FVoxelVertexFactoryParameters>(), VoxelVF->UniformBuffer);
 	}
 
 	void Bind(const FShaderParameterMap& ParameterMap)
@@ -57,7 +57,6 @@ void FVoxelVertexFactory::GetPSOPrecacheVertexFetchElements(EVertexInputStreamTy
 	const uint32 Stride = sizeof(FVoxelVertexInfo);
 	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Position), VET_Float3, 0, Stride)); // POSITION
 	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Normal), VET_Float3, 1, Stride));   // NORMAL
-	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Color), VET_Color, 2, Stride));     // COLOR
 }
 
 void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
@@ -69,7 +68,6 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 
 void FVoxelVertexFactory::ReleaseRHI()
 {
-	UniformBuffer.SafeRelease();
 	FVertexFactory::ReleaseRHI();
 }
 

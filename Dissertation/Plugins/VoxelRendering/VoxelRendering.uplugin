@@ -25,6 +25,11 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		},
+	{
+			"Name": "VoxelRenderingUtils",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
 		{
 			"Name": "ComputeDispatchers",
 			"Type": "Runtime",

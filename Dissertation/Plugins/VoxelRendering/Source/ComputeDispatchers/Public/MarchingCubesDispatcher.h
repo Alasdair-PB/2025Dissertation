@@ -19,13 +19,23 @@ struct FMarchingCubesOutput
 };
 
 USTRUCT(BlueprintType)
+struct FVoxelComputeShaderDispatchData
+{
+	FVoxelComputeShaderDispatchData(FBufferRHIRef inBufferRHI, uint32 inNumElements, uint32 inSizeInBites) : 
+		BufferRHI(inBufferRHI), NumElements(inNumElements), SizeInBytes(inSizeInBites) {}
+	FBufferRHIRef BufferRHI;
+	uint32 NumElements;
+	uint32 SizeInBytes;
+};
+
+USTRUCT(BlueprintType)
 struct FMarchingCubesInput
 {
 	GENERATED_BODY()
 	OctreeNode* tree;
-	//FBufferRHIRef* VertexBufferRHI;
-	//FRHIUnorderedAccessView* IndexBufferUAV;
-	FRHIUnorderedAccessView* VertexBufferUAV;
+	FVoxelComputeShaderDispatchData vertexBufferRHIRef;
+	FVoxelComputeShaderDispatchData indexBufferRHIRef;
+
 	UPROPERTY(BlueprintReadOnly) int leafCount = 0;
 	UPROPERTY(BlueprintReadOnly) FVector3f leafPosition = FVector3f();
 	UPROPERTY(BlueprintReadOnly) int leafDepth = 0;

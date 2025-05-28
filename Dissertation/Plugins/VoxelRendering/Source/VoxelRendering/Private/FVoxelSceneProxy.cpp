@@ -75,12 +75,14 @@ void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, in
 	Mesh.bDitheredLODTransition = false;
 
 	FMeshBatchElement& meshBatch = Mesh.Elements[0];
-	meshBatch.IndexBuffer = VertexFactory->GetIndexPooledBuffer()->GetIndexBuffer();
-	meshBatch.FirstIndex = 0;
-	meshBatch.NumPrimitives = 0; // IndexBuffer.GetIndexDataSize() / 3;
-	meshBatch.MinVertexIndex = 0;
-	meshBatch.MaxVertexIndex = 0; // VertexBuffers.PositionVertexBuffer.GetNumVertices() - 1;
 
+	FRWBuffer IndexRWBuffer;
+	IndexRWBuffer.UAV;
+	meshBatch.IndexBuffer = VertexFactory->GetIndexBuffer();
+	meshBatch.FirstIndex = 0;
+	meshBatch.NumPrimitives = VertexFactory->GetIndexBuffer.GetIndexDataSize() / 3;
+	meshBatch.MinVertexIndex = 0;
+	meshBatch.MaxVertexIndex = VertexFactory->GetVertexBuffer.PositionVertexBuffer.GetNumVertices() - 1;
 	PDI->DrawMesh(Mesh, FLT_MAX);
 }
 
@@ -96,12 +98,12 @@ FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMateri
 
 	GetScene().GetPrimitiveUniformShaderParameters_RenderThread(GetPrimitiveSceneInfo(), bHasPrecomputedVolumetricLightmap, PreviousLocalToWorld, SingleCaptureIndex, bOutputVelocity);
 
-	FMeshBatchElement& BatchElement = Mesh.Elements[0];
-	BatchElement.FirstIndex = 0;
-	BatchElement.NumPrimitives = 0; // IndexBuffer.GetIndexDataSize() / 3;
-	BatchElement.MinVertexIndex = 0;
-	BatchElement.MaxVertexIndex = 0; // VertexBuffers.PositionVertexBuffer.GetNumVertices() - 1;
-	BatchElement.IndexBuffer = VertexFactory->GetIndexBuffer();
+	FMeshBatchElement& meshBatch = Mesh.Elements[0];
+	meshBatch.FirstIndex = 0;
+	meshBatch.NumPrimitives = VertexFactory->GetIndexBuffer.GetIndexDataSize() / 3;
+	meshBatch.MinVertexIndex = 0;
+	meshBatch.MaxVertexIndex = VertexFactory->GetVertexBuffer.PositionVertexBuffer.GetNumVertices() - 1;
+	meshBatch.IndexBuffer = VertexFactory->GetIndexBuffer();
 
 	Mesh.bWireframe = bWireframe;
 	Mesh.VertexFactory = VertexFactory;

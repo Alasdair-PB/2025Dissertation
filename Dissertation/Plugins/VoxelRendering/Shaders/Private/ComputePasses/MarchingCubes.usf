@@ -8,8 +8,13 @@ int nodeIndex;
 StructuredBuffer<float> isoValues;
 StructuredBuffer<int> marchLookUp;
 
-RWStructuredBuffer<float3> outVertices;
-RWStructuredBuffer<float3> outNormals;
+struct FVoxelVertexInfo
+{
+    float3 Position;
+    float3 Normal;
+};
+
+RWStructuredBuffer<FVoxelVertexInfo> outInfo;
 RWStructuredBuffer<int> outTris;
 
 int voxelsPerAxis;
@@ -65,8 +70,8 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     float3 normalB = CalculateNormal(cornerPosB);
     float3 normalRes = normalA + (t * (normalB - normalA));
 
-    outNormals[vertexIndex] = normalRes;
-    outVertices[vertexIndex] = position;
+    outInfo[vertexIndex].Normal = normalRes;
+    outInfo[vertexIndex].Position = position;
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]

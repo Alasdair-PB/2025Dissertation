@@ -12,13 +12,6 @@ class  VOXELRENDERING_API UVoxelRendererComponent : public UActorComponent
 
 public:	
 	UVoxelRendererComponent() {}
-
-protected:
-	virtual void BeginPlay() override;
-
-public:	
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
 private:
 	UProceduralMeshComponent* ProcMesh;
 };

@@ -30,16 +30,18 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
     InvokeVoxelRenderer(tree->root);
 }
 
-
-void UVoxelMeshComponent::InitVoxelMesh(AABB bounds, int depth, TArray<float>& isovalueBuffer, TArray<uint32>& typeValueBuffer) {
+void UVoxelMeshComponent::InitVoxelMesh(AABB inBounds, int depth, TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer) {
     int nodesPerAxisMaxRes = Octree::IntPow(2, depth);
     int size = voxelsPerAxis * nodesPerAxisMaxRes;
-    BuildOctree(bounds, size, depth);
+    typeValueBuffer = inTypeValueBuffer;
+    isoValueBuffer = inIsovalueBuffer;
+    BuildOctree(inBounds, size, depth);
 }
 
-void UVoxelMeshComponent::BuildOctree(AABB bounds, int size, int depth)
+void UVoxelMeshComponent::BuildOctree(AABB inBounds, int size, int depth)
 {
-    tree = new Octree(bounds);
+    tree = new Octree(inBounds);
+    bounds = inBounds;
     if (!tree->BuildFromBuffers(isoValueBuffer, typeValueBuffer, size, depth))
         UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
 }

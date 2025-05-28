@@ -107,23 +107,6 @@ public:
 	uint32 GetVertexBufferElementsCount() const { return vertexBuffer.GetVertexCount(); }
 	uint32 GetIndexBufferElementsCount() const { return indexBuffer.GetIndexCount(); }
 
-	/*FRHIUnorderedAccessView* GetVertexBufferUAV(FRHICommandListBase& RHICmdList) const
-	{
-		return RHICmdList.CreateUnorderedAccessView(
-			vertexBuffer.VertexBufferRHI,
-			sizeof(FVoxelVertexInfo),
-			PF_Unknown
-		);
-	}
-
-	FRHIUnorderedAccessView* GetIndexBufferUAV(FRHICommandListBase& RHICmdList) const
-	{
-		return RHICmdList.CreateUnorderedAccessView(
-			indexBuffer.IndexBufferRHI,
-			PF_R32_UINT
-		);
-	}*/
-
 	FVoxelVertexBuffer* GetVertexBuffer() { return &vertexBuffer; }
 	FVoxelIndexBuffer* GetIndexBuffer() { return &indexBuffer; }
 private:

@@ -6,6 +6,7 @@
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "../../Octree/Public/OctreeNode.h"
 #include "RenderGraphResources.h"
+#include "RHI.h"
 #include "MarchingCubesDispatcher.generated.h"
 
 USTRUCT(BlueprintType)
@@ -21,6 +22,8 @@ USTRUCT(BlueprintType)
 struct FVoxelComputeShaderDispatchData
 {
 	GENERATED_BODY()
+	FVoxelComputeShaderDispatchData()
+		: BufferRHI(nullptr), NumElements(0), SizeInBytes(0) {}
 	FVoxelComputeShaderDispatchData(FBufferRHIRef inBufferRHI, uint32 inNumElements, uint32 inSizeInBites) : 
 		BufferRHI(inBufferRHI), NumElements(inNumElements), SizeInBytes(inSizeInBites) {}
 	FBufferRHIRef BufferRHI;

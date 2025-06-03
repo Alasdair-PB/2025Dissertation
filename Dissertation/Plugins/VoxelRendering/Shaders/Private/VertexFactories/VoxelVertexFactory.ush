@@ -1,5 +1,6 @@
-#include "/Engine/Private/GeneratedUniformBuffers.ush"
 #include "/Engine/Private/VertexFactoryCommon.ush"
+#include "/Engine/Private/VertexFactoryDefaultInterface.ush"
+#include "/Engine/Private/BasePassCommon.ush"
 
 struct FVertexFactoryInput
 {
@@ -17,25 +18,26 @@ void VertexFactoryMain(
     OutNormal = Input.Normal;
 }
 
-/*struct FVertexFactoryInput
+
+struct FPositionAndNormalOnlyVertexFactoryInput
 {
-    float3 Position : ATTRIBUTE0; // Position
-    float3 Normal : ATTRIBUTE1; // Normal
-    float4 Color : ATTRIBUTE2; // Color
-    //VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
-};*/
-
-/*#include "VertexFactoryCommon.ush"
-#include "VertexFactoryDefaultInterface.ush"
-
-
-
+    float4 Position : ATTRIBUTE0;
+    float4 Normal : ATTRIBUTE1;
+};
 
 struct FVertexFactoryIntermediates
 {
-    float4 Color;
     FSceneDataIntermediates SceneData;
 };
+
+struct FVertexFactoryInterpolantsVSToPS
+{
+	TANGENTTOWORLD_INTERPOLATOR_BLOCK
+    half4 Color : COLOR0;
+    half Alpha : COLOR1;
+    float2 TexCoords : TEXCOORD0;
+};
+
 
 float3 SafeNormalize(float3 V)
 {
@@ -90,7 +92,6 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
 {
     FVertexFactoryIntermediates Intermediates;
     Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
-    Intermediates.Color = Input.Color;
     return Intermediates;
 }
 
@@ -143,4 +144,3 @@ uint VertexFactoryGetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
 {
     return 0;
 }
-*/

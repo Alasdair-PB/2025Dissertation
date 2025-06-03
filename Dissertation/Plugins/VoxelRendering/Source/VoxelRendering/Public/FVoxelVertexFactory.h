@@ -107,6 +107,7 @@ public:
 	uint32 GetVertexBufferElementsCount() const { return vertexBuffer.GetVertexCount(); }
 	uint32 GetIndexBufferElementsCount() const { return indexBuffer.GetIndexCount(); }
 
+	static bool SupportsManualVertexFetch() { return true; }
 	FVoxelVertexBuffer* GetVertexBuffer() { return &vertexBuffer; }
 	FVoxelIndexBuffer* GetIndexBuffer() { return &indexBuffer; }
 private:

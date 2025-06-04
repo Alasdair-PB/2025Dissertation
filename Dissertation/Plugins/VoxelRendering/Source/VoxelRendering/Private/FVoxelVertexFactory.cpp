@@ -5,6 +5,9 @@
 #include "DataDrivenShaderPlatformInfo.h"
 #include "RHIResourceUtils.h"
 
+IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryParameters, "VoxelVF");
+
+
 class FVoxelVertexFactoryShaderParameters : public FVertexFactoryShaderParameters {
 	DECLARE_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters, NonVirtual);
 public:
@@ -46,6 +49,7 @@ bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPer
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {
 	OutEnvironment.SetDefine(TEXT("VOXEL_MESH"), TEXT("1"));
+	OutEnvironment.SetDefine(TEXT("RAY_TRACING_DYNAMIC_MESH_IN_LOCAL_SPACE"), TEXT("1"));
 	FVertexFactory::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 }
 
@@ -56,8 +60,6 @@ IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelV
 	| EVertexFactoryFlags::SupportsPositionOnly
 	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 );
-
-
 
 void FVoxelVertexFactory::GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements)
 {

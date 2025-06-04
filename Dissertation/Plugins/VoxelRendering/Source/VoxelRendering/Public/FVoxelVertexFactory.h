@@ -25,7 +25,7 @@ class FVoxelVertexFactoryShaderParameters;
 struct FShaderCompilerEnvironment;
 
 BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryParameters, )
-	SHADER_PARAMETER_SRV(Texture2D<float>, NoiseTexture)
+	SHADER_PARAMETER_SRV(Buffer<float>, VertexFetch_Buffer)
 END_GLOBAL_SHADER_PARAMETER_STRUCT()
 typedef TUniformBufferRef<FVoxelVertexFactoryParameters> FVoxelVertexFactoryBufferRef;
 

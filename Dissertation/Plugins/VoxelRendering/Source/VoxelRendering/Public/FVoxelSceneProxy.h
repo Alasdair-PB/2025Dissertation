@@ -8,8 +8,9 @@ class FVoxelVertexFactory;
 
 class FVoxelSceneProxy : public FPrimitiveSceneProxy {
 public:
-	FVoxelSceneProxy(UPrimitiveComponent* Component)
-		: FPrimitiveSceneProxy(Component)
+	FVoxelSceneProxy(UPrimitiveComponent* Component) : 
+		FPrimitiveSceneProxy(Component),
+		bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
 	{}
 
 	FORCENOINLINE virtual void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override;
@@ -29,7 +30,9 @@ public:
 	FVoxelVertexFactory* GetVertexFactor();
 	UMaterialInterface* Material;
 
-protected:	
+protected:
+	bool bCompatiblePlatform;
+	bool CanBeRendered() const { return bCompatiblePlatform; }
 	FVoxelVertexFactory* VertexFactory;
 	void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
 	void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, int LODIndex);

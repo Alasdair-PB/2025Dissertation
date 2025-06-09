@@ -67,10 +67,12 @@ public:
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 
 	uint32 GetVertexCount() const { return numVertices;}
-	void SetElementCount(uint32 InNumVertices) { numVertices = InNumVertices; }
+	void SetElementCount(uint32 InNumVertices) { numVertices = InNumVertices; }	
+	FShaderResourceViewRHIRef SRV;
+	FUnorderedAccessViewRHIRef UAV;
+
 private:
 	uint32 numVertices = 0;
-	FShaderResourceViewRHIRef SRV;
 	FVoxelVertexFactoryBufferRef VertexUniformBuffer;
 	FVoxelComputeFactoryBufferRef ComputeUniformBuffer;
 };
@@ -90,6 +92,7 @@ public:
 	void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
 	static void GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements);
 
+	void SetUniformParameters();
 	void InitRHI(FRHICommandListBase& RHICmdList) override final;
 	void ReleaseRHI() override;
 

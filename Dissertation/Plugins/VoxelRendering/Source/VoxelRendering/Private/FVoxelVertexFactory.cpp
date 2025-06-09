@@ -90,16 +90,15 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	RHICmdList.UnlockBuffer(VertexBufferRHI);
 
 	SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI, Size, PF_R32_FLOAT);
+	UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, false, false);
 
-	FVoxelVertexFactoryParameters VSParams;
+	FVoxelVertexFactoryUniformParameters VSParams;
 	VSParams.VertexFetch_Buffer = SRV;
-	VertexUniformBuffer = TUniformBufferRef<FVoxelVertexFactoryParameters>::CreateUniformBufferImmediate(VSParams, UniformBuffer_MultiFrame);
+	VertexUniformBuffer = FVoxelVertexFactoryBufferRef::CreateUniformBufferImmediate(VSParams, UniformBuffer_MultiFrame);
 
-	FVoxelComputeFactoryParameters CSParams;
-	FUnorderedAccessViewRHIRef VertexUAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, false, false);
-	CSParams.VertexFetch_Buffer = VertexUAV;
-	ComputeUniformBuffer =TUniformBufferRef<FVoxelComputeFactoryParameters>::CreateUniformBufferImmediate(CSParams, UniformBuffer_SingleFrame);
-
+	FVoxelComputeFactoryUniformParameters CSParams;
+	CSParams.VertexFetch_Buffer = UAV;
+	ComputeUniformBuffer = FVoxelComputeFactoryBufferRef::CreateUniformBufferImmediate(CSParams, UniformBuffer_MultiFrame);
 }
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
@@ -127,20 +126,27 @@ void FVoxelVertexFactory::GetPSOPrecacheVertexFetchElements(EVertexInputStreamTy
 	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Normal), VET_Float3, 1, Stride));   // NORMAL
 }
 
+void FVoxelVertexFactory::SetUniformParameters() {
+	FVoxelVertexFactoryUniformParameters vertexUniformParameters;
+	FVoxelComputeFactoryUniformParameters computeUniformParameters;
+
+	vertexUniformParameters.VertexFetch_Buffer = vertexBuffer.SRV;
+	computeUniformParameters.VertexFetch_Buffer = vertexBuffer.UAV;
+
+	if (vertexUniformParameters.VertexFetch_Buffer)
+		vertexUniformBuffer = FVoxelVertexFactoryBufferRef::CreateUniformBufferImmediate(vertexUniformParameters, UniformBuffer_MultiFrame);
+	if (computeUniformParameters.VertexFetch_Buffer)
+		computeUniformBuffer = FVoxelComputeFactoryBufferRef::CreateUniformBufferImmediate(computeUniformParameters, UniformBuffer_MultiFrame);
+}
+
 void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
-{	
+{		
+	SetUniformParameters();
 	vertexBuffer.InitResource(RHICmdList);
 	indexBuffer.InitResource(RHICmdList);
 	FVertexDeclarationElementList Elements;
 	GetPSOPrecacheVertexFetchElements(EVertexInputStreamType::Default, Elements);
 	InitDeclaration(Elements);
-
-	FVoxelVertexFactoryShaderParameters UniformParameters;
-	UniformParameters.VertexFetch_Buffer = GetVertexBufferSRV();
-	if (UniformParameters.VertexFetch_Buffer)
-	{
-		UniformBuffer = TUniformBufferRef<FLidarPointCloudVertexFactoryUniformShaderParameters>::CreateUniformBufferImmediate(UniformParameters, UniformBuffer_MultiFrame);
-	}
 }
 
 void FVoxelVertexFactory::ReleaseRHI()

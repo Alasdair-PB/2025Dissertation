@@ -44,6 +44,12 @@ float3 SafeNormalize(float3 V)
     return V / sqrt(max(dot(V, V), 0.01));
 }
 
+// Probably wrong math
+float3 VoxelGetInstancePosition(uint VertexId)
+{
+    uint Idx = (VertexId / 4) * 5; 
+    return float3(VoxelVF.VertexFetch_Buffer[Idx], VoxelVF.VertexFetch_Buffer[Idx + 1], VoxelVF.VertexFetch_Buffer[Idx + 2]);
+}
 
 float4 VertexFactoryGetInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
@@ -74,6 +80,13 @@ float4 VertexFactoryGetRasterizedWorldPosition(FVertexFactoryInput Input, FVerte
 float3 VertexFactoryGetPositionForVertexLighting(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, float3 TranslatedWorldPosition)
 {
     return TranslatedWorldPosition;
+}
+
+float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input)
+{
+    float4 WorldPosition = TransformLocalToTranslatedWorld(ApplyClipping(VoxelGetInstancePosition(Input.VertexId)) + LocationOffset), GetPrimitiveDataFromUniformBuffer().LocalToWorld);
+    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz, Input.VertexId);
+    return WorldPosition;
 }
 
 float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
@@ -116,6 +129,11 @@ float4 VertexFactoryGetTranslatedPrimitiveVolumeBounds(FVertexFactoryInterpolant
 uint VertexFactoryGetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
 {
     return 0;
+}
+
+float3 VertexFactoryGetWorldNormal(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+    return Intermediates.TangentToWorld[2];
 }
 
 float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Input)

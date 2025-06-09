@@ -24,10 +24,23 @@
 class FVoxelVertexFactoryShaderParameters;
 struct FShaderCompilerEnvironment;
 
-BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryParameters, )
+BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryUniformParameters, )
 	SHADER_PARAMETER_SRV(Buffer<float>, VertexFetch_Buffer)
 END_GLOBAL_SHADER_PARAMETER_STRUCT()
-typedef TUniformBufferRef<FVoxelVertexFactoryParameters> FVoxelVertexFactoryBufferRef;
+typedef TUniformBufferRef<FVoxelVertexFactoryUniformParameters> FVoxelVertexFactoryBufferRef;
+
+BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelComputeFactoryUniformParameters, )
+	SHADER_PARAMETER_UAV(RWStructuredBuffer<FVoxelVertexInfo>, VertexFetch_Buffer)
+END_GLOBAL_SHADER_PARAMETER_STRUCT()
+typedef TUniformBufferRef<FVoxelComputeFactoryUniformParameters> FVoxelComputeFactoryBufferRef;
+
+struct FVoxelBatchElementUserData
+{
+	int32 voxelsPerAxis;
+	int32 baseDepthScale;
+	int32 isoLevel;
+	FVoxelBatchElementUserData();
+};
 
 class FVoxelIndexBuffer : public FIndexBuffer
 {
@@ -36,18 +49,7 @@ public:
 	~FVoxelIndexBuffer() = default;
 	FVoxelIndexBuffer(uint32 InNumIndices) : numIndices(InNumIndices) {}
 
-	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
-	{
-		uint32 Size = sizeof(uint32) * numIndices;
-		FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
-		EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_IndexBuffer;
-		const ERHIAccess InitialState = ERHIAccess::UAVCompute | ERHIAccess::SRVCompute;
-
-		IndexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, InitialState, CreateInfo);
-		void* LockedData = RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
-		FMemory::Memzero(LockedData, Size); // FMemory::Memset(LockedData, 0xFF, Size);
-		RHICmdList.UnlockBuffer(IndexBufferRHI);
-	}
+	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 	uint32 GetIndexCount() const { return numIndices; }
 	void SetElementCount(uint32 InNumIndices) { numIndices = InNumIndices; }
 
@@ -62,37 +64,30 @@ public:
 	~FVoxelVertexBuffer() = default;
 	FVoxelVertexBuffer(uint32 InNumVertices) : numVertices(InNumVertices) {}
 
-	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
-	{
-		uint32 Size = sizeof(FVoxelVertexInfo) * numVertices;
-		FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
-		EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
-		const ERHIAccess InitialState = ERHIAccess::UAVCompute | ERHIAccess::SRVCompute;
+	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 
-		VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, InitialState, CreateInfo);
-		void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
-		FMemory::Memzero(LockedData, Size);		//FMemory::Memcpy(LockedData, Vertices.GetData(), Size);
-		RHICmdList.UnlockBuffer(VertexBufferRHI);
-	}
 	uint32 GetVertexCount() const { return numVertices;}
 	void SetElementCount(uint32 InNumVertices) { numVertices = InNumVertices; }
 private:
 	uint32 numVertices = 0;
+	FShaderResourceViewRHIRef SRV;
+	FVoxelVertexFactoryBufferRef VertexUniformBuffer;
+	FVoxelComputeFactoryBufferRef ComputeUniformBuffer;
 };
 
 class FVoxelVertexFactory : public FVertexFactory
 {
 	DECLARE_VERTEX_FACTORY_TYPE(FVoxelVertexFactory);
-public:
 
+public:
 	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel) //, FVoxelVertexFactoryParameters UniformParams
 	{
 		vertexBuffer.SetElementCount(bufferSize);
 		indexBuffer.SetElementCount(bufferSize);
 	}
 
-	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
-	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
+	bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
+	void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
 	static void GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements);
 
 	void InitRHI(FRHICommandListBase& RHICmdList) override final;
@@ -107,15 +102,15 @@ public:
 	uint32 GetVertexBufferElementsCount() const { return vertexBuffer.GetVertexCount(); }
 	uint32 GetIndexBufferElementsCount() const { return indexBuffer.GetIndexCount(); }
 
-	static bool SupportsManualVertexFetch() { return true; }
+	bool SupportsManualVertexFetch() { return true; }
 	FVoxelVertexBuffer* GetVertexBuffer() { return &vertexBuffer; }
 	FVoxelIndexBuffer* GetIndexBuffer() { return &indexBuffer; }
 private:
-	FVoxelVertexFactoryParameters params;
-	FVoxelVertexFactoryBufferRef uniformBuffer;
-
 	FVoxelIndexBuffer indexBuffer;
 	FVoxelVertexBuffer vertexBuffer;
+
+	FVoxelVertexFactoryBufferRef vertexUniformBuffer;
+	FVoxelComputeFactoryBufferRef computeUniformBuffer;
 
 	uint32 firstIndex;
 	bool bUsesDynamicParameter;

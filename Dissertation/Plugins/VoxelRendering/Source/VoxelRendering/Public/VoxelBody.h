@@ -1,4 +1,4 @@
-#pragma once
+/*#pragma once
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
 
@@ -33,4 +33,4 @@ protected:
 public:
 	UBodySetup* GetBodySetup();
 
-};
+};*/

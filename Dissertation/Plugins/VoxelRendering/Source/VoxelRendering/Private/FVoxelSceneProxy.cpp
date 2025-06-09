@@ -109,7 +109,6 @@ void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, in
 
 
 FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const {
-	//if (VertexBuffers.PositionVertexBuffer.GetNumVertices() == 0) return;
 	check(MaterialProxy);
 
 	bool bHasPrecomputedVolumetricLightmap;

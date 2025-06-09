@@ -12,6 +12,14 @@ struct FVertexFactoryInput
 	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
+struct FPositionOnlyVertexFactoryInput
+{
+    float4 Position : ATTRIBUTE0;
+    uint VertexId : SV_VertexID;
+
+	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+};
+
 struct FPositionAndNormalOnlyVertexFactoryInput
 {
     float4 Position : ATTRIBUTE0;

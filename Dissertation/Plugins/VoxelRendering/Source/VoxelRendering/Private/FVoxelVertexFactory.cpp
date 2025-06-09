@@ -89,7 +89,7 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	FMemory::Memzero(LockedData, Size);		//FMemory::Memcpy(LockedData, Vertices.GetData(), Size);
 	RHICmdList.UnlockBuffer(VertexBufferRHI);
 
-	SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI, Size, PF_R32_FLOAT);
+	SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI, Size, PF_Unknown);
 	UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, false, false);
 
 	FVoxelVertexFactoryUniformParameters VSParams;
@@ -98,7 +98,7 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 
 	FVoxelComputeFactoryUniformParameters CSParams;
 	CSParams.VertexFetch_Buffer = UAV;
-	ComputeUniformBuffer = FVoxelComputeFactoryBufferRef::CreateUniformBufferImmediate(CSParams, UniformBuffer_MultiFrame);
+	ComputeUniformBuffer = FVoxelComputeFactoryBufferRef::CreateUniformBufferImmediate(CSParams, UniformBuffer_SingleFrame);
 }
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)

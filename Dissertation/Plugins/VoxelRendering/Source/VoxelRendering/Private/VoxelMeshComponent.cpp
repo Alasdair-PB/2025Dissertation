@@ -25,7 +25,7 @@ void UVoxelMeshComponent::BeginDestroy() {
 void UVoxelMeshComponent::PostLoad()
 {
     Super::PostLoad();
-    UpdateMaterial();
+    //UpdateMaterial();
 }
 
 void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

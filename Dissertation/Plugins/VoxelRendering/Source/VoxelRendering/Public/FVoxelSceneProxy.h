@@ -26,6 +26,7 @@ public:
 	virtual void CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
+	virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override;
 
 	FVoxelVertexFactory* GetVertexFactor();
 	UMaterialInterface* Material;
@@ -35,6 +36,5 @@ protected:
 	bool CanBeRendered() const { return bCompatiblePlatform; }
 	FVoxelVertexFactory* VertexFactory;
 	void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
-	void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, int LODIndex);
 
 };

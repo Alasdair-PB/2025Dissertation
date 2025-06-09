@@ -19,15 +19,6 @@
 FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* View) const
 {
 	FPrimitiveViewRelevance Result;
-	Result.bDrawRelevance = true;
-	Result.bDynamicRelevance = true;
-	Result.bOpaqueRelevance = true;
-	return Result;
-}
-
-FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* View) const
-{
-	FPrimitiveViewRelevance Result;
 
 	if (CanBeRendered())
 	{
@@ -35,6 +26,8 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 		Result.bShadowRelevance = IsShadowCast(View);
 		Result.bDynamicRelevance = true;
 		Result.bStaticRelevance = false;
+		Result.bOpaqueRelevance = true;
+
 		Result.bRenderInMainPass = ShouldRenderInMainPass();
 		Result.bUsesLightingChannels = GetLightingChannelMask() != GetDefaultLightingChannelMask();
 		Result.bRenderCustomDepth = ShouldRenderCustomDepth();
@@ -60,7 +53,7 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const F
 
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
 
-	FVoxelVertexFactoryParameters UniformParams;
+	FVoxelVertexFactoryUniformParameters UniformParams;
 	uint32 size = 64 * nodeVoxelCount * 15; // instead of 64 should be * Params.Input.leafCount;
 	VertexFactory = new FVoxelVertexFactory(GetScene().GetFeatureLevel(), size);
 	VertexFactory->InitResource(RHICmdList);
@@ -80,7 +73,7 @@ void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 	FPrimitiveSceneProxy::OnTransformChanged(RHICmdList);
 }
 
-void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, int LODIndex) {
+void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) {
 	if (RuntimeVirtualTextureMaterialTypes.Num() == 0) return;
 
 	FMaterialRenderProxy* MaterialInstance = Material->GetRenderProxy();
@@ -93,7 +86,7 @@ void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI, in
 	Mesh.Type = PT_TriangleList;
 	Mesh.DepthPriorityGroup = SDPG_World;
 	Mesh.bCanApplyViewModeOverrides = false;
-	Mesh.LODIndex = LODIndex;
+	// Mesh.LODIndex = LODIndex;
 	Mesh.bDitheredLODTransition = false;
 
 	FMeshBatchElement& meshBatch = Mesh.Elements[0];

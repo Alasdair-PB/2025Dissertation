@@ -88,8 +88,8 @@ public:
 		indexBuffer.SetElementCount(bufferSize);
 	}
 
-	bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
-	void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
+	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
+	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
 	static void GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements);
 
 	void SetUniformParameters();

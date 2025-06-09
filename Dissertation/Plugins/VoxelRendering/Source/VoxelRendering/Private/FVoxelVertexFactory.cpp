@@ -5,7 +5,9 @@
 #include "DataDrivenShaderPlatformInfo.h"
 #include "RHIResourceUtils.h"
 
-IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryParameters, "VoxelVF");
+IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryUniformParameters, "VoxelVF");
+IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelComputeFactoryUniformParameters, "VoxelCF");
+
 #define BINDPARAM(Name) Name.Bind(ParameterMap, TEXT(#Name))
 #define SETPARAM(Name) if (Name.IsBound()) { ShaderBindings.Add(Name, UserData->Name); }
 #define SETSRVPARAM(Name) if(UserData->Name) { SETPARAM(Name) }

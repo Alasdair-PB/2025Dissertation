@@ -1,8 +1,6 @@
 #include "/Engine/Private/Common.ush"
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
-static float2 PrecomputedUV_Quad[8] = { float2(-0.5, -0.5), float2(0.5, -0.5), float2(0.5, 0.5), float2(-0.5, 0.5), float2(0, 1), float2(1, 1), float2(1, 0), float2(0, 0) };
-
 // ************************ Required Structs for base feature support ************************
 
 struct FVertexFactoryInput
@@ -58,12 +56,17 @@ float3 SafeNormalize(float3 V)
     return V / sqrt(max(dot(V, V), 0.01));
 }
 
-float3 VoxelGetInstancePosition(uint VertexId)
+// For 0 stride buffer 
+uint GetVertexFetchBufferOffset(uint VertexId)
 {
-    uint Idx = (VertexId / 4) * 5; 
-    return float3(VoxelVF.VertexFetch_Buffer[Idx], VoxelVF.VertexFetch_Buffer[Idx + 1], VoxelVF.VertexFetch_Buffer[Idx + 2]);
+    return floor(VertexId / 4) * 5;
 }
 
+float3 VoxelGetInstancePosition(uint VertexId)
+{
+    uint Idx = GetVertexFetchBufferOffset(VertexId);
+    return float3(VoxelVF.VertexFetch_Buffer[Idx], VoxelVF.VertexFetch_Buffer[Idx + 1], VoxelVF.VertexFetch_Buffer[Idx + 2]);
+}
 float3 ApplyClipping(float3 Position)
 {
     return Position;
@@ -87,6 +90,20 @@ FPrimitiveSceneData GetPrimitiveData(FVertexFactoryIntermediates Intermediates)
 float4 VertexFactoryGetRasterizedWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, float4 InWorldPosition)
 {
     return InWorldPosition;
+}
+
+float2 NormalBasedPlanarMapping(FVertexFactoryInput Input, float2 UVDensity)
+{
+    float3 N = normalize(Input.Normal);
+    float2 UV;
+
+    if (abs(N.z) > abs(N.x) && abs(N.z) > abs(N.y))
+        UV = Input.Position.xy; // XY plane
+    else if (abs(N.y) > abs(N.x))
+        UV = Input.Position.xz; // XZ plane
+    else
+        UV = Input.Position.yz; // YZ plane
+    return UV * UVDensity;
 }
 
 void GetTangents(FVertexFactoryInput Input, out float4 Right, out float4 Up)
@@ -118,7 +135,6 @@ float3x3 CalcTangentBasis(FVertexFactoryInput Input)
 float3x3 VertexFactoryGetTangentToLocal(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
     return Intermediates.TangentToLocal;
-    //return CalcTangentBasis(Input);
 }
 
 // ************************ Instancing, LOD, et al Support ************************
@@ -159,6 +175,7 @@ float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput In
 float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
     float4 WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position, Intermediates.SceneData.Primitive.LocalToWorld);
+    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz, Intermediates.TangentToLocal, Input.VertexId);
     return WorldPosition;
 }
 
@@ -190,12 +207,12 @@ uint VertexFactoryGetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
 FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int VertexIndex)
 {
     FVertexFactoryInput Input = (FVertexFactoryInput) 0;
+    float3 Position = VoxelGetInstancePosition(VertexIndex);
+    
     Input.VertexId = TriangleIndex * 3 + VertexIndex;
-    uint VertexOffset = floor(Input.VertexId / 4) * 5;
-		
-    Input.Position.x = VoxelVF.VertexFetch_Buffer[VertexOffset + 0];
-    Input.Position.y = VoxelVF.VertexFetch_Buffer[VertexOffset + 1];
-    Input.Position.z = VoxelVF.VertexFetch_Buffer[VertexOffset + 2];
+    Input.Position = float4(Position.xyz, 1);
+    Input.Color = half4(1, 1, 1, 1);
+    Input.Normal = float3(0, 0, 1);
     return Input;
 }
 
@@ -224,9 +241,9 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
     Interpolants.TangentToWorld0 = float4(Intermediates.TangentToWorld[0], 0);
     Interpolants.TangentToWorld2 = float4(Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
     
-    Interpolants.Color = VertexParameters.VertexColor;
+    Interpolants.Color = VertexParameters.VertexColor; // Intermediates.Color;?
     Interpolants.Alpha = Intermediates.Alpha;
-    Interpolants.TexCoords = PrecomputedUV_Quad[Input.VertexId % 4 + 4];
+    Interpolants.TexCoords = NormalBasedPlanarMapping(Input, float2(1,1));
     return Interpolants;
 }
 
@@ -258,10 +275,8 @@ uint GetNumRayTracingDynamicMeshVerticesIndirect()
 FVertexFactoryInput LoadVertexFactoryInputForDynamicUpdate(uint TriangleIndex, int VertexIndex, uint PrimitiveId, uint DrawInstanceId)
 {
 	FVertexFactoryInput Input = LoadVertexFactoryInputFromIndices(TriangleIndex, VertexIndex);
-		
 	FPrimitiveSceneData PrimitiveData = GetPrimitiveData(PrimitiveId);
 	VF_GPUSCENE_SET_INPUT_FOR_RT(Input, PrimitiveData.InstanceSceneDataOffset + DrawInstanceId, DrawInstanceId);
-
 	return Input;
 }
 #endif

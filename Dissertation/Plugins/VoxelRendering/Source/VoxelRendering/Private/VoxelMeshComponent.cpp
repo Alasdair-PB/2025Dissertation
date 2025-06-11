@@ -22,10 +22,16 @@ void UVoxelMeshComponent::BeginDestroy() {
     Super::BeginDestroy();
 }
 
-void UVoxelMeshComponent::PostLoad()
-{
+void UVoxelMeshComponent::PostLoad() {
     Super::PostLoad();
     //UpdateMaterial();
+}
+
+UBodySetup* UVoxelMeshComponent::GetBodySetup() {
+    return UMeshComponent::GetBodySetup();
+}
+void  UVoxelMeshComponent::SetMaterial(int32 ElementIndex, UMaterialInterface* InMaterial) {
+    UMeshComponent::SetMaterial(ElementIndex, InMaterial);
 }
 
 void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

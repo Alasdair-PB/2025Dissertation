@@ -44,8 +44,8 @@ public:
 		SETSRVPARAM(baseDepthScale);
 		SETSRVPARAM(voxelsPerAxis);
 
-		if (VertexFactoryUniformBuffer)
-			ShaderBindings.Add(Shader->GetUniformBufferParameter<FVoxelVertexFactoryShaderParameters>(), VertexFactoryUniformBuffer);
+		//if (VertexFactoryUniformBuffer)
+		//	ShaderBindings.Add(Shader->GetUniformBufferParameter<FVoxelVertexFactoryShaderParameters>(), VertexFactoryUniformBuffer);
 	}
 
 	void Bind(const FShaderParameterMap& ParameterMap)

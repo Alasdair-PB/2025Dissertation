@@ -26,7 +26,7 @@ public:
 	virtual void CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
-	virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override;
+	//virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override;
 
 	FVoxelVertexFactory* GetVertexFactor();
 	UMaterialInterface* Material;

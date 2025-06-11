@@ -73,7 +73,7 @@ void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 	FPrimitiveSceneProxy::OnTransformChanged(RHICmdList);
 }
 
-void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) {
+/*void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) {
 	if (RuntimeVirtualTextureMaterialTypes.Num() == 0) return;
 
 	FMaterialRenderProxy* MaterialInstance = Material->GetRenderProxy();
@@ -98,7 +98,7 @@ void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) {
 	meshBatch.MinVertexIndex = 0;
 	meshBatch.MaxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;
 	PDI->DrawMesh(Mesh, FLT_MAX);
-}
+}*/
 
 
 FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const {

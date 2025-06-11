@@ -84,7 +84,7 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	uint32 Size = stride * numVertices;
 	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
 	EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
-	const ERHIAccess InitialState = ERHIAccess::UAVCompute | ERHIAccess::SRVCompute;
+	const ERHIAccess InitialState = ERHIAccess::UAVCompute; // | ERHIAccess::SRVCompute;
 
 	VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, InitialState, CreateInfo);
 	void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
@@ -116,9 +116,11 @@ void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShade
 
 IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelVertexFactory.ush",
 	EVertexFactoryFlags::UsedWithMaterials
-	| EVertexFactoryFlags::SupportsDynamicLighting
-	| EVertexFactoryFlags::SupportsPositionOnly
-	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
+
+	// Will look at enabling support for these features once core has been established
+	//| EVertexFactoryFlags::SupportsDynamicLighting
+	//| EVertexFactoryFlags::SupportsPositionOnly
+	//| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 );
 
 void FVoxelVertexFactory::GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements)

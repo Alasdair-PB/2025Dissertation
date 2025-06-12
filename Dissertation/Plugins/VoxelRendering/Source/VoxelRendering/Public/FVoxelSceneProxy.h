@@ -8,11 +8,8 @@ class FVoxelVertexFactory;
 
 class FVoxelSceneProxy : public FPrimitiveSceneProxy {
 public:
-	FVoxelSceneProxy(UPrimitiveComponent* Component) : 
-		FPrimitiveSceneProxy(Component),
-		bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
-	{}
-
+	FVoxelSceneProxy(UPrimitiveComponent* Component);
+	~FVoxelSceneProxy();
 	FORCENOINLINE virtual void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override;
 
 	virtual FPrimitiveViewRelevance GetViewRelevance(const FSceneView* View) const override;

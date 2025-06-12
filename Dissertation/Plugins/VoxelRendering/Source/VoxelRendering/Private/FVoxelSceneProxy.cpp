@@ -16,6 +16,18 @@
 #include "Octree.h"
 #include "Async/Mutex.h"
 
+
+FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
+	FPrimitiveSceneProxy(Component),
+	bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
+{
+
+}
+
+FVoxelSceneProxy::~FVoxelSceneProxy() {
+	// Safe release any buffers in this SceneProxy
+}
+
 FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* View) const
 {
 	FPrimitiveViewRelevance Result;
@@ -26,7 +38,7 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 		Result.bShadowRelevance = IsShadowCast(View);
 		Result.bDynamicRelevance = true;
 		Result.bStaticRelevance = false;
-		Result.bOpaqueRelevance = true;
+		Result.bOpaque = true;
 
 		Result.bRenderInMainPass = ShouldRenderInMainPass();
 		Result.bUsesLightingChannels = GetLightingChannelMask() != GetDefaultLightingChannelMask();

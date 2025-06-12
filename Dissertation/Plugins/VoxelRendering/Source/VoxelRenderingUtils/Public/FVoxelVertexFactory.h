@@ -1,4 +1,5 @@
 #pragma once
+#include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
 #include "VertexFactory.h"
 #include "UniformBuffer.h"
@@ -6,7 +7,6 @@
 #include "ShaderParameters.h"
 #include "RHI.h"
 #include "RHIUtilities.h"
-#include "FVoxelSceneProxy.h"
 #include "CommonRenderResources.h"
 #include "RenderGraph.h"
 #include "PixelShaderUtils.h"
@@ -20,29 +20,30 @@
 #include "CanvasTypes.h"
 #include "MaterialShader.h"
 #include "VoxelBufferUtils.h"
+#include "FVoxelVertexFactoryShaderParameters.h"
 
-class FVoxelVertexFactoryShaderParameters;
 struct FShaderCompilerEnvironment;
 
+/*
+BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelComputeFactoryUniformParameters, )
+	//SHADER_PARAMETER_UAV(RWStructuredBuffer<FVoxelVertexInfo>, VertexFetch_Buffer)
+END_GLOBAL_SHADER_PARAMETER_STRUCT()
+typedef TUniformBufferRef<FVoxelComputeFactoryUniformParameters> FVoxelComputeFactoryBufferRef;
+*/
 BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryUniformParameters, )
-	SHADER_PARAMETER_SRV(Buffer<float>, VertexFetch_Buffer)
+	//SHADER_PARAMETER_SRV(Buffer<float>, VertexFetch_Buffer)
 END_GLOBAL_SHADER_PARAMETER_STRUCT()
 typedef TUniformBufferRef<FVoxelVertexFactoryUniformParameters> FVoxelVertexFactoryBufferRef;
 
-BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelComputeFactoryUniformParameters, )
-	SHADER_PARAMETER_UAV(RWStructuredBuffer<FVoxelVertexInfo>, VertexFetch_Buffer)
-END_GLOBAL_SHADER_PARAMETER_STRUCT()
-typedef TUniformBufferRef<FVoxelComputeFactoryUniformParameters> FVoxelComputeFactoryBufferRef;
 
-struct FVoxelBatchElementUserData
+struct VOXELRENDERINGUTILS_API FVoxelBatchElementUserData
 {
-	int32 voxelsPerAxis;
-	int32 baseDepthScale;
-	int32 isoLevel;
+	//int32 voxelsPerAxis;
+	//int32 baseDepthScale;
+	//int32 isoLevel;
 	FVoxelBatchElementUserData();
 };
-
-class FVoxelIndexBuffer : public FIndexBuffer
+class VOXELRENDERINGUTILS_API FVoxelIndexBuffer : public FIndexBuffer
 {
 public:
 	FVoxelIndexBuffer() = default;
@@ -57,7 +58,7 @@ private:
 	uint32 numIndices = 0;
 };
 
-class FVoxelVertexBuffer : public FVertexBuffer
+class VOXELRENDERINGUTILS_API FVoxelVertexBuffer : public FVertexBuffer
 {
 public:
 	FVoxelVertexBuffer() = default;
@@ -73,20 +74,16 @@ public:
 
 private:
 	uint32 numVertices = 0;
-	FVoxelVertexFactoryBufferRef VertexUniformBuffer;
-	FVoxelComputeFactoryBufferRef ComputeUniformBuffer;
+	//FVoxelVertexFactoryBufferRef VertexUniformBuffer;
+	//FVoxelComputeFactoryBufferRef ComputeUniformBuffer;
 };
 
-class FVoxelVertexFactory : public FVertexFactory
+class VOXELRENDERINGUTILS_API FVoxelVertexFactory : public FVertexFactory
 {
 	DECLARE_VERTEX_FACTORY_TYPE(FVoxelVertexFactory);
 
 public:
-	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel) //, FVoxelVertexFactoryParameters UniformParams
-	{
-		vertexBuffer.SetElementCount(bufferSize);
-		indexBuffer.SetElementCount(bufferSize);
-	}
+	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize);
 
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
@@ -98,6 +95,8 @@ public:
 
 	FBufferRHIRef GetVertexBufferRHIRef() const { return vertexBuffer.GetRHI();}
 	FBufferRHIRef GetIndexBufferRHIRef() const { return indexBuffer.GetRHI();}
+
+	FShaderResourceViewRHIRef GetVertexSRV() const { return vertexBuffer.SRV; }
 
 	uint32 GetVertexBufferBytesPerElement() const { return sizeof(FVoxelVertexInfo); }
 	uint32 GetIndexBufferBytesPerElement() const { return sizeof(uint32); }
@@ -112,8 +111,8 @@ private:
 	FVoxelIndexBuffer indexBuffer;
 	FVoxelVertexBuffer vertexBuffer;
 
+	//FVoxelComputeFactoryBufferRef computeUniformBuffer;
 	FVoxelVertexFactoryBufferRef vertexUniformBuffer;
-	FVoxelComputeFactoryBufferRef computeUniformBuffer;
 
 	uint32 firstIndex;
 	bool bUsesDynamicParameter;

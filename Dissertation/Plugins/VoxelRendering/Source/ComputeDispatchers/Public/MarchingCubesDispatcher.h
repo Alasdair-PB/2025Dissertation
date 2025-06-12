@@ -23,12 +23,12 @@ struct FVoxelComputeShaderDispatchData
 {
 	GENERATED_BODY()
 	FVoxelComputeShaderDispatchData()
-		: BufferRHI(nullptr), NumElements(0), SizeInBytes(0) {}
-	FVoxelComputeShaderDispatchData(FBufferRHIRef inBufferRHI, uint32 inNumElements, uint32 inSizeInBites) : 
-		BufferRHI(inBufferRHI), NumElements(inNumElements), SizeInBytes(inSizeInBites) {}
+		: BufferRHI(nullptr), NumElements(0), BytesPerElement(0) {}
+	FVoxelComputeShaderDispatchData(FBufferRHIRef inBufferRHI, uint32 inNumElements, uint32 inBytesPerElement) :
+		BufferRHI(inBufferRHI), NumElements(inNumElements), BytesPerElement(inBytesPerElement) {}
 	FBufferRHIRef BufferRHI;
 	uint32 NumElements;
-	uint32 SizeInBytes;
+	uint32 BytesPerElement;
 };
 
 USTRUCT(BlueprintType)

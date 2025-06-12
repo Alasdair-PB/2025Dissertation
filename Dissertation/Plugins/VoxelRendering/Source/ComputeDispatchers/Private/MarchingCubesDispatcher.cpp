@@ -31,6 +31,8 @@ class FMarchingCubes : public FGlobalShader
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<int>, marchLookUp)
 		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<FVoxelVertexInfo>, outInfo)
 		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<int>, outTris)
+		//SHADER_PARAMETER_STRUCT_REF(FVoxelComputeFactoryUniformParameters, VFUniformBuffer)
+
 		SHADER_PARAMETER(uint32, voxelsPerAxis)
 		SHADER_PARAMETER(float, baseDepthScale)
 		SHADER_PARAMETER(float, isoLevel)
@@ -105,8 +107,8 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			uint32 indexNumElements = Params.Input.indexBufferRHIRef.NumElements;
 			uint32 vertexNumElements = Params.Input.vertexBufferRHIRef.NumElements;
 
-			FRDGBufferDesc indexBufferDec = FRDGBufferDesc::CreateStructuredDesc(Params.Input.indexBufferRHIRef.SizeInBytes, indexNumElements);
-			FRDGBufferDesc vertexBufferDec = FRDGBufferDesc::CreateStructuredDesc(Params.Input.vertexBufferRHIRef.SizeInBytes, vertexNumElements);
+			FRDGBufferDesc indexBufferDec = FRDGBufferDesc::CreateStructuredDesc(Params.Input.indexBufferRHIRef.BytesPerElement, indexNumElements);
+			FRDGBufferDesc vertexBufferDec = FRDGBufferDesc::CreateStructuredDesc(Params.Input.vertexBufferRHIRef.BytesPerElement, vertexNumElements);
 
 			TRefCountPtr<FRDGPooledBuffer> indexPooledBuffer = new FRDGPooledBuffer(RHICmdList, Params.Input.indexBufferRHIRef.BufferRHI, indexBufferDec, indexNumElements, TEXT("VoxelIndexPooledBuffer"));
 			TRefCountPtr<FRDGPooledBuffer> vertexPooledBuffer = new FRDGPooledBuffer(RHICmdList, Params.Input.vertexBufferRHIRef.BufferRHI, vertexBufferDec, vertexNumElements, TEXT("VoxelVertexPooledBuffer"));

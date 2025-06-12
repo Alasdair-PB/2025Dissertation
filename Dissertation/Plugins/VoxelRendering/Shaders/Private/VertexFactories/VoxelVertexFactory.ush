@@ -3,6 +3,14 @@
 
 // ************************ Required Structs for base feature support ************************
 
+struct FVoxelVertexInfo
+{
+    float3 Position;
+    float3 Normal;
+};
+
+RWStructuredBuffer<FVoxelVertexInfo> VoxelVF;
+
 struct FVertexFactoryInput
 {
     float4 Position : POSITION;
@@ -56,17 +64,22 @@ float3 SafeNormalize(float3 V)
     return V / sqrt(max(dot(V, V), 0.01));
 }
 
-// For 0 stride buffer 
+uint GetInputVertexIndex(uint TriangleIndex, int VertexIndex)
+{
+    return TriangleIndex * 3 + VertexIndex;
+}
+
 uint GetVertexFetchBufferOffset(uint VertexId)
 {
-    return floor(VertexId / 4) * 5;
+    return VertexId;
 }
 
 float3 VoxelGetInstancePosition(uint VertexId)
 {
     uint Idx = GetVertexFetchBufferOffset(VertexId);
-    return float3(VoxelVF.VertexFetch_Buffer[Idx], VoxelVF.VertexFetch_Buffer[Idx + 1], VoxelVF.VertexFetch_Buffer[Idx + 2]);
+    return VoxelVF[Idx].Position;
 }
+
 float3 ApplyClipping(float3 Position)
 {
     return Position;
@@ -209,7 +222,7 @@ FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int Ve
     FVertexFactoryInput Input = (FVertexFactoryInput) 0;
     float3 Position = VoxelGetInstancePosition(VertexIndex);
     
-    Input.VertexId = TriangleIndex * 3 + VertexIndex;
+    Input.VertexId = GetInputVertexIndex(TriangleIndex, VertexIndex);
     Input.Position = float4(Position.xyz, 1);
     Input.Color = half4(1, 1, 1, 1);
     Input.Normal = float3(0, 0, 1);

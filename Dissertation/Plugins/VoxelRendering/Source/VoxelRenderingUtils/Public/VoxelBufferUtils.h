@@ -2,7 +2,7 @@
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
 
-struct FVoxelVertexInfo
+struct VOXELRENDERINGUTILS_API FVoxelVertexInfo
 {
 	FVoxelVertexInfo() {}
 	FVoxelVertexInfo(const FVector& InPosition, const FVector& InNormal, const FColor& InColor) :
@@ -12,4 +12,5 @@ struct FVoxelVertexInfo
 
 	FVector Position;
 	FVector Normal;
+	// Color
 };

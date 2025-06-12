@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/PrimitiveComponent.h"
-#include "FVoxelVertexFactory.h"
+#include "FVoxelSceneProxy.h"
 #include "Octree.h"
 #include "OctreeNode.h"
 #include "MarchingCubesDispatcher.h"

@@ -1,5 +1,5 @@
-#include "VoxelRenderingUtils.h"
 #include "FVoxelVertexFactory.h"
+#include "VoxelRenderingUtils.h"
 #include "MaterialDomain.h"
 #include "MeshDrawShaderBindings.h"
 #include "MeshMaterialShader.h"
@@ -23,10 +23,6 @@ FVoxelBatchElementUserData::FVoxelBatchElementUserData()
 class FVoxelVertexFactoryShaderParameters : public FVertexFactoryShaderParameters {
 	DECLARE_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters, NonVirtual);
 public:
-	LAYOUT_FIELD(FShaderParameter, voxelsPerAxis);
-	LAYOUT_FIELD(FShaderParameter, baseDepthScale);
-	LAYOUT_FIELD(FShaderParameter, isoLevel);
-
 	void GetElementShaderBindings(
 		const class FSceneInterface* Scene,
 		const class FSceneView* View,
@@ -38,7 +34,7 @@ public:
 		class FMeshDrawSingleShaderBindings& ShaderBindings,
 		FVertexInputStreamArray& VertexStreams) const
 	{
-		FVoxelVertexFactory* VoxelVF = (FVoxelVertexFactory*)InVertexFactory;
+		FVoxelVertexFactory* VoxelVertexF = (FVoxelVertexFactory*)InVertexFactory;
 		FRHIUniformBuffer* VertexFactoryUniformBuffer = static_cast<FRHIUniformBuffer*>(BatchElement.VertexFactoryUserData);
 		FVoxelBatchElementUserData* UserData = (FVoxelBatchElementUserData*)BatchElement.UserData;
 
@@ -49,24 +45,27 @@ public:
 		//if (VertexFactoryUniformBuffer)
 		//	ShaderBindings.Add(Shader->GetUniformBufferParameter<FVoxelVertexFactoryShaderParameters>(), VertexFactoryUniformBuffer);
 
-		ShaderBindings.Add(VertexSRV, VoxelVF->GetVertexSRV());
+		ShaderBindings.Add(VoxelVF, VoxelVertexF->GetVertexSRV());
 	}
 
 	void Bind(const FShaderParameterMap& ParameterMap)
 	{
-		VertexSRV.Bind(ParameterMap, TEXT("VoxelVF"), SPF_Optional);
+		BINDPARAM(VoxelVF);
 		//BINDPARAM(isoLevel);
 		//BINDPARAM(baseDepthScale);
 		//BINDPARAM(voxelsPerAxis);
 	};
 
 private:
-	LAYOUT_FIELD(FShaderResourceParameter, VertexSRV);
+	LAYOUT_FIELD(FShaderResourceParameter, VoxelVF);	
+	//LAYOUT_FIELD(FShaderParameter, voxelsPerAxis);
+	//LAYOUT_FIELD(FShaderParameter, baseDepthScale);
+	//LAYOUT_FIELD(FShaderParameter, isoLevel);
 };
 
 IMPLEMENT_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters);
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Vertex, FVoxelVertexFactoryShaderParameters);
-//IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Compute, FVoxelVertexFactoryShaderParameters);
+IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Compute, FVoxelVertexFactoryShaderParameters);
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Pixel, FVoxelVertexFactoryShaderParameters);
 
 void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
@@ -75,10 +74,9 @@ void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	uint32 Size = sizeof(uint32) * numIndices;
 	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
 	EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_IndexBuffer;
-	//const ERHIAccess InitialState = ERHIAccess::UAVCompute | ERHIAccess::SRVCompute;
+	const ERHIAccess InitialState = ERHIAccess::VertexOrIndexBuffer;
 
 	IndexBufferRHI = RHICmdList.CreateStructuredBuffer(stride, Size, UsageFlags, CreateInfo);
-
 	//IndexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, InitialState, CreateInfo);
 	void* LockedData = RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
 	FMemory::Memzero(LockedData, Size); // FMemory::Memset(LockedData, 0xFF, Size);

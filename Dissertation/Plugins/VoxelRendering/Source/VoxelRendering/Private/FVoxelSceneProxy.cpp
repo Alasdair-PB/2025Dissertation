@@ -53,7 +53,7 @@ FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactor() { return VertexFactory;
 
 FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const
 {
-	FMaterialRenderProxy* renderProxy = Material->GetRenderProxy();
+	FMaterialRenderProxy* renderProxy = Material->GetRenderProxy(); // No material causes crash
 	for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
 	{
 		if (!(VisibilityMap & (1 << ViewIndex))) continue;

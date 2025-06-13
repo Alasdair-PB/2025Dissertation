@@ -159,8 +159,20 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 	SetUniformParameters();	
 	indexBuffer.InitResource(RHICmdList);
 	vertexBuffer.InitResource(RHICmdList);
+
+
+	//GetPSOPrecacheVertexFetchElements(EVertexInputStreamType::Default, Elements);
+
 	FVertexDeclarationElementList Elements;
-	GetPSOPrecacheVertexFetchElements(EVertexInputStreamType::Default, Elements);
+	FVertexDeclarationElementList PositionOnlyElements;
+
+	const uint32 Stride = sizeof(FVoxelVertexInfo);
+	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Position), VET_Float3, 0, Stride)); // POSITION
+	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Normal), VET_Float3, 1, Stride));   // NORMAL
+
+	PositionOnlyElements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Position), VET_Float3, 0, Stride)); // POSITION
+
+	InitDeclaration(PositionOnlyElements, EVertexInputStreamType::PositionOnly);
 	InitDeclaration(Elements);
 }
 

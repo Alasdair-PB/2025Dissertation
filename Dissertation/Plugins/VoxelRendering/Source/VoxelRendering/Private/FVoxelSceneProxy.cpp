@@ -14,7 +14,14 @@
 #include "SceneInterface.h"
 #include "TextureResource.h"
 #include "Octree.h"
+#include "VoxelPixelShader.h"
+#include "VoxelVertexShader.h"
+
 #include "Async/Mutex.h"
+
+
+IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/PixelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
+IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/PixelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
 
 
 FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
@@ -93,8 +100,8 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 		const FMatrix ViewProj = ViewMatrix * ProjectionMatrix;
 
 		// Capture necessary data for the render thread
-		const FMatrix LocalToWorld = GetLocalToWorld();
-		const FMatrix MVP = LocalToWorld * ViewProj;
+		const FMatrix ltw = GetLocalToWorld();
+		const FMatrix MVP = ltw * ViewProj;
 
 		FVoxelVertexFactory* VF = VertexFactory;
 
@@ -116,10 +123,10 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 				PSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 				PSOInit.PrimitiveType = PT_TriangleList;
 
-				SetGraphicsPipelineState(RHICmdList, PSOInit);
+				SetGraphicsPipelineState(RHICmdList, PSOInit, 0);
 
 				FVoxelVertexShader::FParameters VSParams;
-				VSParams.ModelViewProjection = MVP;
+				VSParams.ModelViewProjection = FMatrix44f(MVP);
 				SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
 
 				FVoxelPixelShader::FParameters PSParams;
@@ -127,7 +134,7 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 
 				RHICmdList.SetStreamSource(0, VertexFactory->GetVertexBuffer()->VertexBufferRHI, 0);
 				RHICmdList.DrawIndexedPrimitive(
-					VertexFactory->GetIndexBuffer(),
+					VertexFactory->GetIndexBufferRHIRef(),
 					0, // BaseVertexIndex
 					0, // MinIndex
 					VertexFactory->GetVertexBuffer()->GetVertexCount(), // NumVertices

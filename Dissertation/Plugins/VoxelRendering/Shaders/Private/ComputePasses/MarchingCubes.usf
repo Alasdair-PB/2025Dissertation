@@ -15,7 +15,6 @@ struct FVoxelVertexInfo
 };
 
 RWStructuredBuffer<FVoxelVertexInfo> outInfo;
-RWStructuredBuffer<int> outTris;
 
 int voxelsPerAxis;
 float baseDepthScale;
@@ -132,9 +131,5 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         CreateVertex(cornerCoords[a0], cornerCoords[b0], indexA, worldPos, isoScale);
         CreateVertex(cornerCoords[a1], cornerCoords[b1], indexB, worldPos, isoScale);
         CreateVertex(cornerCoords[a2], cornerCoords[b2], indexC, worldPos, isoScale);
-        
-        outTris[triangleStartIndex + k] = indexC;
-        outTris[triangleStartIndex + k + 1] = indexB;
-        outTris[triangleStartIndex + k + 2] = indexA;
     }
 }

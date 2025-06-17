@@ -29,10 +29,7 @@ class FMarchingCubes : public FGlobalShader
 		SHADER_PARAMETER(uint32, nodeIndex)
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float>, isoValues)
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<int>, marchLookUp)
-		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<FVoxelVertexInfo>, outInfo)
-		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<int>, outTris)
-		//SHADER_PARAMETER_STRUCT_REF(FVoxelComputeFactoryUniformParameters, VFUniformBuffer)
-
+		SHADER_PARAMETER_UAV(RWStructuredBuffer<FVoxelVertexInfo>, outInfo)
 		SHADER_PARAMETER(uint32, voxelsPerAxis)
 		SHADER_PARAMETER(float, baseDepthScale)
 		SHADER_PARAMETER(float, isoLevel)
@@ -54,13 +51,13 @@ class FMarchingCubes : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
 
-void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 depth, uint32* nodeIndex, FMarchingCubesDispatchParams& Params, FRDGBufferUAVRef OutTrisUAV, FRDGBufferUAVRef OutInfoUAV, FRDGBufferSRVRef InLookUpSRV) {
+void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 depth, uint32* nodeIndex, FMarchingCubesDispatchParams& Params, FUnorderedAccessViewRHIRef OutInfoUAV, FRDGBufferSRVRef InLookUpSRV) {
 
 	if (!node) return;
 	if (!(node->isLeaf)) {	
 		depth++;
 		for (OctreeNode* child : node->children)
-			AddOctreeMarchingPass(GraphBuilder, child, depth, nodeIndex, Params, OutTrisUAV, OutInfoUAV, InLookUpSRV);
+			AddOctreeMarchingPass(GraphBuilder, child, depth, nodeIndex, Params, OutInfoUAV, InLookUpSRV);
 		return;
 	}
 
@@ -72,7 +69,6 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 	PassParams->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
 	PassParams->marchLookUp = InLookUpSRV;
 	PassParams->outInfo = OutInfoUAV;
-	PassParams->outTris = OutTrisUAV;
 	PassParams->voxelsPerAxis = voxelsPerAxis;
 	PassParams->baseDepthScale = Params.Input.baseDepthScale;
 	PassParams->isoLevel = Params.Input.isoLevel;
@@ -104,39 +100,23 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		if (bIsShaderValid) {
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
 			FRDGBufferSRVRef InLookUpSRV = GraphBuilder.CreateSRV(isoValuesBuffer);
+			UE_LOG(LogTemp, Warning, TEXT("Shader dispatched"));
 
-			uint32 indexNumElements = Params.Input.indexBufferRHIRef.NumElements;
-			uint32 vertexNumElements = Params.Input.vertexBufferRHIRef.NumElements;
+			uint32 vertexCount = Params.Input.vertexBufferRHIRef.NumElements;
 
-			//FRDGBufferDesc indexBufferDec = FRDGBufferDesc::CreateStructuredDesc(sizeof(uint32), indexNumElements);
 			//FRDGBufferDesc vertexBufferDec = FRDGBufferDesc::CreateStructuredDesc(sizeof(FVoxelVertexInfo), vertexNumElements);
-
-			//TRefCountPtr<FRDGPooledBuffer> indexPooledBuffer = new FRDGPooledBuffer(RHICmdList, Params.Input.indexBufferRHIRef.BufferRHI, indexBufferDec, indexNumElements, TEXT("VoxelIndexPooledBuffer"));
 			//TRefCountPtr<FRDGPooledBuffer> vertexPooledBuffer = new FRDGPooledBuffer(RHICmdList, Params.Input.vertexBufferRHIRef.BufferRHI, vertexBufferDec, vertexNumElements, TEXT("VoxelVertexPooledBuffer"));
-			//FRDGBufferRef RDGIndexBuffer = GraphBuilder.RegisterExternalBuffer(indexPooledBuffer, TEXT("VoxelIndexBuffer"));
+			//FRDGBufferRef RDGVertexBuffer = GraphBuilder.RegisterExternalBuffer(vertexPooledBuffer, TEXT("VoxelIndexBuffer"));
 
-			FRDGBuffer* VertexToEdgeBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateStructuredDesc(sizeof(FVoxelVertexInfo), vertexNumElements), TEXT("Voxel.VertexToEdge"));
-			GraphBuilder.QueueBufferUpload(VertexToEdgeBuffer, Params.Input.vertexBufferRHIRef.BufferRHI, vertexNumElements * sizeof(FVoxelVertexInfo));
-			TRefCountPtr<FRDGPooledBuffer> vertexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(VertexToEdgeBuffer);
-			FRDGBufferRef RDGVertexBuffer = GraphBuilder.RegisterExternalBuffer(vertexPooledBuffer, TEXT("VoxelVertexBuffer"));
+			//FRDGBuffer* VertexToEdgeBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateStructuredDesc(sizeof(FVoxelVertexInfo), vertexNumElements), TEXT("Voxel.VertexToEdge"));
+			//GraphBuilder.QueueBufferUpload(VertexToEdgeBuffer, Params.Input.vertexBufferRHIRef.BufferRHI, vertexNumElements * sizeof(FVoxelVertexInfo));
+			//TRefCountPtr<FRDGPooledBuffer> vertexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(VertexToEdgeBuffer);
+			//FRDGBufferRef RDGVertexBuffer = GraphBuilder.RegisterExternalBuffer(vertexPooledBuffer, TEXT("VoxelVertexBuffer"));
 
-			//FRDGBuffer* IndexToEdgeBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateStructuredDesc(sizeof(uint32), indexNumElements), TEXT("Voxel.IndexToEdge"));
-			//GraphBuilder.QueueBufferUpload(IndexToEdgeBuffer, Params.Input.indexBufferRHIRef.BufferRHI, indexNumElements * sizeof(FVoxelVertexInfo));
-			//TRefCountPtr<FRDGPooledBuffer> indexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(IndexToEdgeBuffer);
-			//FRDGBufferRef RDGIndexBuffer = GraphBuilder.RegisterExternalBuffer(indexPooledBuffer, TEXT("VoxelIndexBuffer"));
-
-			TArray<FVoxelVertexInfo> OutVertices;
-			TArray<int32> OutTris;
-			OutVertices.Init(FVoxelVertexInfo(), vertexNumElements);
-			OutTris.Init(-1, indexNumElements);
-			FRDGBufferRef OutVerticesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutVertices_StructuredBuffer"), sizeof(FVoxelVertexInfo), vertexNumElements, OutVertices.GetData(), vertexNumElements * sizeof(FVector3f));
-			FRDGBufferRef OutTrisBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("OutTris_StructuredBuffer"), sizeof(int32), indexNumElements, OutTris.GetData(), indexNumElements * sizeof(int32));
-
-			FRDGBufferUAVRef OutInfoUAV = GraphBuilder.CreateUAV(RDGVertexBuffer); //GraphBuilder.CreateUAV(RDGVertexBuffer);
-			FRDGBufferUAVRef OutTrisUAV = GraphBuilder.CreateUAV(OutTrisBuffer); //GraphBuilder.CreateUAV(RDGIndexBuffer);
+			FUnorderedAccessViewRHIRef OutInfoUAV = Params.Input.vertexBufferRHIRef.VertexInfoRHIRef; //GraphBuilder.CreateUAV(RDGVertexBuffer); 
 
 			uint32 nodeIndex = 0;
-			AddOctreeMarchingPass(GraphBuilder, Params.Input.tree, 0, &nodeIndex, Params, OutTrisUAV, OutInfoUAV, InLookUpSRV);
+			AddOctreeMarchingPass(GraphBuilder, Params.Input.tree, 0, &nodeIndex, Params, OutInfoUAV, InLookUpSRV);
 
 			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->
 				void {

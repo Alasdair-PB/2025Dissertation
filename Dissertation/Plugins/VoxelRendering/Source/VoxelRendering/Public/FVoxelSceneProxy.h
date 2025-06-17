@@ -25,7 +25,7 @@ public:
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
 	//virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override;
 
-	FVoxelVertexFactory* GetVertexFactor();
+	FVoxelVertexFactory* GetVertexFactory();
 	UMaterialInterface* Material;
 
 protected:

@@ -21,6 +21,8 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	FPrimitiveSceneProxy(Component),
 	bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
 {
+	Material = Component->GetMaterial(0);
+	UE_LOG(LogTemp, Warning, TEXT("Material has been set"));
 
 }
 
@@ -49,11 +51,11 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 	return Result;
 }
 
-FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactor() { return VertexFactory; }
+FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactory() { return VertexFactory; }
 
 FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const
 {
-	FMaterialRenderProxy* renderProxy = Material->GetRenderProxy(); // No material causes crash
+	FMaterialRenderProxy* renderProxy = Material->GetRenderProxy();
 	for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
 	{
 		if (!(VisibilityMap & (1 << ViewIndex))) continue;

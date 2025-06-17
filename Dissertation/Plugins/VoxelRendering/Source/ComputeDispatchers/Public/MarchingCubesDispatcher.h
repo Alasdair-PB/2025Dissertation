@@ -23,10 +23,10 @@ struct FVoxelComputeShaderDispatchData
 {
 	GENERATED_BODY()
 	FVoxelComputeShaderDispatchData()
-		: BufferRHI(nullptr), NumElements(0), BytesPerElement(0) {}
-	FVoxelComputeShaderDispatchData(FBufferRHIRef inBufferRHI, uint32 inNumElements, uint32 inBytesPerElement) :
-		BufferRHI(inBufferRHI), NumElements(inNumElements), BytesPerElement(inBytesPerElement) {}
-	FBufferRHIRef BufferRHI;
+		: VertexInfoRHIRef(nullptr), NumElements(0), BytesPerElement(0) { }
+	FVoxelComputeShaderDispatchData(FUnorderedAccessViewRHIRef inVertexInfoRHIRef, uint32 inNumElements, uint32 inBytesPerElement) :
+		VertexInfoRHIRef(inVertexInfoRHIRef), NumElements(inNumElements), BytesPerElement(inBytesPerElement) { }
+	FUnorderedAccessViewRHIRef VertexInfoRHIRef;
 	uint32 NumElements;
 	uint32 BytesPerElement;
 };
@@ -37,8 +37,6 @@ struct FMarchingCubesInput
 	GENERATED_BODY()
 	OctreeNode* tree;
 	FVoxelComputeShaderDispatchData vertexBufferRHIRef;
-	FVoxelComputeShaderDispatchData indexBufferRHIRef;
-
 	UPROPERTY(BlueprintReadOnly) int leafCount = 0;
 	UPROPERTY(BlueprintReadOnly) FVector3f leafPosition = FVector3f();
 	UPROPERTY(BlueprintReadOnly) int leafDepth = 0;
@@ -103,6 +101,7 @@ public:
 		Params.Input.nodeIndex = Args.nodeIndex;
 		Params.Input.baseDepthScale = Args.baseDepthScale;
 		Params.Input.isoLevel = Args.isoLevel;
+		Params.Input.vertexBufferRHIRef = Args.vertexBufferRHIRef;
 
 		FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
 			this->Completed.Broadcast(OutputVal);

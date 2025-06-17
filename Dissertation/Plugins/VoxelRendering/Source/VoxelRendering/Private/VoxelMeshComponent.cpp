@@ -10,8 +10,11 @@ UVoxelMeshComponent::UVoxelMeshComponent()
     bUseAsOccluder = false;
 
     static ConstructorHelpers::FObjectFinder<UMaterial> MaterialAsset(TEXT("/Game/Materials/M_VoxelPixelShader"));
-    if (MaterialAsset.Succeeded())
+
+    if (MaterialAsset.Succeeded()) {
         MaterialInstance = UMaterialInstanceDynamic::Create(MaterialAsset.Object, this);
+        SetMaterial(0, MaterialInstance);
+    }
 }
 
 void UVoxelMeshComponent::BeginPlay() {
@@ -78,23 +81,18 @@ float UVoxelMeshComponent::SampleSDF(FVector3f p) {
 void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
-
-    FVoxelComputeShaderDispatchData indexDispathBuffer = FVoxelComputeShaderDispatchData(
-        sceneProxy->GetVertexFactor()->GetIndexBufferRHIRef(),
-        sceneProxy->GetVertexFactor()->GetIndexBufferElementsCount(),
-        sceneProxy->GetVertexFactor()->GetIndexBufferBytesPerElement());
+    FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();
 
     FVoxelComputeShaderDispatchData vertexDispatchBuffer = FVoxelComputeShaderDispatchData(
-        sceneProxy->GetVertexFactor()->GetVertexBufferRHIRef(),
-        sceneProxy->GetVertexFactor()->GetVertexBufferElementsCount(),
-        sceneProxy->GetVertexFactor()->GetVertexBufferBytesPerElement());
+        vf->GetVertexUAV(),
+        vf->GetVertexBufferElementsCount(),
+        vf->GetVertexBufferBytesPerElement());
 
     Params.Input.baseDepthScale = 400.0f;
     Params.Input.isoLevel = isoLevel;
     Params.Input.voxelsPerAxis = voxelsPerAxis;
     Params.Input.tree = node;
     Params.Input.vertexBufferRHIRef = vertexDispatchBuffer;
-    Params.Input.indexBufferRHIRef = indexDispathBuffer;
     Params.Input.leafCount = tree->GetLeafCount(); // Note this may not need to be done every dispatch
 
     FMarchingCubesInterface::Dispatch(Params,

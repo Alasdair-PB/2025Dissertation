@@ -53,6 +53,7 @@ public:
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 	uint32 GetIndexCount() const { return numIndices; }
 	void SetElementCount(uint32 InNumIndices) { numIndices = InNumIndices; }
+	FShaderResourceViewRHIRef SRV;
 
 private:
 	uint32 numIndices = 0;
@@ -97,6 +98,10 @@ public:
 	FBufferRHIRef GetIndexBufferRHIRef() const { return indexBuffer.GetRHI();}
 
 	FShaderResourceViewRHIRef GetVertexSRV() const { return vertexBuffer.SRV; }
+	FUnorderedAccessViewRHIRef GetVertexUAV() const { return vertexBuffer.UAV; }
+
+	FShaderResourceViewRHIRef GetIndexSRV() const { return indexBuffer.SRV; }
+
 
 	uint32 GetVertexBufferBytesPerElement() const { return sizeof(FVoxelVertexInfo); }
 	uint32 GetIndexBufferBytesPerElement() const { return sizeof(uint32); }

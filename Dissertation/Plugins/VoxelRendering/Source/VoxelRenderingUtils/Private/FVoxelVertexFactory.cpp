@@ -70,17 +70,26 @@ IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Pixel, FVoxelVer
 
 void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 {
-	uint32 stride = sizeof(uint32);
-	uint32 Size = sizeof(uint32) * numIndices;
-	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
-	EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_IndexBuffer;
-	const ERHIAccess InitialState = ERHIAccess::VertexOrIndexBuffer;
+	uint32 Stride = sizeof(uint32);
+	uint32 Size = Stride * numIndices;
 
-	IndexBufferRHI = RHICmdList.CreateStructuredBuffer(stride, Size, UsageFlags, CreateInfo);
-	//IndexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, InitialState, CreateInfo);
+	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
+	EBufferUsageFlags UsageFlags = BUF_Static | BUF_ShaderResource | BUF_IndexBuffer;
+
+	IndexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, ERHIAccess::VertexOrIndexBuffer, CreateInfo);
+
 	void* LockedData = RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
-	FMemory::Memzero(LockedData, Size); // FMemory::Memset(LockedData, 0xFF, Size);
+	uint32* IndexData = reinterpret_cast<uint32*>(LockedData);
+
+	for (uint32 i = 0; i < numIndices; i += 3)
+	{
+		IndexData[i + 0] = i + 2;
+		IndexData[i + 1] = i + 1;
+		IndexData[i + 2] = i + 0;
+	}
+
 	RHICmdList.UnlockBuffer(IndexBufferRHI);
+	SRV = RHICmdList.CreateShaderResourceView(IndexBufferRHI, Stride, PF_R32_UINT);
 }
 
 void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)

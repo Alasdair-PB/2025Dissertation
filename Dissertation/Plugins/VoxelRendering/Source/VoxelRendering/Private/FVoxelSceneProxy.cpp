@@ -20,18 +20,14 @@
 #include "Async/Mutex.h"
 
 
-IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/PixelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
-IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/PixelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
+IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
+IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
 
 
 FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	FPrimitiveSceneProxy(Component),
 	bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
-{
-	Material = Component->GetMaterial(0);
-	UE_LOG(LogTemp, Warning, TEXT("Material has been set"));
-
-}
+{}
 
 FVoxelSceneProxy::~FVoxelSceneProxy() {
 	// Safe release any buffers in this SceneProxy
@@ -59,8 +55,6 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 }
 
 FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactory() { return VertexFactory; }
-
-
 
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
 
@@ -98,8 +92,6 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 		const FMatrix ViewMatrix = View->ViewMatrices.GetViewMatrix();
 		const FMatrix ProjectionMatrix = View->ViewMatrices.GetProjectionMatrix();
 		const FMatrix ViewProj = ViewMatrix * ProjectionMatrix;
-
-		// Capture necessary data for the render thread
 		const FMatrix ltw = GetLocalToWorld();
 		const FMatrix MVP = ltw * ViewProj;
 
@@ -123,6 +115,10 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 				PSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 				PSOInit.PrimitiveType = PT_TriangleList;
 
+				PSOInit.RenderTargetFormats[0] = GPixelFormats[PF_B8G8R8A8].PlatformFormat;
+
+				for (int32 i = 1; i < MaxSimultaneousRenderTargets; ++i)
+					PSOInit.RenderTargetFormats[i] = PF_Unknown;
 				SetGraphicsPipelineState(RHICmdList, PSOInit, 0);
 
 				FVoxelVertexShader::FParameters VSParams;

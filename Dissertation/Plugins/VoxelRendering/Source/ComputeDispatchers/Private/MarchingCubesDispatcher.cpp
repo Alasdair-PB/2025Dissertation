@@ -51,13 +51,13 @@ class FMarchingCubes : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
 
-void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 depth, uint32* nodeIndex, FMarchingCubesDispatchParams& Params, FUnorderedAccessViewRHIRef OutInfoUAV, FRDGBufferSRVRef InLookUpSRV) {
+void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 depth, uint32* nodeIndex, FMarchingCubesDispatchParams& Params, FRDGBufferSRVRef InLookUpSRV) {
 
 	if (!node) return;
 	if (!(node->isLeaf)) {	
 		depth++;
 		for (OctreeNode* child : node->children)
-			AddOctreeMarchingPass(GraphBuilder, child, depth, nodeIndex, Params, OutInfoUAV, InLookUpSRV);
+			AddOctreeMarchingPass(GraphBuilder, child, depth, nodeIndex, Params, InLookUpSRV);
 		return;
 	}
 
@@ -68,7 +68,7 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 	PassParams->nodeIndex = (*nodeIndex);
 	PassParams->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
 	PassParams->marchLookUp = InLookUpSRV;
-	PassParams->outInfo = OutInfoUAV;
+	PassParams->outInfo = Params.Input.vertexBufferRHIRef.VertexInfoRHIRef;
 	PassParams->voxelsPerAxis = voxelsPerAxis;
 	PassParams->baseDepthScale = Params.Input.baseDepthScale;
 	PassParams->isoLevel = Params.Input.isoLevel;
@@ -113,10 +113,8 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			//TRefCountPtr<FRDGPooledBuffer> vertexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(VertexToEdgeBuffer);
 			//FRDGBufferRef RDGVertexBuffer = GraphBuilder.RegisterExternalBuffer(vertexPooledBuffer, TEXT("VoxelVertexBuffer"));
 
-			FUnorderedAccessViewRHIRef OutInfoUAV = Params.Input.vertexBufferRHIRef.VertexInfoRHIRef; //GraphBuilder.CreateUAV(RDGVertexBuffer); 
-
 			uint32 nodeIndex = 0;
-			AddOctreeMarchingPass(GraphBuilder, Params.Input.tree, 0, &nodeIndex, Params, OutInfoUAV, InLookUpSRV);
+			AddOctreeMarchingPass(GraphBuilder, Params.Input.tree, 0, &nodeIndex, Params, InLookUpSRV);
 
 			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->
 				void {

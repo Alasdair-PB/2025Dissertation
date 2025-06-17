@@ -5,7 +5,7 @@ cbuffer Parameters
     float4x4 ModelViewProjection;
 };
 
-float4 MainVS(float3 Position : POSITION) : SV_POSITION
+float4 MainVS(float3 Position : POSITION, float3 Normal : NORMAL) : SV_POSITION
 {
     return mul(ModelViewProjection, float4(Position, 1.0));
 }

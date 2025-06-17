@@ -53,17 +53,7 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 
 FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactory() { return VertexFactory; }
 
-FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const
-{
-	FMaterialRenderProxy* renderProxy = Material->GetRenderProxy();
-	for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
-	{
-		if (!(VisibilityMap & (1 << ViewIndex))) continue;
-		FMeshBatch& Mesh = Collector.AllocateMesh();
-		DrawDynamicElements(Mesh, renderProxy, false, 0);
-		Collector.AddMesh(ViewIndex, Mesh);
-	}
-}
+
 
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
 
@@ -86,6 +76,109 @@ void FVoxelSceneProxy::DestroyRenderThreadResources() {
 void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 	FPrimitiveSceneProxy::OnTransformChanged(RHICmdList);
 }
+
+FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
+	const TArray<const FSceneView*>& Views,
+	const FSceneViewFamily& ViewFamily,
+	uint32 VisibilityMap,
+	FMeshElementCollector& Collector) const
+{
+	for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
+	{
+		if (!(VisibilityMap & (1 << ViewIndex))) continue;
+
+		const FSceneView* View = Views[ViewIndex];
+		const FMatrix ViewMatrix = View->ViewMatrices.GetViewMatrix();
+		const FMatrix ProjectionMatrix = View->ViewMatrices.GetProjectionMatrix();
+		const FMatrix ViewProj = ViewMatrix * ProjectionMatrix;
+
+		// Capture necessary data for the render thread
+		const FMatrix LocalToWorld = GetLocalToWorld();
+		const FMatrix MVP = LocalToWorld * ViewProj;
+
+		FVoxelVertexFactory* VF = VertexFactory;
+
+		ENQUEUE_RENDER_COMMAND(DrawCustomShader)(
+			[VertexFactory = VF, MVP](FRHICommandListImmediate& RHICmdList)
+			{
+				TShaderMapRef<FVoxelVertexShader> VertexShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+				TShaderMapRef<FVoxelPixelShader> PixelShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+
+				FGraphicsPipelineStateInitializer PSOInit;
+				RHICmdList.ApplyCachedRenderTargets(PSOInit);
+
+				PSOInit.BlendState = TStaticBlendState<>::GetRHI();
+				PSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+				PSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+
+				PSOInit.BoundShaderState.VertexDeclarationRHI = VertexFactory->GetDeclaration();
+				PSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+				PSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+				PSOInit.PrimitiveType = PT_TriangleList;
+
+				SetGraphicsPipelineState(RHICmdList, PSOInit);
+
+				FVoxelVertexShader::FParameters VSParams;
+				VSParams.ModelViewProjection = MVP;
+				SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
+
+				FVoxelPixelShader::FParameters PSParams;
+				SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
+
+				RHICmdList.SetStreamSource(0, VertexFactory->GetVertexBuffer()->VertexBufferRHI, 0);
+				RHICmdList.DrawIndexedPrimitive(
+					VertexFactory->GetIndexBuffer(),
+					0, // BaseVertexIndex
+					0, // MinIndex
+					VertexFactory->GetVertexBuffer()->GetVertexCount(), // NumVertices
+					0, // StartIndex
+					VertexFactory->GetIndexBuffer()->GetIndexCount() / 3, // NumPrimitives
+					1  // NumInstances
+				);
+			});
+	}
+}
+
+/*
+FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const
+{
+	for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
+	{
+		if (!(VisibilityMap & (1 << ViewIndex))) continue;
+		FMeshBatch& Mesh = Collector.AllocateMesh();
+
+		DrawDynamicElements(Mesh, false, 0);
+		Collector.AddMesh(ViewIndex, Mesh);
+	}
+}
+
+FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, bool bWireframe, int32 ViewIndex) const {
+	check(MaterialProxy);
+
+	bool bHasPrecomputedVolumetricLightmap;
+	FMatrix PreviousLocalToWorld;
+	int32 SingleCaptureIndex;
+	bool bOutputVelocity;
+
+	GetScene().GetPrimitiveUniformShaderParameters_RenderThread(GetPrimitiveSceneInfo(), bHasPrecomputedVolumetricLightmap, PreviousLocalToWorld, SingleCaptureIndex, bOutputVelocity);
+
+	FMeshBatchElement& meshBatch = Mesh.Elements[0];
+	FVoxelIndexBuffer* indexBuffer = VertexFactory->GetIndexBuffer();
+
+	meshBatch.FirstIndex = 0;
+	meshBatch.NumPrimitives = indexBuffer->GetIndexCount() / 3;
+	meshBatch.MinVertexIndex = 0;
+	meshBatch.MaxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;
+	meshBatch.IndexBuffer = indexBuffer;
+
+	Mesh.bWireframe = bWireframe;
+	Mesh.VertexFactory = VertexFactory;
+	Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
+	Mesh.Type = PT_TriangleList;
+	Mesh.DepthPriorityGroup = SDPG_World;
+	Mesh.bCanApplyViewModeOverrides = false;
+}*/
+
 
 /*void FVoxelSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) {
 	if (RuntimeVirtualTextureMaterialTypes.Num() == 0) return;
@@ -113,32 +206,3 @@ void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 	meshBatch.MaxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;
 	PDI->DrawMesh(Mesh, FLT_MAX);
 }*/
-
-
-FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const {
-	check(MaterialProxy);
-
-	bool bHasPrecomputedVolumetricLightmap;
-	FMatrix PreviousLocalToWorld;
-	int32 SingleCaptureIndex;
-	bool bOutputVelocity;
-
-	GetScene().GetPrimitiveUniformShaderParameters_RenderThread(GetPrimitiveSceneInfo(), bHasPrecomputedVolumetricLightmap, PreviousLocalToWorld, SingleCaptureIndex, bOutputVelocity);
-
-	FMeshBatchElement& meshBatch = Mesh.Elements[0];
-	FVoxelIndexBuffer* indexBuffer = VertexFactory->GetIndexBuffer();
-
-	meshBatch.FirstIndex = 0;
-	meshBatch.NumPrimitives = indexBuffer->GetIndexCount() / 3;
-	meshBatch.MinVertexIndex = 0;
-	meshBatch.MaxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;
-	meshBatch.IndexBuffer = indexBuffer;
-
-	Mesh.bWireframe = bWireframe;
-	Mesh.VertexFactory = VertexFactory;
-	Mesh.MaterialRenderProxy = MaterialProxy;
-	Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
-	Mesh.Type = PT_TriangleList;
-	Mesh.DepthPriorityGroup = SDPG_World;
-	Mesh.bCanApplyViewModeOverrides = false;
-}

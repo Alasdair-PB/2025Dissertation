@@ -9,12 +9,11 @@ UVoxelMeshComponent::UVoxelMeshComponent()
     PrimaryComponentTick.bCanEverTick = true;
     bUseAsOccluder = false;
 
-    static ConstructorHelpers::FObjectFinder<UMaterial> MaterialAsset(TEXT("/Game/Materials/M_VoxelPixelShader"));
-
+    /*static ConstructorHelpers::FObjectFinder<UMaterial> MaterialAsset(TEXT("/Game/Materials/M_VoxelPixelShader"));
     if (MaterialAsset.Succeeded()) {
         MaterialInstance = UMaterialInstanceDynamic::Create(MaterialAsset.Object, this);
         SetMaterial(0, MaterialInstance);
-    }
+    }*/
 }
 
 void UVoxelMeshComponent::BeginPlay() {
@@ -27,7 +26,6 @@ void UVoxelMeshComponent::BeginDestroy() {
 
 void UVoxelMeshComponent::PostLoad() {
     Super::PostLoad();
-    //UpdateMaterial();
 }
 
 UBodySetup* UVoxelMeshComponent::GetBodySetup() {
@@ -63,8 +61,6 @@ void UVoxelMeshComponent::BuildOctree(AABB inBounds, int size, int depth)
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
-    if (!MaterialInstance)
-        return nullptr;
     sceneProxy = new FVoxelSceneProxy(this);
 	return sceneProxy; //, GetWorld()->GetFeatureLevel()
 }

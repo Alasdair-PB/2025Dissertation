@@ -43,7 +43,7 @@ protected:
     void BuildOctree(AABB bounds, int size, int depth);
 
 
-    UMaterialInstanceDynamic* MaterialInstance;
+    //UMaterialInstanceDynamic* MaterialInstance;
     FVoxelSceneProxy* sceneProxy;
     Octree* tree;
     AABB bounds;

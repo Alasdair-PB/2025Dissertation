@@ -21,6 +21,11 @@
 			"LoadingPhase": "PostConfigInit"
 		},
 		{
+			"Name": "VoxelShaders",
+			"Type": "Runtime",
+			"LoadingPhase": "PostConfigInit"
+		},
+		{
 			"Name": "VoxelRenderingUtils",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
@@ -29,7 +34,7 @@
 			"Name": "ComputeDispatchers",
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit"
-		},		
+		},
 		{
 			"Name": "VoxelRendering",
 			"Type": "Runtime",

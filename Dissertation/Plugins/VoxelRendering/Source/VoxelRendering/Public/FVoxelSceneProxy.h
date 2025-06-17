@@ -32,6 +32,6 @@ protected:
 	bool bCompatiblePlatform;
 	bool CanBeRendered() const { return bCompatiblePlatform; }
 	FVoxelVertexFactory* VertexFactory;
-	void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
+	//void DrawDynamicElements(FMeshBatch& Mesh, bool bWireframe, int32 ViewIndex) const;
 
 };

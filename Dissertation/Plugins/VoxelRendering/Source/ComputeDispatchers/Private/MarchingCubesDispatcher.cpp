@@ -100,7 +100,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		if (bIsShaderValid) {
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
 			FRDGBufferSRVRef InLookUpSRV = GraphBuilder.CreateSRV(isoValuesBuffer);
-			UE_LOG(LogTemp, Warning, TEXT("Shader dispatched"));
+			//UE_LOG(LogTemp, Warning, TEXT("Shader dispatched"));
 
 			uint32 vertexCount = Params.Input.vertexBufferRHIRef.NumElements;
 

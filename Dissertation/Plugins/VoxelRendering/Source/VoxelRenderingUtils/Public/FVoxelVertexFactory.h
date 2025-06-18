@@ -75,8 +75,6 @@ public:
 
 private:
 	uint32 numVertices = 0;
-	//FVoxelVertexFactoryBufferRef VertexUniformBuffer;
-	//FVoxelComputeFactoryBufferRef ComputeUniformBuffer;
 };
 
 class VOXELRENDERINGUTILS_API FVoxelVertexFactory : public FVertexFactory
@@ -88,9 +86,7 @@ public:
 
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
-	static void GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements);
 
-	void SetUniformParameters();
 	void InitRHI(FRHICommandListBase& RHICmdList) override final;
 	void ReleaseRHI() override;
 

@@ -31,7 +31,7 @@ void UVoxelMeshComponent::PostLoad() {
 UBodySetup* UVoxelMeshComponent::GetBodySetup() {
     return UMeshComponent::GetBodySetup();
 }
-void  UVoxelMeshComponent::SetMaterial(int32 ElementIndex, UMaterialInterface* InMaterial) {
+void UVoxelMeshComponent::SetMaterial(int32 ElementIndex, UMaterialInterface* InMaterial) {
     UMeshComponent::SetMaterial(ElementIndex, InMaterial);
 }
 

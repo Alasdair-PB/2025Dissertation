@@ -13,12 +13,7 @@
 #define SETPARAM(Name) if (Name.IsBound()) { ShaderBindings.Add(Name, UserData->Name); }
 #define SETSRVPARAM(Name) if(UserData->Name) { SETPARAM(Name) }
 
-FVoxelBatchElementUserData::FVoxelBatchElementUserData()
-//: voxelsPerAxis(0)
-//, baseDepthScale(0)
-//, isoLevel(0)
-{
-}
+FVoxelBatchElementUserData::FVoxelBatchElementUserData() {}
 
 class FVoxelVertexFactoryShaderParameters : public FVertexFactoryShaderParameters {
 	DECLARE_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters, NonVirtual);
@@ -39,9 +34,6 @@ public:
 		FVoxelBatchElementUserData* UserData = (FVoxelBatchElementUserData*)BatchElement.UserData;
 
 		//SETSRVPARAM(isoLevel);
-		//SETSRVPARAM(baseDepthScale);
-		//SETSRVPARAM(voxelsPerAxis);
-
 		//if (VertexFactoryUniformBuffer)
 		//	ShaderBindings.Add(Shader->GetUniformBufferParameter<FVoxelVertexFactoryShaderParameters>(), VertexFactoryUniformBuffer);
 
@@ -100,21 +92,12 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
 
 	VertexBufferRHI = RHICmdList.CreateStructuredBuffer(stride, Size, UsageFlags, CreateInfo);
-	//VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, InitialState, CreateInfo); // (EnumHasAnyFlags(InRHIAccess, ERHIAccess::WritableMask)
 	void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
 	FMemory::Memzero(LockedData, Size);
 	RHICmdList.UnlockBuffer(VertexBufferRHI);
 
 	SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI);
 	UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, false, false);
-
-	//FVoxelVertexFactoryUniformParameters VSParams;
-	//VSParams.VertexFetch_Buffer = SRV;
-	//VertexUniformBuffer = FVoxelVertexFactoryBufferRef::CreateUniformBufferImmediate(VSParams, UniformBuffer_MultiFrame);
-
-	//FVoxelComputeFactoryUniformParameters CSParams;
-	//CSParams.VertexFetch_Buffer = UAV;
-	//ComputeUniformBuffer = FVoxelComputeFactoryBufferRef::CreateUniformBufferImmediate(CSParams, UniformBuffer_SingleFrame);
 }
 
 FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel) //, FVoxelVertexFactoryParameters UniformParams
@@ -143,45 +126,14 @@ IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelV
 	//| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 );
 
-void FVoxelVertexFactory::GetPSOPrecacheVertexFetchElements(EVertexInputStreamType VertexInputStreamType, FVertexDeclarationElementList& Elements)
-{
-	const uint32 Stride = sizeof(FVoxelVertexInfo);
-	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Position), VET_Float3, 0, Stride)); // POSITION
-	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Normal), VET_Float3, 1, Stride));   // NORMAL
-}
-
-void FVoxelVertexFactory::SetUniformParameters() {
-	//FVoxelVertexFactoryUniformParameters vertexUniformParameters;
-	//FVoxelComputeFactoryUniformParameters computeUniformParameters;
-
-	//vertexUniformParameters.VertexFetch_Buffer = vertexBuffer.SRV;
-	//computeUniformParameters.VertexFetch_Buffer = vertexBuffer.UAV;
-
-	//if (vertexUniformParameters.VertexFetch_Buffer)
-	//	vertexUniformBuffer = FVoxelVertexFactoryBufferRef::CreateUniformBufferImmediate(vertexUniformParameters, UniformBuffer_MultiFrame);
-	//if (computeUniformParameters.VertexFetch_Buffer)
-	//	computeUniformBuffer = FVoxelComputeFactoryBufferRef::CreateUniformBufferImmediate(computeUniformParameters, UniformBuffer_MultiFrame);
-}
-
 void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 {		
-	SetUniformParameters();	
 	indexBuffer.InitResource(RHICmdList);
 	vertexBuffer.InitResource(RHICmdList);
 
-
-	//GetPSOPrecacheVertexFetchElements(EVertexInputStreamType::Default, Elements);
-
 	FVertexDeclarationElementList Elements;
-	FVertexDeclarationElementList PositionOnlyElements;
-
-	const uint32 Stride = sizeof(FVoxelVertexInfo);
-	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Position), VET_Float3, 0, Stride)); // POSITION
-	Elements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Normal), VET_Float3, 1, Stride));   // NORMAL
-
-	PositionOnlyElements.Add(FVertexElement(0, STRUCT_OFFSET(FVoxelVertexInfo, Position), VET_Float3, 0, Stride)); // POSITION
-
-	InitDeclaration(PositionOnlyElements, EVertexInputStreamType::PositionOnly);
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Position), sizeof(FVoxelVertexInfo), VET_Float3), 0));
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Normal), sizeof(FVoxelVertexInfo), VET_Float3), 0));
 	InitDeclaration(Elements);
 }
 

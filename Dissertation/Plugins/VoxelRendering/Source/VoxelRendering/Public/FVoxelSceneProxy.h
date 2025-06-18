@@ -24,6 +24,7 @@ public:
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
 	//virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override;
+	void RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* Scene, const FSceneView* View, FTextureRHIRef Target);
 
 	FVoxelVertexFactory* GetVertexFactory();
 	UMaterialInterface* Material;
@@ -32,6 +33,7 @@ protected:
 	bool bCompatiblePlatform;
 	bool CanBeRendered() const { return bCompatiblePlatform; }
 	FVoxelVertexFactory* VertexFactory;
-	//void DrawDynamicElements(FMeshBatch& Mesh, bool bWireframe, int32 ViewIndex) const;
-
+	//void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
+	void DrawDynamicElements(FMeshBatch& Mesh, FMeshElementCollector& Collector, bool bWireframe, int32 ViewIndex) const;
+	mutable TArray<FMeshBatch> CustomPassMeshBatches;
 };

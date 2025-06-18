@@ -47,16 +47,16 @@ public:
         const FMaterialRenderProxy& DefaultProxy = *UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
         const FMaterial& DefaultMaterial = *DefaultProxy.GetMaterialNoFallback(FeatureLevel);
 
-		TShaderMapRef<FVoxelVertexShader> VertexShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-		TShaderMapRef<FVoxelPixelShader> PixelShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-        TMeshProcessorShaders<FVoxelVertexShader, FVoxelVertexShader> Shaders;
+		//TShaderRef<FVoxelVertexMeshMaterialShader> VertexShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+		//TShaderRef<FVoxelPixelMeshMaterialShader> PixelShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+        TMeshProcessorShaders<FVoxelVertexMeshMaterialShader, FVoxelVertexMeshMaterialShader> Shaders;
 
         const FMeshDrawingPolicyOverrideSettings OverrideSettings = ComputeMeshOverrideSettings(MeshBatch);
         const ERasterizerFillMode MeshFillMode = ComputeMeshFillMode(DefaultMaterial, OverrideSettings);
         const ERasterizerCullMode MeshCullMode = ComputeMeshCullMode(DefaultMaterial, OverrideSettings);
         const FVertexFactory* VertexFactory = MeshBatch.VertexFactory;
 
-        FMeshDrawCommandSortKey SortKey = CalculateMeshStaticSortKey(VertexShader, PixelShader);
+        FMeshDrawCommandSortKey SortKey{};
         FVoxelElementData ShaderElementData(MeshBatch.LCI);
 
         BuildMeshDrawCommands(

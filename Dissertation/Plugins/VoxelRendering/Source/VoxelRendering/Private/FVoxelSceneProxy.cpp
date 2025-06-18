@@ -116,7 +116,7 @@ FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMeshEl
 	meshBatch.MinVertexIndex = 0;
 	meshBatch.MaxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;
 	meshBatch.IndexBuffer = indexBuffer;
-	//meshBatch.PrimitiveUniformBuffer = GetUniformBuffer();
+	meshBatch.PrimitiveUniformBuffer = GetUniformBuffer();
 
 	Mesh.MaterialRenderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 	Mesh.bWireframe = bWireframe;

@@ -31,7 +31,7 @@ public:
 	{
 		FVoxelVertexFactory* VoxelVertexF = (FVoxelVertexFactory*)InVertexFactory;
 		FRHIUniformBuffer* VertexFactoryUniformBuffer = static_cast<FRHIUniformBuffer*>(BatchElement.VertexFactoryUserData);
-		FVoxelBatchElementUserData* UserData = (FVoxelBatchElementUserData*)BatchElement.UserData;
+		FVoxelBatchElementUserData* UserData = (FVoxelBatchElementUserData*) BatchElement.UserData;
 
 		//SETSRVPARAM(isoLevel);
 		//if (VertexFactoryUniformBuffer)
@@ -119,11 +119,9 @@ void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShade
 
 IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelVertexFactory.ush",
 	EVertexFactoryFlags::UsedWithMaterials
-
-	// Will look at enabling support for these features once core has been established
-	//| EVertexFactoryFlags::SupportsDynamicLighting
-	//| EVertexFactoryFlags::SupportsPositionOnly
-	//| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
+	| EVertexFactoryFlags::SupportsDynamicLighting
+	| EVertexFactoryFlags::SupportsPositionOnly
+	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 );
 
 void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
@@ -135,6 +133,14 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Position), sizeof(FVoxelVertexInfo), VET_Float3), 0));
 	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Normal), sizeof(FVoxelVertexInfo), VET_Float3), 0));
 	InitDeclaration(Elements);
+	
+
+	/*
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&VertexBuffer, 0, sizeof(FLidarPointCloudPoint), VET_Float3), 0));
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&VertexBuffer, 12, sizeof(FLidarPointCloudPoint), VET_Color), 1));
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&VertexBuffer, 16, sizeof(FLidarPointCloudPoint), VET_UInt), 2));
+	*/
+
 }
 
 void FVoxelVertexFactory::ReleaseRHI()

@@ -77,5 +77,4 @@ public:
 private:
 	const FSceneView* View;
     FMeshPassProcessorRenderState DrawRenderState;
-
 };

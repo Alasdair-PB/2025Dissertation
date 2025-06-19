@@ -34,6 +34,6 @@ protected:
 	bool CanBeRendered() const { return bCompatiblePlatform; }
 	FVoxelVertexFactory* VertexFactory;
 	//void DrawDynamicElements(FMeshBatch& Mesh, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const;
-	void DrawDynamicElements(FMeshBatch& Mesh, FMeshElementCollector& Collector, bool bWireframe, int32 ViewIndex) const;
+	void DrawDynamicElements(FMeshBatch& Mesh, FMeshElementCollector& Collector, FMaterialRenderProxy* renderProxy, bool bWireframe, int32 ViewIndex) const;
 	mutable TArray<FMeshBatch> CustomPassMeshBatches;
 };

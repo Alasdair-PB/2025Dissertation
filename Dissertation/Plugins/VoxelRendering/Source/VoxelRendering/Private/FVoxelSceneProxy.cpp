@@ -22,7 +22,10 @@
 FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	FPrimitiveSceneProxy(Component),
 	bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
-{}
+{
+	UE_LOG(LogTemp, Warning, TEXT("Using GetMaterial"));
+	Material = Component->GetMaterial(0);
+}
 
 FVoxelSceneProxy::~FVoxelSceneProxy() {}
 
@@ -80,9 +83,7 @@ void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, 
 	FMyMeshPassProcessor PassProcessor(InScene, View, DrawListContext);
 
 	for (const FMeshBatch& MeshBatch : CustomPassMeshBatches)
-	{
 		PassProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
-	}
 	RHICmdList.EndRenderPass();
 }
 
@@ -94,13 +95,26 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const F
 		if (!(VisibilityMap & (1 << ViewIndex))) continue;
 
 		FMeshBatch& Mesh = Collector.AllocateMesh();
-		DrawDynamicElements(Mesh, Collector, false, ViewIndex);
+		FMaterialRenderProxy* renderProxy;
+
+		if (!Material) {
+			renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
+			UE_LOG(LogTemp, Warning, TEXT("No Material instance set:: switching to default MD_Surface support"));
+
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("Debug::Trying to access render proxy"));
+			renderProxy = Material->GetRenderProxy();
+			UE_LOG(LogTemp, Warning, TEXT("Debug::access successful"));
+		}
+
+		DrawDynamicElements(Mesh, Collector, renderProxy, false, ViewIndex);
 		CustomPassMeshBatches.Add(Mesh);
 		Collector.AddMesh(ViewIndex, Mesh);
 	}
 }
 
-FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMeshElementCollector& Collector, bool bWireframe, int32 ViewIndex) const {
+FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMeshElementCollector& Collector, FMaterialRenderProxy* renderProxy, bool bWireframe, int32 ViewIndex) const {
 
 	/*bool bHasPrecomputedVolumetricLightmap;
 	FMatrix PreviousLocalToWorld;
@@ -118,13 +132,16 @@ FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMeshEl
 	meshBatch.IndexBuffer = indexBuffer;
 	meshBatch.PrimitiveUniformBuffer = GetUniformBuffer();
 
-	Mesh.MaterialRenderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
+	Mesh.MaterialRenderProxy = renderProxy;
 	Mesh.bWireframe = bWireframe;
 	Mesh.VertexFactory = VertexFactory;
 	Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
 	Mesh.Type = PT_TriangleList;
 	Mesh.DepthPriorityGroup = SDPG_World;
 	Mesh.bCanApplyViewModeOverrides = false;
+
+	//meshBatch.UserData = OverrideColorVertexBuffer;
+	//meshBatch.bUserDataIsColorVertexBuffer = true;
 }
 
 /*

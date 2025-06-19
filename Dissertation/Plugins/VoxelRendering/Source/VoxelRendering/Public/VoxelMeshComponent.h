@@ -27,7 +27,6 @@ public:
     virtual void PostLoad() override;
     virtual UBodySetup* GetBodySetup() override;
     virtual void SetMaterial(int32 ElementIndex, UMaterialInterface* InMaterial) override;
-
     virtual UMaterialInterface* GetMaterial(int32 ElementIndex) const override { return Material; }
 
 private:
@@ -42,8 +41,6 @@ protected:
     float SampleSDF(FVector3f p);
     void BuildOctree(AABB bounds, int size, int depth);
 
-
-    //UMaterialInstanceDynamic* MaterialInstance;
     FVoxelSceneProxy* sceneProxy;
     Octree* tree;
     AABB bounds;

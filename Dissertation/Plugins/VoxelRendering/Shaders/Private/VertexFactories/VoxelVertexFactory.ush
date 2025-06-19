@@ -11,7 +11,7 @@ struct FVoxelVertexInfo
 
 RWStructuredBuffer<FVoxelVertexInfo> VoxelVF;
 
-struct FVertexFactoryInput
+/*struct FVertexFactoryInput
 {
     float4 Position : POSITION;
     half4 Color : ATTRIBUTE1;
@@ -19,7 +19,17 @@ struct FVertexFactoryInput
     uint VertexId : SV_VertexID;
 
 	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+};*/
+
+struct FVertexFactoryInput
+{
+    float3 Position : ATTRIBUTE0;
+    float3 Normal : ATTRIBUTE1;
+    uint VertexId : SV_VertexID;
+    
+    VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
+
 
 struct FPositionOnlyVertexFactoryInput
 {
@@ -224,7 +234,7 @@ FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int Ve
     
     Input.VertexId = GetInputVertexIndex(TriangleIndex, VertexIndex);
     Input.Position = float4(Position.xyz, 1);
-    Input.Color = half4(1, 1, 1, 1);
+    //Input.Color = half4(1, 1, 1, 1);
     Input.Normal = float3(0, 0, 1);
     return Input;
 }
@@ -268,7 +278,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.TangentToLocal = CalcTangentToLocal();
     Intermediates.TangentToWorldSign = Intermediates.SceneData.InstanceData.DeterminantSign;
     Intermediates.TangentToWorld = CalcTangentToWorldNoScale(Intermediates.TangentToLocal);
-    Intermediates.Color = Input.Color;
+    Intermediates.Color = half4(0,0,0,0);
     Intermediates.Alpha = 1;
 
     return Intermediates;

@@ -75,7 +75,7 @@ void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 
 void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* InScene, const FSceneView* View, FTextureRHIRef Target)
 {
-	FRHIRenderPassInfo RPInfo(Target, ERenderTargetActions::Load_Store);
+	/*FRHIRenderPassInfo RPInfo(Target, ERenderTargetActions::Load_Store);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("MyCustomPass"));
 
 	FMeshPassDrawListContext* DrawListContext = nullptr; // abstract
@@ -83,12 +83,12 @@ void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, 
 
 	for (const FMeshBatch& MeshBatch : CustomPassMeshBatches)
 		PassProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
-	RHICmdList.EndRenderPass();
+	RHICmdList.EndRenderPass();*/
 }
 
 FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const
 {
-	CustomPassMeshBatches.Reset();
+	//CustomPassMeshBatches.Reset();
 	for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
 	{
 		if (!(VisibilityMap & (1 << ViewIndex))) continue;
@@ -103,19 +103,12 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const F
 		else renderProxy = Material->GetRenderProxy();
 
 		DrawDynamicElements(Mesh, Collector, renderProxy, false, ViewIndex);
-		CustomPassMeshBatches.Add(Mesh);
+		//CustomPassMeshBatches.Add(Mesh);
 		Collector.AddMesh(ViewIndex, Mesh);
 	}
 }
 
 FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMeshElementCollector& Collector, FMaterialRenderProxy* renderProxy, bool bWireframe, int32 ViewIndex) const {
-
-	/*bool bHasPrecomputedVolumetricLightmap;
-	FMatrix PreviousLocalToWorld;
-	int32 SingleCaptureIndex;
-	bool bOutputVelocity;
-	GetScene().GetPrimitiveUniformShaderParameters_RenderThread(GetPrimitiveSceneInfo(), bHasPrecomputedVolumetricLightmap, PreviousLocalToWorld, SingleCaptureIndex, bOutputVelocity);*/
-
 	FMeshBatchElement& meshBatch = Mesh.Elements[0];
 	FVoxelIndexBuffer* indexBuffer = VertexFactory->GetIndexBuffer();
 
@@ -133,11 +126,10 @@ FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMeshEl
 	Mesh.Type = PT_TriangleList;
 	Mesh.DepthPriorityGroup = SDPG_World;
 	Mesh.bCanApplyViewModeOverrides = false;
+}
 
 	//meshBatch.UserData = OverrideColorVertexBuffer;
 	//meshBatch.bUserDataIsColorVertexBuffer = true;
-}
-
 /*
 	FDynamicPrimitiveUniformBuffer& DynamicPrimitiveUniformBuffer = Collector.AllocateOneFrameResource<FDynamicPrimitiveUniformBuffer>();
 	DynamicPrimitiveUniformBuffer.Set(Collector.GetRHICommandList(), GetLocalToWorld(), GetLocalToWorld(), GetBounds(), GetLocalBounds(), true, false, AlwaysHasVelocity());

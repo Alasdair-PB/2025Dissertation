@@ -119,9 +119,9 @@ void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShade
 
 IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelVertexFactory.ush",
 	EVertexFactoryFlags::UsedWithMaterials
-	| EVertexFactoryFlags::SupportsDynamicLighting
-	| EVertexFactoryFlags::SupportsPositionOnly
-	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
+	//| EVertexFactoryFlags::SupportsDynamicLighting
+	//| EVertexFactoryFlags::SupportsPositionOnly
+	//| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 );
 
 void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)

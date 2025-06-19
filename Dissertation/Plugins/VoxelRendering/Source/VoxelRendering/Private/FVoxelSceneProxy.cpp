@@ -23,7 +23,6 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	FPrimitiveSceneProxy(Component),
 	bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Using GetMaterial"));
 	Material = Component->GetMaterial(0);
 }
 
@@ -100,13 +99,8 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const F
 		if (!Material) {
 			renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 			UE_LOG(LogTemp, Warning, TEXT("No Material instance set:: switching to default MD_Surface support"));
-
 		}
-		else {
-			UE_LOG(LogTemp, Warning, TEXT("Debug::Trying to access render proxy"));
-			renderProxy = Material->GetRenderProxy();
-			UE_LOG(LogTemp, Warning, TEXT("Debug::access successful"));
-		}
+		else renderProxy = Material->GetRenderProxy();
 
 		DrawDynamicElements(Mesh, Collector, renderProxy, false, ViewIndex);
 		CustomPassMeshBatches.Add(Mesh);

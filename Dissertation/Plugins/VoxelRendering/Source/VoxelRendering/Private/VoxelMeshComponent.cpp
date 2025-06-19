@@ -12,7 +12,6 @@ UVoxelMeshComponent::UVoxelMeshComponent()
     if (MaterialAsset.Succeeded()) {
         Material = UMaterialInstanceDynamic::Create(MaterialAsset.Object, this);
         SetMaterial(0, Material);
-        UE_LOG(LogTemp, Warning, TEXT("Material has been set on MeshComponent"));
     }
 }
 

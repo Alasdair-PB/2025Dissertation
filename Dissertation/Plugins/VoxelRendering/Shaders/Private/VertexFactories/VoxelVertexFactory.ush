@@ -9,41 +9,26 @@ struct FVoxelVertexInfo
     float3 Normal;
 };
 
-RWStructuredBuffer<FVoxelVertexInfo> VoxelVF;
-
-/*struct FVertexFactoryInput
-{
-    float4 Position : POSITION;
-    half4 Color : ATTRIBUTE1;
-    float3 Normal : NORMAL;
-    uint VertexId : SV_VertexID;
-
-	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
-};*/
+StructuredBuffer<FVoxelVertexInfo> VoxelVF;
 
 struct FVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
-    float3 Normal : ATTRIBUTE1;
-    uint VertexId : SV_VertexID;
-    
+    float3 Normal : ATTRIBUTE1;    
     VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
 
 struct FPositionOnlyVertexFactoryInput
 {
-    float4 Position : ATTRIBUTE0;
-    uint VertexId : SV_VertexID;
-
+    float3 Position : ATTRIBUTE0;
 	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
 struct FPositionAndNormalOnlyVertexFactoryInput
 {
-    float4 Position : ATTRIBUTE0;
+    float3 Position : ATTRIBUTE0;
     float3 Normal : ATTRIBUTE1;
-    uint VertexId : SV_VertexID;
 
 	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
@@ -74,33 +59,17 @@ float3 SafeNormalize(float3 V)
     return V / sqrt(max(dot(V, V), 0.01));
 }
 
-uint GetInputVertexIndex(uint TriangleIndex, int VertexIndex)
-{
-    return TriangleIndex * 3 + VertexIndex;
-}
-
-uint GetVertexFetchBufferOffset(uint VertexId)
-{
-    return VertexId;
-}
-
-float3 VoxelGetInstancePosition(uint VertexId)
-{
-    uint Idx = GetVertexFetchBufferOffset(VertexId);
-    return VoxelVF[Idx].Position;
-}
-
 float3 ApplyClipping(float3 Position)
 {
     return Position;
 }
 
-float3 ProcessPosition(float3 Position, half3x3 TangentToLocal, int VertexID)
+float3 ProcessPosition(float3 Position, half3x3 TangentToLocal)
 {
     return Position;
 }
 
-float3 ProcessPosition(float3 Position, int VertexID)
+float3 ProcessPosition(float3 Position)
 {
     return Position;
 }
@@ -181,24 +150,26 @@ float3 VertexFactoryGetPositionForVertexLighting(FVertexFactoryInput Input, FVer
 float4 VertexFactoryGetWorldPosition(FPositionOnlyVertexFactoryInput Input)
 {
     float4 WorldPosition = TransformLocalToTranslatedWorld(
-    ApplyClipping(VoxelGetInstancePosition(Input.VertexId)),
-    GetPrimitiveDataFromUniformBuffer().LocalToWorld);
-    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz, Input.VertexId);
+        ApplyClipping(Input.Position),
+        GetPrimitiveDataFromUniformBuffer().LocalToWorld);
+
+    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz);
     return WorldPosition;
 }
 float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput Input)
 {
     float4 WorldPosition = TransformLocalToTranslatedWorld(
-    ApplyClipping(VoxelGetInstancePosition(Input.VertexId)),
-    GetPrimitiveDataFromUniformBuffer().LocalToWorld);
-    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz, Input.VertexId);
+        ApplyClipping(Input.Position),
+        GetPrimitiveDataFromUniformBuffer().LocalToWorld);
+
+    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz);
     return WorldPosition;
 }
 
 float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
     float4 WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position, Intermediates.SceneData.Primitive.LocalToWorld);
-    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz, Intermediates.TangentToLocal, Input.VertexId);
+    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz, Intermediates.TangentToLocal);
     return WorldPosition;
 }
 
@@ -227,14 +198,22 @@ uint VertexFactoryGetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
     return 0;
 }
 
+uint GetVertexFetchBufferOffset(uint VertexId)
+{
+    return VertexId;
+}
+
+float3 VoxelGetInstancePosition(uint VertexId)
+{
+    uint Idx = GetVertexFetchBufferOffset(VertexId);
+    return VoxelVF[Idx].Position;
+}
+
 FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int VertexIndex)
 {
     FVertexFactoryInput Input = (FVertexFactoryInput) 0;
     float3 Position = VoxelGetInstancePosition(VertexIndex);
-    
-    Input.VertexId = GetInputVertexIndex(TriangleIndex, VertexIndex);
-    Input.Position = float4(Position.xyz, 1);
-    //Input.Color = half4(1, 1, 1, 1);
+        Input.Position = Position.xyz;
     Input.Normal = float3(0, 0, 1);
     return Input;
 }

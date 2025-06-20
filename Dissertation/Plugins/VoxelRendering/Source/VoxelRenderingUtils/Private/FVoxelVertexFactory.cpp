@@ -9,9 +9,9 @@
 //IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryUniformParameters, "VoxelVF");
 //IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelComputeFactoryUniformParameters, "VoxelCF");
 
-#define BINDPARAM(Name) Name.Bind(ParameterMap, TEXT(#Name))
+/*#define BINDPARAM(Name) Name.Bind(ParameterMap, TEXT(#Name))
 #define SETPARAM(Name) if (Name.IsBound()) { ShaderBindings.Add(Name, UserData->Name); }
-#define SETSRVPARAM(Name) if(UserData->Name) { SETPARAM(Name) }
+#define SETSRVPARAM(Name) if(UserData->Name) { SETPARAM(Name) }*/
 
 FVoxelBatchElementUserData::FVoxelBatchElementUserData() {}
 
@@ -29,35 +29,31 @@ public:
 		class FMeshDrawSingleShaderBindings& ShaderBindings,
 		FVertexInputStreamArray& VertexStreams) const
 	{
-		FVoxelVertexFactory* VoxelVertexF = (FVoxelVertexFactory*)InVertexFactory;
-		FRHIUniformBuffer* VertexFactoryUniformBuffer = static_cast<FRHIUniformBuffer*>(BatchElement.VertexFactoryUserData);
-		FVoxelBatchElementUserData* UserData = (FVoxelBatchElementUserData*) BatchElement.UserData;
+		const FVoxelVertexFactory* VoxelVertexFactory = static_cast<const FVoxelVertexFactory*>(InVertexFactory);
+		const FVoxelBatchElementUserData* UserData = (const FVoxelBatchElementUserData*)BatchElement.UserData;
 
-		//SETSRVPARAM(isoLevel);
-		//if (VertexFactoryUniformBuffer)
-		//	ShaderBindings.Add(Shader->GetUniformBufferParameter<FVoxelVertexFactoryShaderParameters>(), VertexFactoryUniformBuffer);
+		//if (VoxelVF.IsBound())
+		//	ShaderBindings.Add(VoxelVF, VoxelVertexFactory->GetVertexSRV());
 
-		ShaderBindings.Add(VoxelVF, VoxelVertexF->GetVertexSRV());
+		//FVoxelVertexFactory* VoxelVertexF = (FVoxelVertexFactory*)InVertexFactory;
+		//FRHIUniformBuffer* VertexFactoryUniformBuffer = static_cast<FRHIUniformBuffer*>(BatchElement.VertexFactoryUserData);
 	}
 
 	void Bind(const FShaderParameterMap& ParameterMap)
 	{
-		BINDPARAM(VoxelVF);
+		//VoxelVF.Bind(ParameterMap, TEXT("VoxelVF"));
+		//BINDPARAM(VoxelVF);
 		//BINDPARAM(isoLevel);
-		//BINDPARAM(baseDepthScale);
-		//BINDPARAM(voxelsPerAxis);
 	};
 
 private:
-	LAYOUT_FIELD(FShaderResourceParameter, VoxelVF);	
+	//LAYOUT_FIELD(FShaderResourceParameter, VoxelVF);	
 	//LAYOUT_FIELD(FShaderParameter, voxelsPerAxis);
-	//LAYOUT_FIELD(FShaderParameter, baseDepthScale);
-	//LAYOUT_FIELD(FShaderParameter, isoLevel);
 };
-
 IMPLEMENT_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters);
+
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Vertex, FVoxelVertexFactoryShaderParameters);
-IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Compute, FVoxelVertexFactoryShaderParameters);
+//IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Compute, FVoxelVertexFactoryShaderParameters);
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Pixel, FVoxelVertexFactoryShaderParameters);
 
 void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
@@ -108,7 +104,7 @@ FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, 
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
 {
-	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+	return true;//  IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 }
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {
@@ -119,8 +115,8 @@ void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShade
 
 IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelVertexFactory.ush",
 	EVertexFactoryFlags::UsedWithMaterials
-	//| EVertexFactoryFlags::SupportsDynamicLighting
-	//| EVertexFactoryFlags::SupportsPositionOnly
+	| EVertexFactoryFlags::SupportsDynamicLighting
+	| EVertexFactoryFlags::SupportsPositionOnly
 	//| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 );
 
@@ -130,11 +126,12 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 	vertexBuffer.InitResource(RHICmdList);
 
 	FVertexDeclarationElementList Elements;
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Position), sizeof(FVoxelVertexInfo), VET_Float3), 0));
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Normal), sizeof(FVoxelVertexInfo), VET_Float3), 0));
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Position), sizeof(FVoxelVertexInfo), VET_Float3), 0)); // STRUCT_OFFSET(FVoxelVertexInfo, Position) 0
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Normal), sizeof(FVoxelVertexInfo), VET_Float3), 0)); // STRUCT_OFFSET(FVoxelVertexInfo, Normal) 24
+	//Elements.Add(AccessStreamComponent(FVertexStreamComponent(nullptr, 0, 0, VET_UInt), 1));
+
 	InitDeclaration(Elements);
 	
-
 	/*
 	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&VertexBuffer, 0, sizeof(FLidarPointCloudPoint), VET_Float3), 0));
 	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&VertexBuffer, 12, sizeof(FLidarPointCloudPoint), VET_Color), 1));

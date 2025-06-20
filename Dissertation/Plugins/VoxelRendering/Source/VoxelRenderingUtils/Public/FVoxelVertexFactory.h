@@ -30,10 +30,12 @@ BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelComputeFactoryUniformParameters, )
 END_GLOBAL_SHADER_PARAMETER_STRUCT()
 typedef TUniformBufferRef<FVoxelComputeFactoryUniformParameters> FVoxelComputeFactoryBufferRef;
 */
+
+/*
 BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryUniformParameters, )
 	//SHADER_PARAMETER_SRV(Buffer<float>, VertexFetch_Buffer)
 END_GLOBAL_SHADER_PARAMETER_STRUCT()
-typedef TUniformBufferRef<FVoxelVertexFactoryUniformParameters> FVoxelVertexFactoryBufferRef;
+typedef TUniformBufferRef<FVoxelVertexFactoryUniformParameters> FVoxelVertexFactoryBufferRef;*/
 
 
 struct VOXELRENDERINGUTILS_API FVoxelBatchElementUserData
@@ -67,7 +69,6 @@ public:
 	FVoxelVertexBuffer(uint32 InNumVertices) : numVertices(InNumVertices) {}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-
 	uint32 GetVertexCount() const { return numVertices;}
 	void SetElementCount(uint32 InNumVertices) { numVertices = InNumVertices; }	
 	FShaderResourceViewRHIRef SRV;
@@ -113,7 +114,7 @@ private:
 	FVoxelVertexBuffer vertexBuffer;
 
 	//FVoxelComputeFactoryBufferRef computeUniformBuffer;
-	FVoxelVertexFactoryBufferRef vertexUniformBuffer;
+	//FVoxelVertexFactoryBufferRef vertexUniformBuffer;
 
 	uint32 firstIndex;
 	bool bUsesDynamicParameter;

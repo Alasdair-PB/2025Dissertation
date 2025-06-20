@@ -53,7 +53,7 @@ FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactory() { return VertexFactory
 
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
 
-	FVoxelVertexFactoryUniformParameters UniformParams;
+	//FVoxelVertexFactoryUniformParameters UniformParams;
 	uint32 size = 64 * nodeVoxelCount * 15; // instead of 64 should be * Params.Input.leafCount;
 	VertexFactory = new FVoxelVertexFactory(GetScene().GetFeatureLevel(), size);
 	VertexFactory->InitResource(RHICmdList);
@@ -102,6 +102,9 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(const TArray<const F
 		}
 		else renderProxy = Material->GetRenderProxy();
 
+
+		renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
+
 		DrawDynamicElements(Mesh, Collector, renderProxy, false, ViewIndex);
 		//CustomPassMeshBatches.Add(Mesh);
 		Collector.AddMesh(ViewIndex, Mesh);
@@ -118,6 +121,9 @@ FORCEINLINE void FVoxelSceneProxy::DrawDynamicElements(FMeshBatch& Mesh, FMeshEl
 	meshBatch.MaxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;
 	meshBatch.IndexBuffer = indexBuffer;
 	meshBatch.PrimitiveUniformBuffer = GetUniformBuffer();
+
+	FVoxelBatchElementUserData userData;
+	meshBatch.UserData = &userData;
 
 	Mesh.MaterialRenderProxy = renderProxy;
 	Mesh.bWireframe = bWireframe;

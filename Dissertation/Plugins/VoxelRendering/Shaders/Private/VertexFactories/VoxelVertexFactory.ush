@@ -9,12 +9,14 @@ struct FVoxelVertexInfo
     float3 Normal;
 };
 
-StructuredBuffer<FVoxelVertexInfo> VoxelVF;
+//StructuredBuffer<FVoxelVertexInfo> VoxelVF;
 
 struct FVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
-    float3 Normal : ATTRIBUTE1;    
+    float3 Normal : ATTRIBUTE1;
+    uint VertexId : SV_VertexID;
+
     VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
@@ -22,6 +24,8 @@ struct FVertexFactoryInput
 struct FPositionOnlyVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
+    uint VertexId : SV_VertexID;
+
 	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
@@ -29,6 +33,7 @@ struct FPositionAndNormalOnlyVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
     float3 Normal : ATTRIBUTE1;
+    uint VertexId : SV_VertexID;
 
 	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
@@ -107,14 +112,20 @@ void GetTangents(FVertexFactoryInput Input, out float4 Right, out float4 Up)
     Up = float4(B, 1);
 }
 
-half3x3 CalcTangentToLocal()
+half3x3 CalcTangentToLocal(FVertexFactoryInput Input)
 {
-    return half3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+    float3 Normal = SafeNormalize(Input.Normal);
+    float3 Tangent = SafeNormalize(cross(Normal, float3(0, 0, 1)));
+    if (length(Tangent) < 0.1)
+        Tangent = SafeNormalize(cross(Normal, float3(1, 0, 0)));
+    float3 Binormal = cross(Normal, Tangent);
+    
+    return half3x3(Tangent, Binormal, Normal);
 }
 
-half3x3 CalcTangentToWorldNoScale(half3x3 TangentToLocal)
+half3x3 CalcTangentToWorldNoScale(half3x3 TangentToLocal, half3x3 LocalToWorld)
 {
-    return half3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+    return mul(TangentToLocal, LocalToWorld);
 }
 
 float3x3 CalcTangentBasis(FVertexFactoryInput Input)
@@ -127,6 +138,11 @@ float3x3 CalcTangentBasis(FVertexFactoryInput Input)
 float3x3 VertexFactoryGetTangentToLocal(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
     return Intermediates.TangentToLocal;
+}
+
+uint GetInputVertexIndex(uint TriangleIndex, int VertexIndex)
+{
+    return TriangleIndex * 3 + VertexIndex;
 }
 
 // ************************ Instancing, LOD, et al Support ************************
@@ -203,7 +219,7 @@ uint GetVertexFetchBufferOffset(uint VertexId)
     return VertexId;
 }
 
-float3 VoxelGetInstancePosition(uint VertexId)
+/*float3 VoxelGetInstancePosition(uint VertexId)
 {
     uint Idx = GetVertexFetchBufferOffset(VertexId);
     return VoxelVF[Idx].Position;
@@ -215,8 +231,9 @@ FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int Ve
     float3 Position = VoxelGetInstancePosition(VertexIndex);
         Input.Position = Position.xyz;
     Input.Normal = float3(0, 0, 1);
+    Input.VertexId = GetInputVertexIndex(TriangleIndex, VertexIndex);
     return Input;
-}
+}*/
 
 // ************************ Parameters & Intermediates Support ************************
 
@@ -243,7 +260,7 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
     Interpolants.TangentToWorld0 = float4(Intermediates.TangentToWorld[0], 0);
     Interpolants.TangentToWorld2 = float4(Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
     
-    Interpolants.Color = VertexParameters.VertexColor; // Intermediates.Color;?
+    Interpolants.Color = VertexParameters.VertexColor;
     Interpolants.Alpha = Intermediates.Alpha;
     Interpolants.TexCoords = NormalBasedPlanarMapping(Input, float2(1,1));
     return Interpolants;
@@ -254,10 +271,10 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     FVertexFactoryIntermediates Intermediates;
     Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
     Intermediates.Position = Input.Position.xyz;
-    Intermediates.TangentToLocal = CalcTangentToLocal();
+    Intermediates.TangentToLocal = CalcTangentToLocal(Input);
     Intermediates.TangentToWorldSign = Intermediates.SceneData.InstanceData.DeterminantSign;
-    Intermediates.TangentToWorld = CalcTangentToWorldNoScale(Intermediates.TangentToLocal);
-    Intermediates.Color = half4(0,0,0,0);
+    Intermediates.TangentToWorld = CalcTangentToWorldNoScale(Intermediates.TangentToLocal, (half3x3) Intermediates.SceneData.Primitive.LocalToWorld);
+    Intermediates.Color = half4(1,1,1,1);
     Intermediates.Alpha = 1;
 
     return Intermediates;
@@ -265,6 +282,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
 
 // ************************ RayTrace & Compute Support ************************
 
+/*
 #if RAYHITGROUPSHADER || COMPUTESHADER
 uint GetNumRayTracingDynamicMeshVerticesIndirect()
 {
@@ -281,7 +299,7 @@ FVertexFactoryInput LoadVertexFactoryInputForDynamicUpdate(uint TriangleIndex, i
 	VF_GPUSCENE_SET_INPUT_FOR_RT(Input, PrimitiveData.InstanceSceneDataOffset + DrawInstanceId, DrawInstanceId);
 	return Input;
 }
-#endif
+#endif*/
 
 
 #include "/Engine/Private/VertexFactoryDefaultInterface.ush"

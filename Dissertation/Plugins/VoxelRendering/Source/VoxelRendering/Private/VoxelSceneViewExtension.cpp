@@ -9,10 +9,11 @@
 #include "VoxelPixelMeshMaterialShader.h"
 #include "VoxelVertexMeshMaterialShader.h"
 
+#include "PostProcess/PostProcessMaterialInputs.h"
+#include "PostProcess/PostProcessInputs.h"
+
 IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
-IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelPixelMeshMaterialShader, TEXT("/VoxelShaders/VoxelPixelShader.usf"), TEXT("MainPS"), SF_Pixel);
-IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelVertexMeshMaterialShader, TEXT("/VoxelShaders/VoxelVertexShader.usf"), TEXT("MainVS"), SF_Vertex);
 
 FVoxelSceneViewExtension::FVoxelSceneViewExtension(const FAutoRegister& AutoRegister) : FSceneViewExtensionBase(AutoRegister)
 {}
@@ -21,12 +22,30 @@ void FVoxelSceneViewExtension::SetSceneProxy(FVoxelSceneProxy* inSceneProxy) {
     sceneProxy = inSceneProxy;
 }
 
-//* 
-// It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead
-
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
     if (!sceneProxy) return;
+
+#if true
+    //----------------- Attempt 1 using Pass processor to render a custom pass from mesh batch data (this may need to be called elsewhere)
+    GraphBuilder.AddPass(
+        RDG_EVENT_NAME("VoxelRenderPass"),
+        ERDGPassFlags::None,
+        [this, &View](FRHICommandListImmediate& RHICmdList)
+        {
+            const FScene* Scene = View.Family->Scene->GetRenderScene();
+            FTextureRHIRef RenderTargetTexture = View.Family->RenderTarget->GetRenderTargetTexture();
+
+            if (!Scene) return;
+            if (!RenderTargetTexture) return;
+
+            sceneProxy->RenderMyCustomPass(RHICmdList, Scene, &View);
+        });
+
+#elif false
+    //----------------- Attempt 1 using Global shader DrawIndexedPrimitive to render data as post process
+    // ended with Shader Compliation failures are fatal. 
+    // It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead
 
 	FSceneViewExtensionBase::PrePostProcessPass_RenderThread(GraphBuilder, View, Inputs);
 
@@ -81,4 +100,5 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     );
 
     RHICmdList.EndRenderPass();
+#endif
 }

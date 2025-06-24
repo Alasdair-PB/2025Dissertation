@@ -21,14 +21,21 @@
 #include "TextureResource.h"
 #include "Async/Mutex.h"
 
+IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelPixelMeshMaterialShader, TEXT("/VoxelShaders/VoxelPixelShader.usf"), TEXT("MainPS"), SF_Pixel);
+IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelVertexMeshMaterialShader, TEXT("/VoxelShaders/VoxelVertexShader.usf"), TEXT("MainVS"), SF_Vertex);
+
+
 class FVoxelMeshPassProcessor : public FMeshPassProcessor
 {
 public:
-    FVoxelMeshPassProcessor(const FScene* InScene, const FSceneView* InView, FMeshPassDrawListContext* InDrawListContext)
+    FVoxelMeshPassProcessor (const FScene* InScene, const FSceneView* InView, FMeshPassDrawListContext* InDrawListContext)
 		: FMeshPassProcessor(TEXT("VoxelGBuffer"), InScene, InView->GetFeatureLevel(), InView, InDrawListContext), View(InView) 
     {
-        DrawRenderState.SetDepthStencilState(TStaticDepthStencilState<false, CF_Always>::GetRHI());
-        DrawRenderState.SetBlendState(TStaticBlendState<>::GetRHI());
+        //DrawRenderState.SetDepthStencilState(TStaticDepthStencilState<false, CF_Always>::GetRHI());
+        //DrawRenderState.SetBlendState(TStaticBlendState<>::GetRHI());
+        DrawRenderState.SetDepthStencilAccess(FExclusiveDepthStencil::DepthWrite_StencilWrite);
+        DrawRenderState.SetDepthStencilState(TStaticDepthStencilState<true, CF_DepthNearOrEqual>::GetRHI());
+        DrawRenderState.SetBlendState(TStaticBlendStateWriteMask<CW_RGBA, CW_RGBA, CW_RGBA, CW_RGBA>::GetRHI());
     }
 
     struct FVoxelElementData : public FMeshMaterialShaderElementData
@@ -40,41 +47,38 @@ public:
 	void AddMeshBatch(const FMeshBatch& MeshBatch, uint64 BatchElementMask, const FPrimitiveSceneProxy* RESTRICT PrimitiveSceneProxy, int32 StaticMeshId = -1)
 	{
         const FMaterialRenderProxy& DefaultProxy = *UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
-        const FMaterial& DefaultMaterial = *DefaultProxy.GetMaterialNoFallback(FeatureLevel);
+        const FVertexFactory* VertexFactory = MeshBatch.VertexFactory;
 
-		//TShaderRef<FVoxelVertexMeshMaterialShader> VertexShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-		//TShaderRef<FVoxelPixelMeshMaterialShader> PixelShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+        const FMaterialRenderProxy* FallbackMaterialRenderProxyPtr = nullptr;
+        const FMaterial& DefaultMaterial = MeshBatch.MaterialRenderProxy->GetMaterialWithFallback(FeatureLevel, FallbackMaterialRenderProxyPtr);
+        const FMaterialRenderProxy& MaterialRenderProxy = FallbackMaterialRenderProxyPtr ? *FallbackMaterialRenderProxyPtr : *MeshBatch.MaterialRenderProxy;
+        TMeshProcessorShaders<FVoxelVertexMeshMaterialShader, FVoxelPixelMeshMaterialShader> voxelPassShaders;
 
-       // VertexShader->SetParameters(ShaderBindings.GetUniformBuffer(), *View, PrimitiveSceneProxy);
-       // PixelShader->SetParameters(ShaderBindings.GetUniformBuffer(), *View);
-
-        //FMeshDrawSingleShaderBindings Shaders = CreateMeshDrawSingleShaderBindings(VertexShader, PixelShader);
-        
-        TMeshProcessorShaders<FVoxelVertexMeshMaterialShader, FVoxelVertexMeshMaterialShader> Shaders;
+        voxelPassShaders.VertexShader = DefaultMaterial.GetShader<FVoxelVertexMeshMaterialShader>(VertexFactory->GetType());
+        voxelPassShaders.PixelShader = DefaultMaterial.GetShader<FVoxelPixelMeshMaterialShader>(VertexFactory->GetType());
 
         const FMeshDrawingPolicyOverrideSettings OverrideSettings = ComputeMeshOverrideSettings(MeshBatch);
         const ERasterizerFillMode MeshFillMode = ComputeMeshFillMode(DefaultMaterial, OverrideSettings);
         const ERasterizerCullMode MeshCullMode = ComputeMeshCullMode(DefaultMaterial, OverrideSettings);
-        const FVertexFactory* VertexFactory = MeshBatch.VertexFactory;
-
-        FMeshDrawCommandSortKey SortKey{};
-        FVoxelElementData ShaderElementData(MeshBatch.LCI);
+        FMeshDrawCommandSortKey SortKey = FMeshDrawCommandSortKey::Default;
+        FMeshMaterialShaderElementData ShaderElementData;
+        ShaderElementData.InitializeMeshMaterialData(ViewIfDynamicMeshCommand, PrimitiveSceneProxy, MeshBatch, StaticMeshId, true);
 
         BuildMeshDrawCommands(
             MeshBatch,
             BatchElementMask,
             PrimitiveSceneProxy,
-            DefaultProxy,
+            MaterialRenderProxy,
             DefaultMaterial,
             DrawRenderState,
-            Shaders,
+            voxelPassShaders,
             MeshFillMode,
             MeshCullMode,
             SortKey,
             EMeshPassFeatures::Default,
             ShaderElementData);
 	}
-
+   
 private:
 	const FSceneView* View;
     FMeshPassProcessorRenderState DrawRenderState;

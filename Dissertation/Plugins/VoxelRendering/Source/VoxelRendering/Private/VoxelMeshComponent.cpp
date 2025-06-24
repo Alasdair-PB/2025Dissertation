@@ -24,10 +24,8 @@ UVoxelMeshComponent::UVoxelMeshComponent()
 void UVoxelMeshComponent::OnRegister()
 {
     Super::OnRegister();
-
-    //if (!SceneViewExtension.IsValid())
     SceneViewExtension = FSceneViewExtensions::NewExtension<FVoxelSceneViewExtension>();
-    SceneViewExtension->SetSceneProxy(sceneProxy);
+    //SceneViewExtension->SetSceneProxy(sceneProxy);
 }
 
 void UVoxelMeshComponent::BeginPlay() {
@@ -96,7 +94,6 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
     if (!sceneProxy) return;
     FMarchingCubesDispatchParams Params(1, 1, 1);
     FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();
-    SceneViewExtension->SetSceneProxy(sceneProxy);
     FVoxelComputeShaderDispatchData vertexDispatchBuffer = FVoxelComputeShaderDispatchData(
         vf->GetVertexUAV(),
         vf->GetVertexBufferElementsCount(),

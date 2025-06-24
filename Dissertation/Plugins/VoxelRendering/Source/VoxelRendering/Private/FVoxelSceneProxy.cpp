@@ -62,20 +62,42 @@ void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 	FPrimitiveSceneProxy::OnTransformChanged(RHICmdList);
 }
 
-void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* InScene, const FSceneView* View, FTextureRHIRef Target)
+void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* InScene, const FSceneView* View)
 {
-	FRHIRenderPassInfo RPInfo(Target, ERenderTargetActions::Load_Store);
-	RHICmdList.BeginRenderPass(RPInfo, TEXT("MyCustomPass"));
+	check(InScene);
+	check(View);
 
-#if false
-	FMeshPassDrawListContext* DrawListContext = nullptr; // abstract
-	FVoxelMeshPassProcessor PassProcessor(InScene, View, DrawListContext);
+	FDynamicMeshDrawCommandStorage DynamicMeshDrawCommandStorage;
+	FMeshCommandOneFrameArray VisibleMeshDrawCommands;
+	FGraphicsMinimalPipelineStateSet GraphicsMinimalPipelineStateSet;
+	bool NeedsShaderInitialisation = false;
+	FDynamicPassMeshDrawListContext DynamicMeshPassContext(DynamicMeshDrawCommandStorage, VisibleMeshDrawCommands, GraphicsMinimalPipelineStateSet, NeedsShaderInitialisation);
+	FVoxelMeshPassProcessor MeshProcessor(InScene, View, &DynamicMeshPassContext);
 
-	for (const FMeshBatch& MeshBatch : CustomPassMeshBatches)
-		PassProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
+#if true // Rebuild batches to avoid nullptr assignments
+	for (int32 viewIndex = 0; viewIndex < 1; viewIndex++)
+	{
+		FMeshBatch MeshBatch;
+		SetMeshBatchGeneric(MeshBatch, viewIndex);
+		SetMeshBatchElementsGeneric(MeshBatch, viewIndex);
+		MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
+	}
+
+#elif false // Use batches added during GetDynamicMeshElements
+	for (auto& MeshBatch : CustomPassMeshBatches)
+		MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
+
+	/*
+	// Copied from LightmapGBUffer/ Lightmap renderer in case needed for rendering
+	const uint32 InstanceFactor = 1;
+	FRHIBuffer* PrimitiveIdVertexBuffer = nullptr;
+	const bool bDynamicInstancing = false;
+	const uint32 PrimitiveIdBufferStride = FInstanceCullingContext::GetInstanceIdBufferStride(View->GetShaderPlatform());
+	SortAndMergeDynamicPassMeshDrawCommands(*View, RHICmdList, VisibleMeshDrawCommands, DynamicMeshDrawCommandStorage, PrimitiveIdVertexBuffer, InstanceFactor, nullptr);
+	FMeshDrawCommandSceneArgs SceneArgs;
+	SceneArgs.PrimitiveIdsBuffer = PrimitiveIdVertexBuffer;
+	SubmitMeshDrawCommands(VisibleMeshDrawCommands, GraphicsMinimalPipelineStateSet, SceneArgs, PrimitiveIdBufferStride, bDynamicInstancing, InstanceFactor, RHICmdList);*/
 #endif
-
-	RHICmdList.EndRenderPass();
 }
 
 FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
@@ -87,10 +109,17 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 	for (int32 viewIndex = 0; viewIndex < Views.Num(); viewIndex++)
 	{
 		if (!(VisibilityMap & (1 << viewIndex))) continue;
-		/*FMeshBatch& meshBatch = Collector.AllocateMesh();
+		FMeshBatch& meshBatch = Collector.AllocateMesh();
+
+#if false // Used for both of the below
 		SetMeshBatchGeneric(meshBatch, viewIndex);
 		SetMeshBatchElementsGeneric(meshBatch, viewIndex);
-		Collector.AddMesh(viewIndex, meshBatch);*/
+#if false // Push MeshBatch to be used by MeshProcessor
+		CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
+#elif false // Push MechBatch to collector to be handled by Unreals material pipeline with Vertex Factory.ush
+		Collector.AddMesh(viewIndex, meshBatch);
+#endif
+#endif
 	}
 }
 
@@ -115,7 +144,7 @@ void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 view
 	else renderProxy = Material->GetRenderProxy();
 	renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 #else 
-	meshBatch.MaterialRenderProxy = nullptr;
+	meshBatch.MaterialRenderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy(); // cannot be nullptr?
 #endif
 
 }
@@ -139,11 +168,10 @@ void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, int32 
 void FVoxelSceneProxy::SetMeshBatchElementsUserData(FMeshBatchElement& batchElement) const
 {
 #if false
-	//meshBatch.UserData = OverrideColorVertexBuffer;
-	//meshBatch.bUserDataIsColorVertexBuffer = true;
-#else 
 	FVoxelBatchElementUserData userData;
-	batchElement.UserData = &userData;
+	batchElement.UserData = userData;
+#else 
+	batchElement.UserData = nullptr;
 #endif
 }
 

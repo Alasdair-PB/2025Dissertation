@@ -23,7 +23,7 @@ public:
 	virtual void CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
-	void RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* Scene, const FSceneView* View, FTextureRHIRef Target);
+	void RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* Scene, const FSceneView* View);
 
 	FVoxelVertexFactory* GetVertexFactory();
 	UMaterialInterface* Material;

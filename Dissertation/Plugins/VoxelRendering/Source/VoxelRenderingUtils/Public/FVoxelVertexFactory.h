@@ -54,6 +54,12 @@ public:
 	FVoxelIndexBuffer(uint32 InNumIndices) : numIndices(InNumIndices) {}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
+
+	virtual void ReleaseRHI() override { 
+		FIndexBuffer::ReleaseRHI();
+		SRV.SafeRelease(); 
+	}
+
 	uint32 GetIndexCount() const { return numIndices; }
 	void SetElementCount(uint32 InNumIndices) { numIndices = InNumIndices; }
 	FShaderResourceViewRHIRef SRV;
@@ -68,6 +74,12 @@ public:
 	FVoxelVertexBuffer() = default;
 	~FVoxelVertexBuffer() = default;
 	FVoxelVertexBuffer(uint32 InNumVertices) : numVertices(InNumVertices) {}
+
+	virtual void ReleaseRHI() override {
+		FVertexBuffer::ReleaseRHI();
+		SRV.SafeRelease();
+		UAV.SafeRelease();
+	}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 	uint32 GetVertexCount() const { return numVertices;}
@@ -85,6 +97,7 @@ class VOXELRENDERINGUTILS_API FVoxelVertexFactory : public FVertexFactory
 
 public:
 	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize);
+	~FVoxelVertexFactory() { ReleaseRHI(); }
 
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);

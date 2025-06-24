@@ -1,16 +1,24 @@
 #include "/Engine/Public/Platform.ush"
 
+struct VS_INPUT
+{
+    float3 Position : ATTRIBUTE0;
+    float3 Normal : ATTRIBUTE1;
+};
+
+
 cbuffer Parameters
 {
     float4x4 ModelViewProjection;
 };
 
-/*
-float4 MainVS(float3 Position : POSITION, float3 Normal : NORMAL) : SV_POSITION
-{
-    return mul(ModelViewProjection, float4(Position, 1.0));
-}*/
 
+float4 MainVS(VS_INPUT Input) : SV_POSITION
+{
+    return mul(ModelViewProjection, float4(Input.Position, 1.0));
+}
+
+/*
 struct VS_INPUT
 {
     float3 Position : POSITION;
@@ -35,3 +43,4 @@ float4 MainPS(VS_OUTPUT Input) : SV_Target
 {
     return float4(1, 0, 0, 1);
 }
+*/

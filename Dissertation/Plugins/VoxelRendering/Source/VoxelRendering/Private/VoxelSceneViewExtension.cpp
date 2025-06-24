@@ -7,6 +7,11 @@
 #include "VoxelVertexShader.h"
 #include "VoxelPixelShader.h"
 
+IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
+IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
+//IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelPixelMeshMaterialShader, TEXT("/VoxelShaders/VoxelPixelShader.usf"), TEXT("MainPS"), SF_Pixel);
+//IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelVertexMeshMaterialShader, TEXT("/VoxelShaders/VoxelVertexShader.usf"), TEXT("MainVS"), SF_Vertex);
+
 FVoxelSceneViewExtension::FVoxelSceneViewExtension(const FAutoRegister& AutoRegister) : FSceneViewExtensionBase(AutoRegister)
 {}
 
@@ -44,7 +49,7 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
     GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
     GraphicsPSOInit.PrimitiveType = PT_TriangleList;
-    GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GetVertexDeclarationFVector4();
+    GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = VF->GetDeclaration();
     GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
     GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 

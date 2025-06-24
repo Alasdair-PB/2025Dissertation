@@ -38,6 +38,9 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     TShaderMapRef<FVoxelPixelShader> PixelShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
     FGraphicsPipelineStateInitializer PSOInit;
+    EPixelFormat RenderTargetFormat = RenderTargetTexture->GetDesc().Format;
+
+    PSOInit.RenderTargetFormats[0] = GPixelFormats[RenderTargetFormat].PlatformFormat;
     PSOInit.BlendState = TStaticBlendState<>::GetRHI();
     PSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
     PSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
@@ -45,16 +48,19 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     PSOInit.BoundShaderState.VertexDeclarationRHI = VF->GetDeclaration();
     PSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
     PSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
-    PSOInit.PrimitiveType = PT_TriangleList;
+    PSOInit.PrimitiveType = PT_TriangleList;    
+    
+    UE_LOG(LogTemp, Warning, TEXT("Pre-set pipeline"));
 
     SetGraphicsPipelineState(RHICmdList, PSOInit, 0);
+    UE_LOG(LogTemp, Warning, TEXT("Pre-Parameters"));
+
+    FVoxelPixelShader::FParameters PSParams;
+    SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
 
     FVoxelVertexShader::FParameters VSParams;
     VSParams.ModelViewProjection = FMatrix44f(MVP);
     SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
-
-    FVoxelPixelShader::FParameters PSParams;
-    SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
 
     uint32 count = VF->GetVertexBuffer()->GetVertexCount();
     UE_LOG(LogTemp, Warning, TEXT("Vertex count %u"), count);

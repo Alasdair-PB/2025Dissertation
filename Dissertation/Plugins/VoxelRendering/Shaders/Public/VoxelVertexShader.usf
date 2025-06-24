@@ -6,41 +6,21 @@ struct VS_INPUT
     float3 Normal : ATTRIBUTE1;
 };
 
+struct VS_OUTPUT
+{
+    float4 Position : SV_POSITION;
+    float3 Normal : TEXCOORD0;
+};
 
 cbuffer Parameters
 {
     float4x4 ModelViewProjection;
 };
 
-
-float4 MainVS(VS_INPUT Input) : SV_POSITION
-{
-    return mul(ModelViewProjection, float4(Input.Position, 1.0));
-}
-
-/*
-struct VS_INPUT
-{
-    float3 Position : POSITION;
-    float3 Normal : NORMAL;
-};
-
-struct VS_OUTPUT
-{
-    float4 Pos : SV_POSITION;
-    float3 Normal : NORMAL;
-};
-
 VS_OUTPUT MainVS(VS_INPUT Input)
 {
     VS_OUTPUT Output;
-    Output.Pos = mul(ModelViewProjection, float4(Input.Position, 1.0));
+    Output.Position = mul(ModelViewProjection, float4(Input.Position, 1.0));
     Output.Normal = Input.Normal;
     return Output;
 }
-
-float4 MainPS(VS_OUTPUT Input) : SV_Target
-{
-    return float4(1, 0, 0, 1);
-}
-*/

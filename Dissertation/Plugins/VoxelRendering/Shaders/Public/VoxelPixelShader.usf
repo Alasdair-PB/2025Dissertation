@@ -1,6 +1,12 @@
 #include "/Engine/Public/Platform.ush"
 
-float4 MainPS() : SV_Target
+struct VS_OUTPUT
+{
+    float4 Position : SV_POSITION;
+    float3 Normal : TEXCOORD0;
+};
+
+float4 MainPS(VS_OUTPUT Input) : SV_Target
 {
     return float4(1, 0, 0, 1);
 }

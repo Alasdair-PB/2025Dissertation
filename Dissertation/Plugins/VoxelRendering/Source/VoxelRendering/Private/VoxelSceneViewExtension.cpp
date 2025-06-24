@@ -6,11 +6,13 @@
 #include "GlobalShader.h"
 #include "VoxelVertexShader.h"
 #include "VoxelPixelShader.h"
+#include "VoxelPixelMeshMaterialShader.h"
+#include "VoxelVertexMeshMaterialShader.h"
 
 IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
-//IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelPixelMeshMaterialShader, TEXT("/VoxelShaders/VoxelPixelShader.usf"), TEXT("MainPS"), SF_Pixel);
-//IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelVertexMeshMaterialShader, TEXT("/VoxelShaders/VoxelVertexShader.usf"), TEXT("MainVS"), SF_Vertex);
+IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelPixelMeshMaterialShader, TEXT("/VoxelShaders/VoxelPixelShader.usf"), TEXT("MainPS"), SF_Pixel);
+IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelVertexMeshMaterialShader, TEXT("/VoxelShaders/VoxelVertexShader.usf"), TEXT("MainVS"), SF_Vertex);
 
 FVoxelSceneViewExtension::FVoxelSceneViewExtension(const FAutoRegister& AutoRegister) : FSceneViewExtensionBase(AutoRegister)
 {}
@@ -18,6 +20,9 @@ FVoxelSceneViewExtension::FVoxelSceneViewExtension(const FAutoRegister& AutoRegi
 void FVoxelSceneViewExtension::SetSceneProxy(FVoxelSceneProxy* inSceneProxy) {
     sceneProxy = inSceneProxy;
 }
+
+//* 
+// It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead
 
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
@@ -53,20 +58,16 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
     GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 
-    UE_LOG(LogTemp, Warning, TEXT("Pre-set pipeline"));
     SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
-    UE_LOG(LogTemp, Warning, TEXT("Pre-Parameters"));
-
-    FVoxelPixelShader::FParameters PSParams;
-    SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
 
     FVoxelVertexShader::FParameters VSParams;
     VSParams.ModelViewProjection = FMatrix44f(MVP);
     SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
 
-    uint32 count = VF->GetVertexBuffer()->GetVertexCount();
-    UE_LOG(LogTemp, Warning, TEXT("Vertex count %u"), count);
+    FVoxelPixelShader::FParameters PSParams;
+    SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
 
+    uint32 count = VF->GetVertexBuffer()->GetVertexCount();
 
     RHICmdList.SetStreamSource(0, VF->GetVertexBuffer()->VertexBufferRHI, 0);
     RHICmdList.DrawIndexedPrimitive(

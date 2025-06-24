@@ -34,25 +34,22 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     FRHIRenderPassInfo RPInfo(RenderTargetTexture, ERenderTargetActions::Load_Store);
     RHICmdList.BeginRenderPass(RPInfo, TEXT("CustomPass"));
 
-    TShaderMapRef<FVoxelVertexShader> VertexShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-    TShaderMapRef<FVoxelPixelShader> PixelShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+    FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+    TShaderMapRef<FVoxelVertexShader> VertexShader(GlobalShaderMap);
+    TShaderMapRef<FVoxelPixelShader> PixelShader(GlobalShaderMap);
 
-    FGraphicsPipelineStateInitializer PSOInit;
-    EPixelFormat RenderTargetFormat = RenderTargetTexture->GetDesc().Format;
+    FGraphicsPipelineStateInitializer GraphicsPSOInit;
+    RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+    GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+    GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+    GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+    GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+    GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GetVertexDeclarationFVector4();
+    GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+    GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 
-    PSOInit.RenderTargetFormats[0] = GPixelFormats[RenderTargetFormat].PlatformFormat;
-    PSOInit.BlendState = TStaticBlendState<>::GetRHI();
-    PSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
-    PSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
-
-    PSOInit.BoundShaderState.VertexDeclarationRHI = VF->GetDeclaration();
-    PSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
-    PSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
-    PSOInit.PrimitiveType = PT_TriangleList;    
-    
     UE_LOG(LogTemp, Warning, TEXT("Pre-set pipeline"));
-
-    SetGraphicsPipelineState(RHICmdList, PSOInit, 0);
+    SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
     UE_LOG(LogTemp, Warning, TEXT("Pre-Parameters"));
 
     FVoxelPixelShader::FParameters PSParams;

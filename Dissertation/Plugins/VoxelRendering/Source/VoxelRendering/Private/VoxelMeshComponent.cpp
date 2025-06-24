@@ -75,7 +75,6 @@ void UVoxelMeshComponent::BuildOctree(AABB inBounds, int size, int depth)
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
-    //if (!Material) return nullptr;
     sceneProxy = new FVoxelSceneProxy(this);
 
     if (SceneViewExtension.IsValid())

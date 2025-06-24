@@ -11,15 +11,12 @@ FVoxelSceneViewExtension::FVoxelSceneViewExtension(const FAutoRegister& AutoRegi
 {}
 
 void FVoxelSceneViewExtension::SetSceneProxy(FVoxelSceneProxy* inSceneProxy) {
-    UE_LOG(LogTemp, Warning, TEXT("Setting proxy"));
-
     sceneProxy = inSceneProxy;
 }
 
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
     if (!sceneProxy) return;
-    UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
 
 	FSceneViewExtensionBase::PrePostProcessPass_RenderThread(GraphBuilder, View, Inputs);
 
@@ -41,9 +38,6 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     TShaderMapRef<FVoxelPixelShader> PixelShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
     FGraphicsPipelineStateInitializer PSOInit;
-    PSOInit.RenderTargetFormats[0] = GPixelFormats[PF_B8G8R8A8].PlatformFormat;
-    for (int32 i = 1; i < MaxSimultaneousRenderTargets; ++i)
-        PSOInit.RenderTargetFormats[i] = PF_Unknown;
     PSOInit.BlendState = TStaticBlendState<>::GetRHI();
     PSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
     PSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
@@ -63,7 +57,7 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
 
     uint32 count = VF->GetVertexBuffer()->GetVertexCount();
-    UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values %u"), count);
+    UE_LOG(LogTemp, Warning, TEXT("Vertex count %u"), count);
 
 
     RHICmdList.SetStreamSource(0, VF->GetVertexBuffer()->VertexBufferRHI, 0);

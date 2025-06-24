@@ -3,7 +3,7 @@
 #include "SceneViewExtension.h"
 #include "FVoxelSceneProxy.h"
 
-class FVoxelSceneViewExtension : public FSceneViewExtensionBase
+class VOXELRENDERING_API FVoxelSceneViewExtension : public FSceneViewExtensionBase
 {
 public:
 	FVoxelSceneViewExtension(const FAutoRegister& AutoRegister);
@@ -18,5 +18,8 @@ public:
 	virtual void PostRenderView_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& InView) override {};
 	virtual void PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs) override;
 	virtual void PostRenderViewFamily_RenderThread(FRDGBuilder& GraphBuilder, FSceneViewFamily& InViewFamily) override {};
-	FVoxelSceneProxy* sceneProxy;
+
+	void SetSceneProxy(FVoxelSceneProxy* sceneProxy);
+
+	FVoxelSceneProxy* sceneProxy = nullptr;
 };

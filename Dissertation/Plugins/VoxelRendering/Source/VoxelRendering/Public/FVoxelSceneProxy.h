@@ -6,7 +6,7 @@
 #include "Materials/MaterialRelevance.h"
 class FVoxelVertexFactory;
 
-class FVoxelSceneProxy : public FPrimitiveSceneProxy {
+class VOXELRENDERING_API FVoxelSceneProxy : public FPrimitiveSceneProxy {
 public:
 	FVoxelSceneProxy(UPrimitiveComponent* Component);
 	~FVoxelSceneProxy();

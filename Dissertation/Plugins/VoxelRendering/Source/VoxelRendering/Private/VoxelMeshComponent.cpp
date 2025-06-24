@@ -25,8 +25,9 @@ void UVoxelMeshComponent::OnRegister()
 {
     Super::OnRegister();
 
-    if (!SceneViewExtension.IsValid())
-        SceneViewExtension = FSceneViewExtensions::NewExtension<FVoxelSceneViewExtension>();
+    //if (!SceneViewExtension.IsValid())
+    SceneViewExtension = FSceneViewExtensions::NewExtension<FVoxelSceneViewExtension>();
+    SceneViewExtension->SetSceneProxy(sceneProxy);
 }
 
 void UVoxelMeshComponent::BeginPlay() {
@@ -74,12 +75,12 @@ void UVoxelMeshComponent::BuildOctree(AABB inBounds, int size, int depth)
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
-    if (!Material) return nullptr;
+    //if (!Material) return nullptr;
     sceneProxy = new FVoxelSceneProxy(this);
 
     if (SceneViewExtension.IsValid())
-        SceneViewExtension->sceneProxy = sceneProxy;
-	return sceneProxy;
+        SceneViewExtension->SetSceneProxy(sceneProxy);
+    return sceneProxy;
 }
 
 FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld) const
@@ -96,7 +97,7 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
     if (!sceneProxy) return;
     FMarchingCubesDispatchParams Params(1, 1, 1);
     FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();
-
+    SceneViewExtension->SetSceneProxy(sceneProxy);
     FVoxelComputeShaderDispatchData vertexDispatchBuffer = FVoxelComputeShaderDispatchData(
         vf->GetVertexUAV(),
         vf->GetVertexBufferElementsCount(),

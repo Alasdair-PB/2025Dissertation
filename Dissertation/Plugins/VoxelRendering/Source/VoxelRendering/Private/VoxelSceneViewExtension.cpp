@@ -1,4 +1,5 @@
 #include "VoxelSceneViewExtension.h"
+#include "VoxelRendering.h"
 #include "RenderGraphUtils.h"
 #include "SceneTextures.h"
 #include "RHIStaticStates.h"
@@ -9,16 +10,24 @@
 FVoxelSceneViewExtension::FVoxelSceneViewExtension(const FAutoRegister& AutoRegister) : FSceneViewExtensionBase(AutoRegister)
 {}
 
+void FVoxelSceneViewExtension::SetSceneProxy(FVoxelSceneProxy* inSceneProxy) {
+    UE_LOG(LogTemp, Warning, TEXT("Setting proxy"));
+
+    sceneProxy = inSceneProxy;
+}
+
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
     if (!sceneProxy) return;
+    UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
+
 	FSceneViewExtensionBase::PrePostProcessPass_RenderThread(GraphBuilder, View, Inputs);
 
     const FMatrix ViewMatrix = View.ViewMatrices.GetViewMatrix();
     const FMatrix ProjectionMatrix = View.ViewMatrices.GetProjectionMatrix();
     const FMatrix ViewProj = ViewMatrix * ProjectionMatrix;
     const FMatrix ltw = sceneProxy->GetLocalToWorld();
-    const FMatrix MVP = ltw * ViewProj;
+    const FMatrix MVP =  ViewProj * ltw;
 
     FVoxelVertexFactory* VF = sceneProxy->GetVertexFactory();
 
@@ -53,6 +62,10 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     FVoxelPixelShader::FParameters PSParams;
     SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
 
+    uint32 count = VF->GetVertexBuffer()->GetVertexCount();
+    UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values %u"), count);
+
+
     RHICmdList.SetStreamSource(0, VF->GetVertexBuffer()->VertexBufferRHI, 0);
     RHICmdList.DrawIndexedPrimitive(
         VF->GetIndexBufferRHIRef(),
@@ -65,6 +78,4 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     );
 
     RHICmdList.EndRenderPass();
-
-
 }

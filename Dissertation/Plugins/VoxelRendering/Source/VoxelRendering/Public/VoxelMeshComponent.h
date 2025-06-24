@@ -6,6 +6,7 @@
 #include "Octree.h"
 #include "OctreeNode.h"
 #include "MarchingCubesDispatcher.h"
+#include "VoxelSceneViewExtension.h"
 #include "VoxelMeshComponent.generated.h"
 
 static const float isoLevel = 0.5f;
@@ -35,6 +36,7 @@ private:
 protected:
     virtual void BeginPlay() override;
     virtual void BeginDestroy() override;
+    virtual void OnRegister() override;
 
     void InvokeVoxelRenderer(OctreeNode* node);
     void TraverseAndDraw(OctreeNode* node);
@@ -42,6 +44,8 @@ protected:
     void BuildOctree(AABB bounds, int size, int depth);
 
     FVoxelSceneProxy* sceneProxy;
+    TSharedPtr<FVoxelSceneViewExtension, ESPMode::ThreadSafe> SceneViewExtension;
+
     Octree* tree;
     AABB bounds;
 

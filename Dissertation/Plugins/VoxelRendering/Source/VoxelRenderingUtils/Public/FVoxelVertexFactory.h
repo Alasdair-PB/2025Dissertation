@@ -20,6 +20,7 @@
 #include "CanvasTypes.h"
 #include "MaterialShader.h"
 #include "VoxelBufferUtils.h"
+#include "Interfaces/Interface_CollisionDataProvider.h"
 #include "FVoxelVertexFactoryShaderParameters.h"
 
 struct FShaderCompilerEnvironment;

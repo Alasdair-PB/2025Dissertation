@@ -120,24 +120,61 @@ IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelV
 	//| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 );
 
+struct FDynamicVoxelMeshDataType
+{
+	FVertexStreamComponent PositionComponent;
+	FVertexStreamComponent TangentBasisComponents[2];
+	TArray<FVertexStreamComponent, TFixedAllocator<MAX_STATIC_TEXCOORDS / 2> > TextureCoordinates;
+	FVertexStreamComponent LightMapCoordinateComponent;
+	FVertexStreamComponent ColorComponent;
+	FRHIShaderResourceView* PositionComponentSRV = nullptr;
+	FRHIShaderResourceView* TangentsSRV = nullptr;
+	FRHIShaderResourceView* TextureCoordinatesSRV = nullptr;
+	FRHIShaderResourceView* ColorComponentsSRV = nullptr;
+
+	uint32 ColorIndexMask = ~0u;
+	int8 LightMapCoordinateIndex = -1;
+	uint8 NumTexCoords = 0;
+	uint8 LODLightmapDataIndex = 0;
+};
+
+/*class xyz : FLocalVertexFactory {
+	// Has Data
+
+	void InitRHI(FRHICommandListBase& RHICmdList) override
+	{
+		if (Data.PositionComponent.VertexBuffer != NULL)
+		{
+		}
+	}
+};*/
+
 void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 {		
 	indexBuffer.InitResource(RHICmdList);
 	vertexBuffer.InitResource(RHICmdList);
 
 	FVertexDeclarationElementList Elements;
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Position), sizeof(FVoxelVertexInfo), VET_Float3), 0)); // STRUCT_OFFSET(FVoxelVertexInfo, Position) 0
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Normal), sizeof(FVoxelVertexInfo), VET_Float3), 0)); // STRUCT_OFFSET(FVoxelVertexInfo, Normal) 24
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Position), sizeof(FVoxelVertexInfo), VET_Float3), 0)); // 0
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Normal), sizeof(FVoxelVertexInfo), VET_Float3), 0)); // 24
+
+
+	/*FVertexStreamComponent NullTangentXComponent(&GNullVertexBuffer, 0, 0, VET_PackedNormal);
+	FVertexStreamComponent NullTangentZComponent(&GNullVertexBuffer, 0, 0, VET_PackedNormal);
+	FVertexStreamComponent NullColorComponent(&GNullColorVertexBuffer, 0, 0, VET_Color);
+	FVertexStreamComponent NullTexCoordComponent(&GNullVertexBuffer, 0, 0, VET_Float2);
+
+	EVertexInputStreamType VertexStreams = EVertexInputStreamType::Default;
+	Elements.Add(AccessStreamComponent(NullTangentXComponent, 1, VertexStreams));
+	Elements.Add(AccessStreamComponent(NullTangentZComponent, 2, VertexStreams));
+	Elements.Add(AccessStreamComponent(NullColorComponent, 3, VertexStreams));	// Color
+	Elements.Add(AccessStreamComponent(NullTexCoordComponent, 4, VertexStreams));	// TexCoords (Unreal expects at least 1)
+	Elements.Add(AccessStreamComponent(NullTexCoordComponent, 15, VertexStreams));*/	// LightMap (expected by some PSOs)
+
+
+
 	//Elements.Add(AccessStreamComponent(FVertexStreamComponent(nullptr, 0, 0, VET_UInt), 1));
-
 	InitDeclaration(Elements);
-	
-	/*
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&VertexBuffer, 0, sizeof(FLidarPointCloudPoint), VET_Float3), 0));
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&VertexBuffer, 12, sizeof(FLidarPointCloudPoint), VET_Color), 1));
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&VertexBuffer, 16, sizeof(FLidarPointCloudPoint), VET_UInt), 2));
-	*/
-
 }
 
 void FVoxelVertexFactory::ReleaseRHI()

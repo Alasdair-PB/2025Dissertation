@@ -9,8 +9,8 @@ UVoxelMeshComponent::UVoxelMeshComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
     bUseAsOccluder = false;
-    static ConstructorHelpers::FObjectFinder<UMaterial> MaterialAsset(TEXT("/Game/Materials/M_VoxelPixelShader"));
 
+    /*static ConstructorHelpers::FObjectFinder<UMaterial> MaterialAsset(TEXT("/Game/Materials/M_VoxelPixelShader"));
     if (MaterialAsset.Succeeded()) {
         Material = UMaterialInstanceDynamic::Create(MaterialAsset.Object, this);
         SetMaterial(0, Material);
@@ -18,7 +18,15 @@ UVoxelMeshComponent::UVoxelMeshComponent()
     else {
         Material = UMaterial::GetDefaultMaterial(MD_Surface);
         SetMaterial(0, UMaterial::GetDefaultMaterial(MD_Surface));
-    }
+    }*/
+}
+
+void UVoxelMeshComponent::OnRegister()
+{
+    Super::OnRegister();
+
+    if (!SceneViewExtension.IsValid())
+        SceneViewExtension = FSceneViewExtensions::NewExtension<FVoxelSceneViewExtension>();
 }
 
 void UVoxelMeshComponent::BeginPlay() {
@@ -68,7 +76,10 @@ FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
     if (!Material) return nullptr;
     sceneProxy = new FVoxelSceneProxy(this);
-	return sceneProxy; //, GetWorld()->GetFeatureLevel()
+
+    if (SceneViewExtension.IsValid())
+        SceneViewExtension->sceneProxy = sceneProxy;
+	return sceneProxy;
 }
 
 FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld) const
@@ -82,6 +93,7 @@ float UVoxelMeshComponent::SampleSDF(FVector3f p) {
 
 void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
+    if (!sceneProxy) return;
     FMarchingCubesDispatchParams Params(1, 1, 1);
     FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();
 

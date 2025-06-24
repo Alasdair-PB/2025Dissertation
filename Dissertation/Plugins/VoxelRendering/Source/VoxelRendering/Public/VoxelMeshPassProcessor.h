@@ -21,16 +21,16 @@
 #include "TextureResource.h"
 #include "Async/Mutex.h"
 
-//IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
-//IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
-//IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelPixelMeshMaterialShader, TEXT("/VoxelShaders/VoxelPixelShader.usf"), TEXT("MainPS"), SF_Pixel);
-//IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelVertexMeshMaterialShader, TEXT("/VoxelShaders/VoxelVertexShader.usf"), TEXT("MainVS"), SF_Vertex);
+IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
+IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
+IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelPixelMeshMaterialShader, TEXT("/VoxelShaders/VoxelPixelShader.usf"), TEXT("MainPS"), SF_Pixel);
+IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelVertexMeshMaterialShader, TEXT("/VoxelShaders/VoxelVertexShader.usf"), TEXT("MainVS"), SF_Vertex);
 
-/*
-class FMyMeshPassProcessor : public FMeshPassProcessor
+
+class FVoxelMeshPassProcessor : public FMeshPassProcessor
 {
 public:
-	FMyMeshPassProcessor(const FScene* InScene, const FSceneView* InView, FMeshPassDrawListContext* InDrawListContext)
+    FVoxelMeshPassProcessor(const FScene* InScene, const FSceneView* InView, FMeshPassDrawListContext* InDrawListContext)
 		: FMeshPassProcessor(TEXT("VoxelGBuffer"), InScene, InView->GetFeatureLevel(), InView, InDrawListContext), View(InView) 
     {
         DrawRenderState.SetDepthStencilState(TStaticDepthStencilState<false, CF_Always>::GetRHI());
@@ -50,6 +50,12 @@ public:
 
 		//TShaderRef<FVoxelVertexMeshMaterialShader> VertexShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 		//TShaderRef<FVoxelPixelMeshMaterialShader> PixelShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+
+       // VertexShader->SetParameters(ShaderBindings.GetUniformBuffer(), *View, PrimitiveSceneProxy);
+       // PixelShader->SetParameters(ShaderBindings.GetUniformBuffer(), *View);
+
+        //FMeshDrawSingleShaderBindings Shaders = CreateMeshDrawSingleShaderBindings(VertexShader, PixelShader);
+        
         TMeshProcessorShaders<FVoxelVertexMeshMaterialShader, FVoxelVertexMeshMaterialShader> Shaders;
 
         const FMeshDrawingPolicyOverrideSettings OverrideSettings = ComputeMeshOverrideSettings(MeshBatch);
@@ -78,4 +84,4 @@ public:
 private:
 	const FSceneView* View;
     FMeshPassProcessorRenderState DrawRenderState;
-};*/
+};

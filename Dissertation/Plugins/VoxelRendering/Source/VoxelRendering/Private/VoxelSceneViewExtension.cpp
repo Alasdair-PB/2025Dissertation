@@ -50,8 +50,9 @@ void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneV
 
             FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindOrAdd(VoxelBody);
             VoxelBodyInfo.RenderContext.RenderedBody = VoxelBody;
-            VoxelBodyInfo.RenderContext.TextureRenderTarget = VoxelBody->GetRenderTarget();
-            VoxelBodyInfo.RenderContext.CaptureZ = SomeZValue;
+
+            //VoxelBodyInfo.RenderContext.TextureRenderTarget = VoxelBody->GetRenderTarget();
+            //VoxelBodyInfo.RenderContext.CaptureZ = SomeZValue;
 
             VoxelBodyInfo.RenderContext.VoxelBodies.Reset();
             UVoxelMeshComponent* MeshComp = VoxelBody->GetComponentByClass<UVoxelMeshComponent>();

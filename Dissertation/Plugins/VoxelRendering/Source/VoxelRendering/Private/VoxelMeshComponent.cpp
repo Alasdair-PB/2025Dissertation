@@ -26,7 +26,6 @@ void UVoxelMeshComponent::OnRegister()
 {
     Super::OnRegister();
     //SceneViewExtension = FSceneViewExtensions::NewExtension<FVoxelSceneViewExtension>();
-    //SceneViewExtension = FSceneViewExtensions::NewWorldExtension<FVoxelSceneViewExtension>(*World);
 }
 
 void UVoxelMeshComponent::BeginPlay() {

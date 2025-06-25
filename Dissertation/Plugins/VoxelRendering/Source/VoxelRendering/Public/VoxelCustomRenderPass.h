@@ -4,6 +4,9 @@
 #include "SceneView.h"
 #include "Rendering/CustomRenderPass.h"
 
+// Intended for cases where a custom camera is needed: e.t.c reflections, shadows maps and depth capture. Incorrect usage here!
+
+
 struct FMyVoxelRenderData : public ICustomRenderPassUserData
 {
     IMPLEMENT_CUSTOM_RENDER_PASS_USER_DATA(FMyVoxelRenderData);

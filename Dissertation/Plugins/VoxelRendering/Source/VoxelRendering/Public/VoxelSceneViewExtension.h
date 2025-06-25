@@ -16,9 +16,9 @@ public:
 	struct FRenderingContext
 	{
 		AVoxelBody* RenderedBody = nullptr;
-		UTextureRenderTarget2DArray* TextureRenderTarget;
+		//UTextureRenderTarget2DArray* TextureRenderTarget;
 		TArray<TWeakObjectPtr<UVoxelMeshComponent>> VoxelBodies;
-		float CaptureZ;
+		//float CaptureZ;
 	};
 
 	struct FVoxelBodyInfo
@@ -26,11 +26,12 @@ public:
 		FRenderingContext RenderContext;
 		struct FVoxelBodyViewInfo
 		{
-			TOptional<FBox2D> UpdateBounds = FBox2D(ForceInit);
+			//TOptional<FBox2D> UpdateBounds = FBox2D(ForceInit);
 			FVector Center = FVector(ForceInit);
 			FVoxelSceneProxy* OldSceneProxy = nullptr;
 			bool bIsDirty = true;
 		};
+		// 1 per viewPlayer
 		TArray<FVoxelBodyViewInfo, TInlineAllocator<4>> ViewInfos;
 	};
 	TWeakObjectPtrKeyMap<AVoxelBody, FVoxelBodyInfo> VoxelBodiesInfos;

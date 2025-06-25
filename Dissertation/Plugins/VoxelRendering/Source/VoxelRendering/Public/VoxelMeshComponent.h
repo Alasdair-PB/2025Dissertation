@@ -44,8 +44,6 @@ protected:
     void BuildOctree(AABB bounds, int size, int depth);
 
     FVoxelSceneProxy* sceneProxy;
-    TSharedPtr<FVoxelSceneViewExtension, ESPMode::ThreadSafe> SceneViewExtension;
-
     Octree* tree;
     AABB bounds;
 

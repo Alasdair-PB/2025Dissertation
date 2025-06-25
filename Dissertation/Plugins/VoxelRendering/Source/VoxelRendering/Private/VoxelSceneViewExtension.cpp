@@ -1,4 +1,5 @@
 #include "VoxelSceneViewExtension.h"
+
 #include "VoxelRendering.h"
 #include "RenderGraphUtils.h"
 #include "SceneTextures.h"
@@ -8,6 +9,8 @@
 #include "VoxelPixelShader.h"
 #include "VoxelPixelMeshMaterialShader.h"
 #include "VoxelVertexMeshMaterialShader.h"
+
+/*
 #include "VoxelCustomRenderPass.h"
 #include "SceneView.h"
 #include "PostProcess/PostProcessMaterialInputs.h"
@@ -15,14 +18,23 @@
 #include "EngineUtils.h"
 #include "RHIResourceUtils.h"
 #include "AVoxelBody.h"
+#include "VoxelMeshPassProcessor.h"
+
 #include "VoxelMeshComponent.h"
 #include "Engine/TextureRenderTarget2DArray.h"
-#include "Engine/GameInstance.h"
+#include "Engine/GameInstance.h"*/
 
 IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
 
+
 void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) {
+
+
+#if false
+    //----------------- Attempt 1 using View extion to call a custom render pass- stopped as custom render path is intended for multi view scenarios like
+    // reflections & depth textures. To continue this approach the data for view 1 would need to be rendered to a texture and added to scene output
+
     const FVector ViewLocation = InView.ViewLocation;
     const TWeakObjectPtr<UWorld> WorldPtr = GetWorld();
 
@@ -68,9 +80,14 @@ void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneV
             UpdateVoxelInfoRendering_CustomRenderPass(Scene, InViewFamily, &VoxelBodyInfo);
         }    
     }
+#endif
 }
 
+#if false
 void FVoxelSceneViewExtension::UpdateVoxelInfoRendering_CustomRenderPass(FSceneInterface* Scene, const FSceneViewFamily& ViewFamily, const FVoxelBodyInfo* VoxelBodyInfo) {
+
+
+    //----------------- Attempt 1 continued -----------------
 
     const FRenderingContext& Context(VoxelBodyInfo->RenderContext);
 
@@ -104,20 +121,39 @@ void FVoxelSceneViewExtension::UpdateVoxelInfoRendering_CustomRenderPass(FSceneI
     PassInput.CustomRenderPass = VoxelPass;
 
     TUniquePtr<FMyVoxelRenderData> Data = MakeUnique<FMyVoxelRenderData>(VoxelBodyInfo->ViewInfos[3].OldSceneProxy);
-    VoxelPass->SetUserData(MoveTemp(Data));
+    //VoxelPass->SetUserData(MoveTemp(Data));
 
     Scene->AddCustomRenderPass(&ViewFamily, PassInput);
 }
+#endif
 
-void FVoxelSceneViewExtension::PreRenderViewFamily_RenderThread(FRDGBuilder& GraphBuilder, FSceneViewFamily& InViewFamily)
+void FVoxelSceneViewExtension::PreRenderView_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& InView) 
 {
 
+#if false
+    //----------------- Attempt 2 using mesh batch draw commands directly in View Extension 
+
+   const FScene* InScene = InView.Family->Scene->GetRenderScene();
+   if (InScene) {
+        FDynamicMeshDrawCommandStorage DynamicMeshDrawCommandStorage;
+        FMeshCommandOneFrameArray VisibleMeshDrawCommands;
+        FGraphicsMinimalPipelineStateSet GraphicsMinimalPipelineStateSet;
+        bool NeedsShaderInitialisation = false;
+        FDynamicPassMeshDrawListContext DynamicMeshPassContext(DynamicMeshDrawCommandStorage, VisibleMeshDrawCommands, GraphicsMinimalPipelineStateSet, NeedsShaderInitialisation);
+        FVoxelMeshPassProcessor MeshProcessor(InScene, &InView, &DynamicMeshPassContext);
+
+        for (const FMeshBatchAndRelevance& MeshBatch : InView.)
+        {
+            MeshProcessor.AddMeshBatch(*MeshBatch.Mesh, MeshBatch.Mesh->, MeshBatch.PrimitiveSceneProxy);
+        }
+    }
+#endif
 }
 
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
 #if false
-    //----------------- Attempt 1 using Pass processor to render a custom pass from mesh batch data (this may need to be called elsewhere)
+    //----------------- Attempt 3 using Pass processor to render a custom pass from mesh batch data (this may need to be called elsewhere)
     GraphBuilder.AddPass(
         RDG_EVENT_NAME("VoxelRenderPass"),
         ERDGPassFlags::None,
@@ -133,7 +169,7 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
         });
 
 #elif false
-    //----------------- Attempt 1 using Global shader DrawIndexedPrimitive to render data as post process
+    //----------------- Attempt 4 using Global shader DrawIndexedPrimitive to render data as post process
     // ended with Shader Compliation failures are fatal. 
     // It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead
 

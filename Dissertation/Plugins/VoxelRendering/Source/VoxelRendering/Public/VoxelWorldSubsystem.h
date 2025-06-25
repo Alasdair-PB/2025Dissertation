@@ -4,6 +4,7 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "VoxelWorldSubsystem.generated.h"
 
+
 UCLASS()
 class VOXELRENDERING_API UVoxelWorldSubsystem : public UWorldSubsystem
 {

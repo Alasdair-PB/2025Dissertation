@@ -6,7 +6,7 @@
 
 // Intended for cases where a custom camera is needed: e.t.c reflections, shadows maps and depth capture. Incorrect usage here!
 
-
+/*
 struct FMyVoxelRenderData : public ICustomRenderPassUserData
 {
     IMPLEMENT_CUSTOM_RENDER_PASS_USER_DATA(FMyVoxelRenderData);
@@ -18,7 +18,7 @@ struct FMyVoxelRenderData : public ICustomRenderPassUserData
 
 private:
     FVoxelSceneProxy* VoxelProxy = nullptr;
-};
+};*/
 
 class VOXELRENDERING_API FVoxelCustomRenderPass : public FCustomRenderPassBase
 {
@@ -29,7 +29,10 @@ public:
 
     virtual void OnPreRender(FRDGBuilder& GraphBuilder) override
     {
-        FCustomRenderPassBase::OnPreRender(GraphBuilder);
+
+#if false
+
+        //----------------- Attempt 1 using sceneview extension to call custom render pass: may not be needed
 
         if (Views.Num() == 0) return;
         const FScene* Scene = Views[0]->Family->Scene->GetRenderScene();
@@ -51,12 +54,11 @@ public:
                     sceneProxy->RenderMyCustomPass(RHICmdList, Scene, sceneView);
                 });
         }
-
+#endif
     }
 
     virtual void OnPostRender(FRDGBuilder& GraphBuilder) override
     {
-        FCustomRenderPassBase::OnPostRender(GraphBuilder);
     }
 
 	virtual void OnBeginPass(FRDGBuilder& GraphBuilder) override {

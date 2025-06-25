@@ -8,6 +8,7 @@
 #include "MeshBatch.h"
 #include "UniformBuffer.h"
 #include "SceneView.h"
+#include "MeshPassProcessor.h"
 #include "RenderResource.h"
 
 FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :

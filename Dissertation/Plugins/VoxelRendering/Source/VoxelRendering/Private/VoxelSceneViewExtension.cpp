@@ -7,22 +7,6 @@
 #include "GlobalShader.h"
 #include "VoxelVertexShader.h"
 #include "VoxelPixelShader.h"
-#include "VoxelPixelMeshMaterialShader.h"
-#include "VoxelVertexMeshMaterialShader.h"
-
-/*
-#include "VoxelCustomRenderPass.h"
-#include "SceneView.h"
-#include "PostProcess/PostProcessMaterialInputs.h"
-#include "PostProcess/PostProcessInputs.h"
-#include "EngineUtils.h"
-#include "RHIResourceUtils.h"
-#include "AVoxelBody.h"
-#include "VoxelMeshPassProcessor.h"
-
-#include "VoxelMeshComponent.h"
-#include "Engine/TextureRenderTarget2DArray.h"
-#include "Engine/GameInstance.h"*/
 
 IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);

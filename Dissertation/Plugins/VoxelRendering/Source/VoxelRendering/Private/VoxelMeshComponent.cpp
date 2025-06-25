@@ -4,6 +4,7 @@
 #include "FVoxelVertexFactoryShaderParameters.h"
 #include "MarchingCubesDispatcher.h"
 #include "MaterialDomain.h"
+#include "VoxelWorldSubsystem.h"
 
 UVoxelMeshComponent::UVoxelMeshComponent()
 {
@@ -26,7 +27,6 @@ void UVoxelMeshComponent::OnRegister()
     Super::OnRegister();
     //SceneViewExtension = FSceneViewExtensions::NewExtension<FVoxelSceneViewExtension>();
     //SceneViewExtension = FSceneViewExtensions::NewWorldExtension<FVoxelSceneViewExtension>(*World);
-    //SceneViewExtension->SetSceneProxy(sceneProxy);
 }
 
 void UVoxelMeshComponent::BeginPlay() {
@@ -75,9 +75,6 @@ void UVoxelMeshComponent::BuildOctree(AABB inBounds, int size, int depth)
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
     sceneProxy = new FVoxelSceneProxy(this);
-
-    if (SceneViewExtension.IsValid())
-        SceneViewExtension->SetSceneProxy(sceneProxy);
     return sceneProxy;
 }
 

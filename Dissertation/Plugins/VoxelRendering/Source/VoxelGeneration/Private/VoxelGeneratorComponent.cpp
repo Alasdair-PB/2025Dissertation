@@ -1,5 +1,6 @@
 #include "VoxelGeneratorComponent.h"
 #include "MySimpleComputeShader.h"
+#include "AVoxelBody.h"
 #include "Logging/LogMacros.h"
 
 UVoxelGeneratorComponent::UVoxelGeneratorComponent() {
@@ -28,10 +29,8 @@ void UVoxelGeneratorComponent::InitIsoDispatch() {
 
 void UVoxelGeneratorComponent::InitVoxelMesh(int size, int depth)
 {
-    AActor* Owner = GetOwner();
-    voxelMesh = NewObject<UVoxelMeshComponent>(Owner);
-    voxelMesh->RegisterComponent();
-    voxelMesh->InitVoxelMesh(bounds, depth, isoValueBuffer, typeValueBuffer);
+    UWorld* world = GetWorld();
+    AVoxelBody::CreateVoxelMeshActor(world, bounds, depth, isoValueBuffer, typeValueBuffer);
 }
 
 void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth) {

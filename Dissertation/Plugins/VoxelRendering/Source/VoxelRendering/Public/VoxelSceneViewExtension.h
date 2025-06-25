@@ -1,16 +1,43 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "SceneViewExtension.h"
+#include "AVoxelBody.h"
+#include "Misc/ScopeLock.h"
 #include "FVoxelSceneProxy.h"
+
+class UTextureRenderTarget2DArray;
+
+template <typename KeyType, typename ValueType>
+using TWeakObjectPtrKeyMap = TMap<TWeakObjectPtr<KeyType>, ValueType, FDefaultSetAllocator, TWeakObjectPtrMapKeyFuncs<TWeakObjectPtr<KeyType>, ValueType>>;
 
 class VOXELRENDERING_API FVoxelSceneViewExtension : public FWorldSceneViewExtension
 {
-public:
+public:	
+	struct FRenderingContext
+	{
+		AVoxelBody* RenderedBody = nullptr;
+		UTextureRenderTarget2DArray* TextureRenderTarget;
+		TArray<TWeakObjectPtr<UVoxelMeshComponent>> VoxelBodies;
+		float CaptureZ;
+	};
+
+	struct FVoxelBodyInfo
+	{
+		FRenderingContext RenderContext;
+		struct FVoxelBodyViewInfo
+		{
+			TOptional<FBox2D> UpdateBounds = FBox2D(ForceInit);
+			FVector Center = FVector(ForceInit);
+			FVoxelSceneProxy* OldSceneProxy = nullptr;
+			bool bIsDirty = true;
+		};
+		TArray<FVoxelBodyViewInfo, TInlineAllocator<4>> ViewInfos;
+	};
+	TWeakObjectPtrKeyMap<AVoxelBody, FVoxelBodyInfo> VoxelBodiesInfos;
+
 
 	FVoxelSceneViewExtension(const FAutoRegister& AutoReg, UWorld* InWorld)
-		: FWorldSceneViewExtension(AutoReg, InWorld)
-	{
-	}
+		: FWorldSceneViewExtension(AutoReg, InWorld) {}
 
 	virtual void SetupViewFamily(FSceneViewFamily& InViewFamily) override {};
 	virtual void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
@@ -24,6 +51,5 @@ public:
 	virtual void PostRenderViewFamily_RenderThread(FRDGBuilder& GraphBuilder, FSceneViewFamily& InViewFamily) override {};
 
 	void SetSceneProxy(FVoxelSceneProxy* sceneProxy);
-	void UpdateVoxelInfoRendering_CustomRenderPass(FSceneInterface* Scene, const FSceneViewFamily& ViewFamily);
-	FVoxelSceneProxy* sceneProxy = nullptr;
+	void UpdateVoxelInfoRendering_CustomRenderPass(FSceneInterface* Scene, const FSceneViewFamily& ViewFamily, const FVoxelBodyInfo* VoxelBodyInfo);
 };

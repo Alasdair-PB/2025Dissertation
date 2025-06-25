@@ -14,20 +14,19 @@
 #include "PostProcess/PostProcessInputs.h"
 #include "EngineUtils.h"
 #include "RHIResourceUtils.h"
+#include "AVoxelBody.h"
+#include "VoxelMeshComponent.h"
+#include "Engine/TextureRenderTarget2DArray.h"
 #include "Engine/GameInstance.h"
 
 IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
 
-void FVoxelSceneViewExtension::SetSceneProxy(FVoxelSceneProxy* inSceneProxy) {
-    sceneProxy = inSceneProxy;
-}
-
 void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) {
     const FVector ViewLocation = InView.ViewLocation;
     const TWeakObjectPtr<UWorld> WorldPtr = GetWorld();
 
-    if (!ensureMsgf(WorldPtr.IsValid(), TEXT("FVoxelViewExtension::SetupView was called while it's owning world is not valid! Lifetime of the VoxelViewExtension is tied to the world, this should be impossible!")))
+    if (!ensureMsgf(WorldPtr.IsValid(), TEXT("FVoxelViewExtension::SetupView was called while it's owning world is not valid!")))
         return;
 
     int32 NumViews = 1;
@@ -42,12 +41,58 @@ void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneV
     FSceneInterface* Scene = WorldPtr.Get()->Scene;
     check(Scene != nullptr);
 
-    UpdateVoxelInfoRendering_CustomRenderPass(Scene, InViewFamily);
+
+    for (AVoxelBody* VoxelBody : TActorRange<AVoxelBody>(WorldPtr.Get()))
+    {
+        if (VoxelBody->HasActorRegisteredAllComponents())
+        {
+            FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindChecked(VoxelBody);
+
+            FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindOrAdd(VoxelBody);
+            VoxelBodyInfo.RenderContext.RenderedBody = VoxelBody;
+            VoxelBodyInfo.RenderContext.TextureRenderTarget = VoxelBody->GetRenderTarget();
+            VoxelBodyInfo.RenderContext.CaptureZ = SomeZValue;
+
+            VoxelBodyInfo.RenderContext.VoxelBodies.Reset();
+            UVoxelMeshComponent* MeshComp = VoxelBody->GetComponentByClass<UVoxelMeshComponent>();
+
+            if (MeshComp && MeshComp->IsRegistered())
+                VoxelBodyInfo.RenderContext.VoxelBodies.Add(MeshComp);
+          
+            int32_t ExpectedNumViews = 4;
+
+            if (VoxelBodyInfo.ViewInfos.Num() != ExpectedNumViews)
+                VoxelBodyInfo.ViewInfos.SetNum(ExpectedNumViews);
+
+            UpdateVoxelInfoRendering_CustomRenderPass(Scene, InViewFamily, &VoxelBodyInfo);
+        }    
+    }
 }
 
-void FVoxelSceneViewExtension::UpdateVoxelInfoRendering_CustomRenderPass(FSceneInterface* Scene, const FSceneViewFamily& ViewFamily) {
+void FVoxelSceneViewExtension::UpdateVoxelInfoRendering_CustomRenderPass(FSceneInterface* Scene, const FSceneViewFamily& ViewFamily, const FVoxelBodyInfo* VoxelBodyInfo) {
+
+    const FRenderingContext& Context(VoxelBodyInfo->RenderContext);
+
 
     FSceneInterface::FCustomRenderPassRendererInput PassInput;
+    PassInput.ViewLocation = ViewLocation;
+    PassInput.ViewRotationMatrix = FLookAtMatrix(ViewLocation, LookAt, FVector(0.f, -1.f, 0.f));
+    PassInput.ViewRotationMatrix = PassInput.ViewRotationMatrix.RemoveTranslation();
+    PassInput.ViewRotationMatrix.RemoveScaling();
+    PassInput.ProjectionMatrix = BuildOrthoMatrix(ZoneExtent.X, ZoneExtent.Y);
+    PassInput.ViewActor = Context.RenderedBody;	
+
+    TSet<FPrimitiveComponentId> ComponentsToRenderInDepthPass;
+    if (Context.VoxelBodies.Num() > 0)
+    {
+        ComponentsToRenderInDepthPass.Reserve(Context.VoxelBodies.Num());
+        for (TWeakObjectPtr<UVoxelMeshComponent> VoxelMeshCom : Context.VoxelBodies)
+        {
+            if (VoxelMeshCom.IsValid())
+                ComponentsToRenderInDepthPass.Add(VoxelMeshCom.Get()->GetPrimitiveSceneId());
+        }
+    }
+    PassInput.ShowOnlyPrimitives = MoveTemp(ComponentsToRenderInDepthPass);
 
     const FScene* Scene = Scene->GetRenderScene();
     FTextureRHIRef RenderTargetTexture = ViewFamily.RenderTarget->GetRenderTargetTexture();
@@ -56,7 +101,8 @@ void FVoxelSceneViewExtension::UpdateVoxelInfoRendering_CustomRenderPass(FSceneI
 
     VoxelPass->PerformRenderCapture(FCustomRenderPassBase::ERenderCaptureType::BeginCapture);
     PassInput.CustomRenderPass = VoxelPass;
-    TUniquePtr<FMyVoxelRenderData> Data = MakeUnique<FMyVoxelRenderData>(sceneProxy);
+
+    TUniquePtr<FMyVoxelRenderData> Data = MakeUnique<FMyVoxelRenderData>(VoxelBodyInfo->ViewInfos[3].OldSceneProxy);
     VoxelPass->SetUserData(MoveTemp(Data));
 
     Scene->AddCustomRenderPass(&ViewFamily, PassInput);
@@ -69,14 +115,7 @@ void FVoxelSceneViewExtension::PreRenderViewFamily_RenderThread(FRDGBuilder& Gra
 
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
-    if (!sceneProxy) return;
-
-#if true
-    const FScene* Scene = View.Family->Scene->GetRenderScene();
-
-
-
-#elif false
+#if false
     //----------------- Attempt 1 using Pass processor to render a custom pass from mesh batch data (this may need to be called elsewhere)
     GraphBuilder.AddPass(
         RDG_EVENT_NAME("VoxelRenderPass"),

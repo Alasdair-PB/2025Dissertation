@@ -8,18 +8,63 @@
 #include "VoxelPixelShader.h"
 #include "VoxelPixelMeshMaterialShader.h"
 #include "VoxelVertexMeshMaterialShader.h"
-
+#include "VoxelCustomRenderPass.h"
+#include "SceneView.h"
 #include "PostProcess/PostProcessMaterialInputs.h"
 #include "PostProcess/PostProcessInputs.h"
+#include "EngineUtils.h"
+#include "RHIResourceUtils.h"
+#include "Engine/GameInstance.h"
 
 IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
 
-FVoxelSceneViewExtension::FVoxelSceneViewExtension(const FAutoRegister& AutoRegister) : FSceneViewExtensionBase(AutoRegister)
-{}
-
 void FVoxelSceneViewExtension::SetSceneProxy(FVoxelSceneProxy* inSceneProxy) {
     sceneProxy = inSceneProxy;
+}
+
+void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) {
+    const FVector ViewLocation = InView.ViewLocation;
+    const TWeakObjectPtr<UWorld> WorldPtr = GetWorld();
+
+    if (!ensureMsgf(WorldPtr.IsValid(), TEXT("FVoxelViewExtension::SetupView was called while it's owning world is not valid! Lifetime of the VoxelViewExtension is tied to the world, this should be impossible!")))
+        return;
+
+    int32 NumViews = 1;
+    if (WorldPtr->GetGameInstance())
+        NumViews = WorldPtr->GetGameInstance()->GetLocalPlayers().Num();
+
+    static bool bUpdatingVoxelInfo = false; // Prevent re-entrancy. 
+    if (bUpdatingVoxelInfo) return;
+
+    bUpdatingVoxelInfo = true;
+    ON_SCOPE_EXIT{ bUpdatingVoxelInfo = false; };
+    FSceneInterface* Scene = WorldPtr.Get()->Scene;
+    check(Scene != nullptr);
+
+    UpdateVoxelInfoRendering_CustomRenderPass(Scene, InViewFamily);
+}
+
+void FVoxelSceneViewExtension::UpdateVoxelInfoRendering_CustomRenderPass(FSceneInterface* Scene, const FSceneViewFamily& ViewFamily) {
+
+    FSceneInterface::FCustomRenderPassRendererInput PassInput;
+
+    const FScene* Scene = Scene->GetRenderScene();
+    FTextureRHIRef RenderTargetTexture = ViewFamily.RenderTarget->GetRenderTargetTexture();
+    const FIntPoint RenderTargetSize;
+    FVoxelCustomRenderPass* VoxelPass = new FVoxelCustomRenderPass(RenderTargetSize);
+
+    VoxelPass->PerformRenderCapture(FCustomRenderPassBase::ERenderCaptureType::BeginCapture);
+    PassInput.CustomRenderPass = VoxelPass;
+    TUniquePtr<FMyVoxelRenderData> Data = MakeUnique<FMyVoxelRenderData>(sceneProxy);
+    VoxelPass->SetUserData(MoveTemp(Data));
+
+    Scene->AddCustomRenderPass(&ViewFamily, PassInput);
+}
+
+void FVoxelSceneViewExtension::PreRenderViewFamily_RenderThread(FRDGBuilder& GraphBuilder, FSceneViewFamily& InViewFamily)
+{
+
 }
 
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
@@ -27,6 +72,11 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     if (!sceneProxy) return;
 
 #if true
+    const FScene* Scene = View.Family->Scene->GetRenderScene();
+
+
+
+#elif false
     //----------------- Attempt 1 using Pass processor to render a custom pass from mesh batch data (this may need to be called elsewhere)
     GraphBuilder.AddPass(
         RDG_EVENT_NAME("VoxelRenderPass"),

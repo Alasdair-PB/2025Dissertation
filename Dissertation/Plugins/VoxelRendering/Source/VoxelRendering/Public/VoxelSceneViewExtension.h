@@ -3,13 +3,17 @@
 #include "SceneViewExtension.h"
 #include "FVoxelSceneProxy.h"
 
-class VOXELRENDERING_API FVoxelSceneViewExtension : public FSceneViewExtensionBase
+class VOXELRENDERING_API FVoxelSceneViewExtension : public FWorldSceneViewExtension
 {
 public:
-	FVoxelSceneViewExtension(const FAutoRegister& AutoRegister);
+
+	FVoxelSceneViewExtension(const FAutoRegister& AutoReg, UWorld* InWorld)
+		: FWorldSceneViewExtension(AutoReg, InWorld)
+	{
+	}
 
 	virtual void SetupViewFamily(FSceneViewFamily& InViewFamily) override {};
-	virtual void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override {};
+	virtual void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
 	virtual void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override {};
 
 	virtual void PostRenderBasePassDeferred_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& InView, const FRenderTargetBindingSlots& RenderTargets, TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTextures) override {};
@@ -20,6 +24,6 @@ public:
 	virtual void PostRenderViewFamily_RenderThread(FRDGBuilder& GraphBuilder, FSceneViewFamily& InViewFamily) override {};
 
 	void SetSceneProxy(FVoxelSceneProxy* sceneProxy);
-
+	void UpdateVoxelInfoRendering_CustomRenderPass(FSceneInterface* Scene, const FSceneViewFamily& ViewFamily);
 	FVoxelSceneProxy* sceneProxy = nullptr;
 };

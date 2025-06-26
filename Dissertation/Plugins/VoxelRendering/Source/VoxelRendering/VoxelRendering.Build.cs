@@ -11,7 +11,7 @@ public class VoxelRendering : ModuleRules
         PublicIncludePaths.AddRange(new string[] {});
         PrivateIncludePaths.AddRange(new string[] {});
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "VoxelRenderingUtils", "Octree", "CoreUObject", "Engine", "MaterialShaderQualitySettings", "InputCore", "ProceduralMeshComponent" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "VoxelRenderingUtils", "VoxelShaders", "Octree", "CoreUObject", "Engine", "MaterialShaderQualitySettings", "InputCore", "ProceduralMeshComponent" });
         PrivateDependencyModuleNames.AddRange(new string[] { "CoreUObject", "Core", "VoxelRenderingUtils", "VoxelShaders", "Engine", "ComputeDispatchers", "Renderer", "Octree", "RenderCore", "RHI", "Projects" });
 
         if (Target.bBuildEditor == true)

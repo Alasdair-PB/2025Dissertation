@@ -1,10 +1,5 @@
 #pragma once
 #include "MeshPassProcessor.h"
-#include "VoxelPixelMeshMaterialShader.h"
-#include "VoxelVertexMeshMaterialShader.h"
-#include "VoxelPixelShader.h"
-#include "VoxelVertexShader.h"
-
 #include "DataDrivenShaderPlatformInfo.h"
 #include "EngineModule.h"
 #include "Engine/Engine.h"
@@ -20,6 +15,14 @@
 #include "SceneInterface.h"
 #include "TextureResource.h"
 #include "Async/Mutex.h"
+
+#include "VoxelPixelMeshMaterialShader.h"
+#include "VoxelVertexMeshMaterialShader.h"
+#include "VoxelPixelShader.h"
+#include "VoxelVertexShader.h"
+#include "RendererInterface.h"
+#include "Runtime/Renderer/Private/SceneRendering.h"
+#include "MaterialShared.h"
 
 IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelPixelMeshMaterialShader, TEXT("/VoxelShaders/VoxelPixelShader.usf"), TEXT("MainPS"), SF_Pixel);
 IMPLEMENT_MATERIAL_SHADER_TYPE(, FVoxelVertexMeshMaterialShader, TEXT("/VoxelShaders/VoxelVertexShader.usf"), TEXT("MainVS"), SF_Vertex);
@@ -37,14 +40,9 @@ public:
         DrawRenderState.SetBlendState(TStaticBlendStateWriteMask<CW_RGBA, CW_RGBA, CW_RGBA, CW_RGBA>::GetRHI());
     }
 
-    struct FVoxelElementData : public FMeshMaterialShaderElementData
-    {
-        const FLightCacheInterface* LCI;
-        FVoxelElementData(const FLightCacheInterface* LCI) : LCI(LCI) {}
-    };
 
-	void AddMeshBatch(const FMeshBatch& MeshBatch, uint64 BatchElementMask, const FPrimitiveSceneProxy* RESTRICT PrimitiveSceneProxy, int32 StaticMeshId = -1)
-	{
+    void AddMeshBatch(const FMeshBatch& MeshBatch, uint64 BatchElementMask, const FPrimitiveSceneProxy* RESTRICT PrimitiveSceneProxy, int32 StaticMeshId = -1)
+    {
         const FMaterialRenderProxy& DefaultProxy = *UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
         const FVertexFactory* VertexFactory = MeshBatch.VertexFactory;
 
@@ -76,9 +74,31 @@ public:
             SortKey,
             EMeshPassFeatures::Default,
             ShaderElementData);
-	}
+    }
+
+
+    struct FVoxelElementData : public FMeshMaterialShaderElementData
+    {
+        const FLightCacheInterface* LCI;
+        FVoxelElementData(const FLightCacheInterface* LCI) : LCI(LCI) {}
+    };
+
+    //void AddMeshBatch(const FMeshBatch& MeshBatch, uint64 BatchElementMask, const FPrimitiveSceneProxy* RESTRICT PrimitiveSceneProxy, int32 StaticMeshId = -1);
    
 private:
 	const FSceneView* View;
     FMeshPassProcessorRenderState DrawRenderState;
 };
+
+/*
+FMeshPassProcessor* CreateVoxelPassProcessor(ERHIFeatureLevel::Type FeatureLevel, const FScene* Scene, const FSceneView* InViewIfDynamicMeshCommand, FMeshPassDrawListContext* InDrawListContext)
+{
+    return new FVoxelMeshPassProcessor(Scene, InViewIfDynamicMeshCommand, InDrawListContext);
+}
+// VoxelInfoPass added to source file: MeshPassProcessor.h
+// 	case EMeshPass::VoxelInfoPass: return TEXT("VoxelInfoPass");
+// change 38 to 39
+FRegisterPassProcessorCreateFunction RegisterVoxelInfoPass(&CreateVoxelPassProcessor, EShadingPath::Deferred, EMeshPass::VoxelInfoPass, EMeshPassFlags::MainView);
+*/
+
+

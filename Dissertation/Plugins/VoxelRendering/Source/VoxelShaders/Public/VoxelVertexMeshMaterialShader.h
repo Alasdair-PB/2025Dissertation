@@ -2,7 +2,6 @@
 #include "GlobalShader.h"
 #include "ShaderParameterUtils.h"
 #include "ShaderParameterStruct.h"
-#include "RHIStaticStates.h"
 #include "MeshMaterialShader.h"
 
 class FVoxelVertexMeshMaterialShader : public FMeshMaterialShader

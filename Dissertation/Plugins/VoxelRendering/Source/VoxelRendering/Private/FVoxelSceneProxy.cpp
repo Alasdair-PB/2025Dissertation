@@ -8,7 +8,6 @@
 #include "MeshBatch.h"
 #include "UniformBuffer.h"
 #include "SceneView.h"
-#include "MeshPassProcessor.h"
 #include "RenderResource.h"
 
 FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
@@ -112,12 +111,12 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 		if (!(VisibilityMap & (1 << viewIndex))) continue;
 		FMeshBatch& meshBatch = Collector.AllocateMesh();
 
-#if false // Used for both of the below
+#if true // Used for both of the below
 		SetMeshBatchGeneric(meshBatch, viewIndex);
 		SetMeshBatchElementsGeneric(meshBatch, viewIndex);
 #if false // Push MeshBatch to be used by MeshProcessor
 		CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
-#elif false // Push MechBatch to collector to be handled by Unreals material pipeline with Vertex Factory.ush
+#elif true // Push MechBatch to collector to be handled by Unreals material pipeline with Vertex Factory.ush
 		Collector.AddMesh(viewIndex, meshBatch);
 #endif
 #endif

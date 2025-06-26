@@ -2,7 +2,6 @@
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
 // ************************ Required Structs for base feature support ************************
-
 struct FVoxelVertexInfo
 {
     float3 Position;
@@ -182,6 +181,11 @@ float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput In
     return WorldPosition;
 }
 
+float3 TransformWorldPositionToLocal(float3 InWorldPosition)
+{
+    return mul(float4(InWorldPosition, 1), Primitive.WorldToLocal).xyz;
+}
+
 float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
     float4 WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position, Intermediates.SceneData.Primitive.LocalToWorld);
@@ -239,21 +243,105 @@ FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int Ve
 
 FMaterialVertexParameters GetMaterialVertexParameters(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, float3 WorldPosition, half3x3 TangentToLocal, bool bIsPreviousFrame = false)
 {
+    
+    FMaterialVertexParameters Result = (FMaterialVertexParameters) 0;
+    Result.WorldPosition = WorldPosition;
+    Result.VertexColor = Intermediates.Color;
+    Result.TangentToWorld = Intermediates.TangentToWorld;
+    return Result;
+    /*
     FMaterialVertexParameters Result = MakeInitializedMaterialVertexParameters();
     Result.SceneData = Intermediates.SceneData;
     Result.WorldPosition = WorldPosition;
     Result.TangentToWorld = Intermediates.TangentToWorld;
     Result.PreSkinnedNormal = TangentToLocal[2];
     Result.PreSkinnedPosition = WorldPosition;
+    Result.PositionInstanceSpace = VertexFactoryGetPreviousInstanceSpacePosition(Input, Intermediates);
+    Result.PositionPrimitiveSpace = Result.PositionInstanceSpace;
     Result.LWCData = MakeMaterialLWCData(Result);
-    return Result;
+  
+#if NUM_MATERIAL_TEXCOORDS_VERTEX
+  for (int CoordinateIndex = 0; CoordinateIndex < NUM_MATERIAL_TEXCOORDS_VERTEX; CoordinateIndex++)
+    {
+        Result.TexCoords[CoordinateIndex] = float2(0,0);
+    }
+#endif  //NUM_MATERIAL_TEXCOORDS_VERTEX*/
+    
+   // return Result;
 }
 
 FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
 {
-    return MakeInitializedMaterialPixelParameters();
+    FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
+
+#if NUM_TEX_COORD_INTERPOLATORS
+	UNROLL
+	for (int CoordinateIndex = 0; CoordinateIndex < NUM_TEX_COORD_INTERPOLATORS; CoordinateIndex++)
+	{
+		Result.TexCoords[CoordinateIndex] = float2(0,0);
+	}
+#endif	//NUM_MATERIAL_TEXCOORDS
+
+    Result.TwoSidedSign = 1;
+    Result.PrimitiveId = 0;
+    return Result;
 }
 
+/*
+FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 PixelPosition)
+{
+	// GetMaterialPixelParameters is responsible for fully initializing the result
+    FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
+	
+    float3 localPosition = TransformWorldPositionToLocal(PixelPosition.xyz); //Assuming PixelPosition is in world-space
+	
+    Result.AbsoluteWorldPosition = PixelPosition; //TODO Is this right?
+	
+    float3 volumeNormal = normalize(cross(ddx(PixelPosition.xyz), ddy(PixelPosition.xyz)));
+	
+	// This fixes inaccuracies/rounding errors which can otherwise occur
+    volumeNormal = floor(volumeNormal + float3(0.5, 0.5, 0.5));
+	
+    Result.WorldNormal = TransformLocalToTranslatedWorld(volumeNormal);
+	
+	// Because we know our normal is pointing along one of the three main axes we can trivially compute a tangent space.
+    float3 volumeTangent = volumeNormal.yzx;
+    float3 volumeBinormal = volumeNormal.zxy;
+	
+	// And from our tangent space we can now compute texture coordinates.
+    float2 texCoords = float2(dot(PixelPosition.xyz, volumeTangent), dot(PixelPosition.xyz, volumeBinormal));
+    texCoords = texCoords - float2(0.5, 0.5); // Required because integer positions are at the center of the voxel.
+
+#if NUM_MATERIAL_TEXCOORDS
+	Result.TexCoords[0] = texCoords;
+#endif
+	
+	//These are in volume space, should be in world space?
+    Result.TangentToWorld[0] = volumeTangent;
+    Result.TangentToWorld[1] = volumeBinormal;
+    Result.TangentToWorld[2] = volumeNormal;
+	
+    Result.VertexColor = GetColor(Interpolants);
+
+    Result.TwoSidedSign = 1;
+    return Result;
+}*/
+
+FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
+{
+    FVertexFactoryInterpolantsVSToPS Interpolants;
+    Interpolants = (FVertexFactoryInterpolantsVSToPS) 0;
+    
+    Interpolants.TangentToWorld0 = float4(Intermediates.TangentToWorld[0], 0);
+    Interpolants.TangentToWorld2 = float4(Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
+    
+    Interpolants.Color = VertexParameters.VertexColor;
+    Interpolants.Alpha = Intermediates.Alpha;
+    Interpolants.TexCoords = NormalBasedPlanarMapping(Input, float2(1, 1));
+    return Interpolants;
+}
+
+/*
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
     FVertexFactoryInterpolantsVSToPS Interpolants = (FVertexFactoryInterpolantsVSToPS) 0;
@@ -265,7 +353,7 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
     Interpolants.TexCoords = NormalBasedPlanarMapping(Input, float2(1,1));
     return Interpolants;
 }
-
+*/
 FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
 {
     FVertexFactoryIntermediates Intermediates;

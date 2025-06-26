@@ -104,7 +104,13 @@ FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, 
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
 {
-	return true;//  IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+	if (IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5)){
+	const bool unlit = Parameters.MaterialParameters.ShadingModels.IsUnlit();
+	UE_LOG(LogTemp, Warning, TEXT("FVoxelVertexFactory::ShouldCompilePermutation — Platform: %d, Material: %hs, IsDefault: %s"),
+		(int32)Parameters.Platform,
+		"null",
+		Parameters.MaterialParameters.bIsDefaultMaterial ? TEXT("true") : TEXT("false"));}
+	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 }
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {
@@ -137,17 +143,6 @@ struct FDynamicVoxelMeshDataType
 	uint8 NumTexCoords = 0;
 	uint8 LODLightmapDataIndex = 0;
 };
-
-/*class xyz : FLocalVertexFactory {
-	// Has Data
-
-	void InitRHI(FRHICommandListBase& RHICmdList) override
-	{
-		if (Data.PositionComponent.VertexBuffer != NULL)
-		{
-		}
-	}
-};*/
 
 void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 {		

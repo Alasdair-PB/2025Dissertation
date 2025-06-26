@@ -124,6 +124,7 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 }
 
 void FVoxelSceneProxy::SetMeshBatchGeneric(FMeshBatch& meshBatch, int32 viewIndex, bool bWireframe) const {
+	check(VertexFactory);
 	meshBatch.VertexFactory = VertexFactory;
 	meshBatch.ReverseCulling = IsLocalToWorldDeterminantNegative();
 	meshBatch.Type = PT_TriangleList;
@@ -144,7 +145,7 @@ void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 view
 	else renderProxy = Material->GetRenderProxy();
 	renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 #else 
-	meshBatch.MaterialRenderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy(); // cannot be nullptr?
+	meshBatch.MaterialRenderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 #endif
 
 }

@@ -14,7 +14,11 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	FPrimitiveSceneProxy(Component),
 	bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
 {
+	//UMaterial::GetDefaultMaterial(MD_Surface)->SetMaterialUsage(true, MATUSAGE_NiagaraMeshParticles);
+	//UMaterial::GetDefaultMaterial(MD_Surface)->ForceRecompileForRendering();;
+
 	Material = Component->GetMaterial(0);
+	Material->ForceRecompileForRendering();;
 }
 
 FVoxelSceneProxy::~FVoxelSceneProxy() {}
@@ -145,7 +149,8 @@ void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 view
 	else renderProxy = Material->GetRenderProxy();
 	renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 #else 
-	meshBatch.MaterialRenderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
+	//UE_LOG(LogTemp, Warning, TEXT("Default material: %s"), *UMaterial::GetDefaultMaterial(MD_Surface)->GetName());
+	meshBatch.MaterialRenderProxy = Material->GetRenderProxy(); //UMaterial::GetDefaultMaterial(MD_Surface)
 #endif
 
 }

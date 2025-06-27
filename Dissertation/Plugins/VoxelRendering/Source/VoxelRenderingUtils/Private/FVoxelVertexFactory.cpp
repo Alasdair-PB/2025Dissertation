@@ -32,8 +32,8 @@ public:
 		const FVoxelVertexFactory* VoxelVertexFactory = static_cast<const FVoxelVertexFactory*>(InVertexFactory);
 		const FVoxelBatchElementUserData* UserData = (const FVoxelBatchElementUserData*)BatchElement.UserData;
 
-		//if (VoxelVF.IsBound())
-		//	ShaderBindings.Add(VoxelVF, VoxelVertexFactory->GetVertexSRV());
+		if (VoxelVF.IsBound())
+			ShaderBindings.Add(VoxelVF, VoxelVertexFactory->GetVertexSRV());
 
 		//FVoxelVertexFactory* VoxelVertexF = (FVoxelVertexFactory*)InVertexFactory;
 		//FRHIUniformBuffer* VertexFactoryUniformBuffer = static_cast<FRHIUniformBuffer*>(BatchElement.VertexFactoryUserData);
@@ -41,19 +41,19 @@ public:
 
 	void Bind(const FShaderParameterMap& ParameterMap)
 	{
-		//VoxelVF.Bind(ParameterMap, TEXT("VoxelVF"));
+		VoxelVF.Bind(ParameterMap, TEXT("VoxelVF"));
 		//BINDPARAM(VoxelVF);
 		//BINDPARAM(isoLevel);
 	};
 
 private:
-	//LAYOUT_FIELD(FShaderResourceParameter, VoxelVF);	
+	LAYOUT_FIELD(FShaderResourceParameter, VoxelVF);	
 	//LAYOUT_FIELD(FShaderParameter, voxelsPerAxis);
 };
 IMPLEMENT_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters);
 
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Vertex, FVoxelVertexFactoryShaderParameters);
-//IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Compute, FVoxelVertexFactoryShaderParameters);
+IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Compute, FVoxelVertexFactoryShaderParameters);
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Pixel, FVoxelVertexFactoryShaderParameters);
 
 void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
@@ -105,26 +105,48 @@ FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
 {
 	if (IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5)){
-	const bool unlit = Parameters.MaterialParameters.ShadingModels.IsUnlit();
-	UE_LOG(LogTemp, Warning, TEXT("FVoxelVertexFactory::ShouldCompilePermutation — Platform: %d, Material: %hs, IsDefault: %s"),
-		(int32)Parameters.Platform,
-		"null",
-		Parameters.MaterialParameters.bIsDefaultMaterial ? TEXT("true") : TEXT("false"));}
-	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+		const bool unlit = Parameters.MaterialParameters.ShadingModels.IsUnlit();
+		const bool isDefault = Parameters.MaterialParameters.bIsDefaultMaterial;
+
+		UE_LOG(LogTemp, Warning, TEXT("FVoxelVertexFactory::ShouldCompilePermutation — Platform: %d, Material: %hs, IsDefault: %s"),
+			(int32)Parameters.Platform,
+			"null",
+			isDefault ? TEXT("true") : TEXT("false"));
+	}
+	return true; // IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 }
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {
-	OutEnvironment.SetDefine(TEXT("VOXEL_MESH"), TEXT("1"));
-	OutEnvironment.SetDefine(TEXT("RAY_TRACING_DYNAMIC_MESH_IN_LOCAL_SPACE"), TEXT("1"));
 	FVertexFactory::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+	OutEnvironment.SetDefine(TEXT("VOXEL_MESH"), TEXT("1"));
+	OutEnvironment.SetDefine(TEXT("VF_SUPPORTS_PRIMITIVE_SCENE_DATA"), Parameters.VertexFactoryType->SupportsPrimitiveIdStream());
+	OutEnvironment.SetDefine(TEXT("RAY_TRACING_DYNAMIC_MESH_IN_LOCAL_SPACE"), TEXT("1"));
 }
 
 IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelVertexFactory.ush",
 	EVertexFactoryFlags::UsedWithMaterials
 	| EVertexFactoryFlags::SupportsDynamicLighting
 	| EVertexFactoryFlags::SupportsPositionOnly
-	//| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
+	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
+	//| EVertexFactoryFlags::SupportsPrimitiveIdStream
+
 );
+
+/*
+EVertexFactoryFlags::UsedWithMaterials
+| EVertexFactoryFlags::SupportsStaticLighting
+| EVertexFactoryFlags::SupportsDynamicLighting
+| EVertexFactoryFlags::SupportsPrecisePrevWorldPos
+| EVertexFactoryFlags::SupportsPositionOnly
+| EVertexFactoryFlags::SupportsCachingMeshDrawCommands
+| EVertexFactoryFlags::SupportsPrimitiveIdStream
+| EVertexFactoryFlags::SupportsRayTracing
+| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
+| EVertexFactoryFlags::SupportsLightmapBaking
+| EVertexFactoryFlags::SupportsManualVertexFetch
+| EVertexFactoryFlags::SupportsPSOPrecaching
+| EVertexFactoryFlags::SupportsGPUSkinPassThrough
+| EVertexFactoryFlags::SupportsLumenMeshCards*/
 
 struct FDynamicVoxelMeshDataType
 {
@@ -165,9 +187,6 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 	Elements.Add(AccessStreamComponent(NullColorComponent, 3, VertexStreams));	// Color
 	Elements.Add(AccessStreamComponent(NullTexCoordComponent, 4, VertexStreams));	// TexCoords (Unreal expects at least 1)
 	Elements.Add(AccessStreamComponent(NullTexCoordComponent, 15, VertexStreams));*/	// LightMap (expected by some PSOs)
-
-
-
 	//Elements.Add(AccessStreamComponent(FVertexStreamComponent(nullptr, 0, 0, VET_UInt), 1));
 	InitDeclaration(Elements);
 }

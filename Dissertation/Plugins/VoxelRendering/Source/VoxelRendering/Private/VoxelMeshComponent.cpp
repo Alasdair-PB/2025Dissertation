@@ -11,12 +11,12 @@ UVoxelMeshComponent::UVoxelMeshComponent()
     PrimaryComponentTick.bCanEverTick = true;
     bUseAsOccluder = false;
 
-    /*static ConstructorHelpers::FObjectFinder<UMaterial> MaterialAsset(TEXT("/Game/Materials/M_VoxelPixelShader"));
+    static ConstructorHelpers::FObjectFinder<UMaterial> MaterialAsset(TEXT("/Game/Materials/M_VoxelPixelShader"));
     if (MaterialAsset.Succeeded()) {
         Material = UMaterialInstanceDynamic::Create(MaterialAsset.Object, this);
         SetMaterial(0, Material);
     }
-    else {
+    /*else {
         Material = UMaterial::GetDefaultMaterial(MD_Surface);
         SetMaterial(0, UMaterial::GetDefaultMaterial(MD_Surface));
     }*/

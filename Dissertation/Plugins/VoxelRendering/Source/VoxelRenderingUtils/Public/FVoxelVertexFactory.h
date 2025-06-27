@@ -56,8 +56,8 @@ public:
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 
 	virtual void ReleaseRHI() override { 
+		SRV.SafeRelease();
 		FIndexBuffer::ReleaseRHI();
-		SRV.SafeRelease(); 
 	}
 
 	uint32 GetIndexCount() const { return numIndices; }
@@ -76,9 +76,9 @@ public:
 	FVoxelVertexBuffer(uint32 InNumVertices) : numVertices(InNumVertices) {}
 
 	virtual void ReleaseRHI() override {
-		FVertexBuffer::ReleaseRHI();
 		SRV.SafeRelease();
 		UAV.SafeRelease();
+		FVertexBuffer::ReleaseRHI();
 	}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
@@ -105,6 +105,8 @@ public:
 	void InitRHI(FRHICommandListBase& RHICmdList) override final;
 	void ReleaseRHI() override;
 
+	static bool ShouldCache(EShaderPlatform Platform, const class FMaterial* Material, const class FShaderType* ShaderType) { return true; }
+
 	FBufferRHIRef GetVertexBufferRHIRef() const { return vertexBuffer.GetRHI();}
 	FBufferRHIRef GetIndexBufferRHIRef() const { return indexBuffer.GetRHI();}
 
@@ -112,7 +114,6 @@ public:
 	FUnorderedAccessViewRHIRef GetVertexUAV() const { return vertexBuffer.UAV; }
 
 	FShaderResourceViewRHIRef GetIndexSRV() const { return indexBuffer.SRV; }
-
 
 	uint32 GetVertexBufferBytesPerElement() const { return sizeof(FVoxelVertexInfo); }
 	uint32 GetIndexBufferBytesPerElement() const { return sizeof(uint32); }
@@ -123,6 +124,7 @@ public:
 	bool SupportsManualVertexFetch() { return true; }
 	FVoxelVertexBuffer* GetVertexBuffer() { return &vertexBuffer; }
 	FVoxelIndexBuffer* GetIndexBuffer() { return &indexBuffer; }
+
 private:
 	FVoxelIndexBuffer indexBuffer;
 	FVoxelVertexBuffer vertexBuffer;

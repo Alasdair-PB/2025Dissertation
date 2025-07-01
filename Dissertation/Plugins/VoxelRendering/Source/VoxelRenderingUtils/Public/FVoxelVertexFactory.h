@@ -46,6 +46,8 @@ struct VOXELRENDERINGUTILS_API FVoxelBatchElementUserData
 	//int32 isoLevel;
 	FVoxelBatchElementUserData();
 };
+
+
 class VOXELRENDERINGUTILS_API FVoxelIndexBuffer : public FIndexBuffer
 {
 public:
@@ -56,8 +58,8 @@ public:
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 
 	virtual void ReleaseRHI() override { 
-		SRV.SafeRelease();
 		FIndexBuffer::ReleaseRHI();
+		SRV.SafeRelease();	
 	}
 
 	uint32 GetIndexCount() const { return numIndices; }
@@ -76,14 +78,15 @@ public:
 	FVoxelVertexBuffer(uint32 InNumVertices) : numVertices(InNumVertices) {}
 
 	virtual void ReleaseRHI() override {
+		FVertexBuffer::ReleaseRHI();
 		SRV.SafeRelease();
 		UAV.SafeRelease();
-		FVertexBuffer::ReleaseRHI();
 	}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 	uint32 GetVertexCount() const { return numVertices;}
 	void SetElementCount(uint32 InNumVertices) { numVertices = InNumVertices; }	
+
 	FShaderResourceViewRHIRef SRV;
 	FUnorderedAccessViewRHIRef UAV;
 
@@ -97,7 +100,7 @@ class VOXELRENDERINGUTILS_API FVoxelVertexFactory : public FVertexFactory
 
 public:
 	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize);
-	~FVoxelVertexFactory() { ReleaseRHI(); }
+	//~FVoxelVertexFactory() { ReleaseRHI(); }
 
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
@@ -112,6 +115,7 @@ public:
 
 	FShaderResourceViewRHIRef GetVertexSRV() const { return vertexBuffer.SRV; }
 	FUnorderedAccessViewRHIRef GetVertexUAV() const { return vertexBuffer.UAV; }
+	FUnorderedAccessViewRHIRef GetVertexNormalsUAV() const { return normalsBuffer.UAV; }
 
 	FShaderResourceViewRHIRef GetIndexSRV() const { return indexBuffer.SRV; }
 
@@ -128,6 +132,8 @@ public:
 private:
 	FVoxelIndexBuffer indexBuffer;
 	FVoxelVertexBuffer vertexBuffer;
+	FVoxelVertexBuffer normalsBuffer;
+
 
 	//FVoxelComputeFactoryBufferRef computeUniformBuffer;
 	//FVoxelVertexFactoryBufferRef vertexUniformBuffer;

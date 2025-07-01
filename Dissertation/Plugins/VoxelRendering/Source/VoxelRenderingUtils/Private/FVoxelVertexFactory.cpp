@@ -82,26 +82,35 @@ void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 
 void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 {
-	uint32 stride = sizeof(FVoxelVertexInfo);
+	uint32 stride = sizeof(FVector);
 	uint32 Size = stride * numVertices;
 	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
 	EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
+	VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, ERHIAccess::VertexOrIndexBuffer, CreateInfo);
 
-
-	//VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, ERHIAccess::VertexOrIndexBuffer, CreateInfo);
-	VertexBufferRHI = RHICmdList.CreateStructuredBuffer(stride, Size, UsageFlags, CreateInfo);
 	void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
 	FMemory::Memzero(LockedData, Size);
 	RHICmdList.UnlockBuffer(VertexBufferRHI);
 
-	SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI);
-	UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, false, false);
+	//VertexBufferRHI = RHICmdList.CreateStructuredBuffer(stride, Size, UsageFlags, CreateInfo);
+	//SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI);
+	//UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, false, false);
+
+	{
+		VertexBufferRHI = RHICmdList.CreateVertexBuffer(Size, UsageFlags, CreateInfo);
+		if (RHISupportsManualVertexFetch(GMaxRHIShaderPlatform))
+		{
+			SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI, sizeof(float), PF_R32_FLOAT);
+			UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, PF_R32_FLOAT);
+		}
+	}
 }
 
 FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel) //, FVoxelVertexFactoryParameters UniformParams
 {
 	vertexBuffer.SetElementCount(bufferSize);
 	indexBuffer.SetElementCount(bufferSize);
+	normalsBuffer.SetElementCount(bufferSize);
 }
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
@@ -171,10 +180,11 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 {		
 	indexBuffer.InitResource(RHICmdList);
 	vertexBuffer.InitResource(RHICmdList);
+	normalsBuffer.InitResource(RHICmdList);
 
 	FVertexDeclarationElementList Elements;
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Position), sizeof(FVoxelVertexInfo), VET_Float3), 0)); // 0
-	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, STRUCT_OFFSET(FVoxelVertexInfo, Normal), sizeof(FVoxelVertexInfo), VET_Float3), 0)); // 24
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, 0, sizeof(FVector3f), VET_Float3), 0));
+	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&normalsBuffer, 0, sizeof(FVoxelVertexInfo), VET_Float3), 1));
 
 
 	/*FVertexStreamComponent NullTangentXComponent(&GNullVertexBuffer, 0, 0, VET_PackedNormal);
@@ -193,9 +203,10 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 }
 
 void FVoxelVertexFactory::ReleaseRHI()
-{
+{	
+	FVertexFactory::ReleaseRHI();
 	vertexBuffer.ReleaseRHI();
 	indexBuffer.ReleaseRHI();
-	FVertexFactory::ReleaseRHI();
+	normalsBuffer.ReleaseRHI();
 }
 

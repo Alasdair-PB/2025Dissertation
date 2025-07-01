@@ -29,7 +29,8 @@ class FMarchingCubes : public FGlobalShader
 		SHADER_PARAMETER(uint32, nodeIndex)
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float>, isoValues)
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<int>, marchLookUp)
-		SHADER_PARAMETER_UAV(RWStructuredBuffer<FVoxelVertexInfo>, outInfo)
+		SHADER_PARAMETER_UAV(RWBuffer<float3>, outInfo)
+		SHADER_PARAMETER_UAV(RWBuffer<float3>, outNormalInfo)
 		SHADER_PARAMETER(uint32, voxelsPerAxis)
 		SHADER_PARAMETER(float, baseDepthScale)
 		SHADER_PARAMETER(float, isoLevel)
@@ -69,6 +70,7 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 	PassParams->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
 	PassParams->marchLookUp = InLookUpSRV;
 	PassParams->outInfo = Params.Input.vertexBufferRHIRef.VertexInfoRHIRef;
+	PassParams->outNormalInfo = Params.Input.vertexBufferRHIRef.vertexNormalsInfoRHIRef;
 	PassParams->voxelsPerAxis = voxelsPerAxis;
 	PassParams->baseDepthScale = Params.Input.baseDepthScale;
 	PassParams->isoLevel = Params.Input.isoLevel;

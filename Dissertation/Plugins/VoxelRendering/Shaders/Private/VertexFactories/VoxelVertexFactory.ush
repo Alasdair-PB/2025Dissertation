@@ -2,13 +2,8 @@
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
 // ************************ Required Structs for base feature support ************************
-struct FVoxelVertexInfo
-{
-    float3 Position;
-    float3 Normal;
-};
-
-StructuredBuffer<FVoxelVertexInfo> VoxelVF;
+Buffer<float3> VoxelVF;
+Buffer<float3> VoxelNormalsVF;
 
 struct FVertexFactoryInput
 {
@@ -226,7 +221,7 @@ uint GetVertexFetchBufferOffset(uint VertexId)
 float3 VoxelGetInstancePosition(uint VertexId)
 {
     uint Idx = GetVertexFetchBufferOffset(VertexId);
-    return VoxelVF[Idx].Position;
+    return VoxelVF[Idx];
 }
 
 FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int VertexIndex)

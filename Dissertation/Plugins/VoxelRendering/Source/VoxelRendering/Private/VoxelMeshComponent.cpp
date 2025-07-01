@@ -93,6 +93,7 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
     FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();
     FVoxelComputeShaderDispatchData vertexDispatchBuffer = FVoxelComputeShaderDispatchData(
         vf->GetVertexUAV(),
+        vf->GetVertexNormalsUAV(),
         vf->GetVertexBufferElementsCount(),
         vf->GetVertexBufferBytesPerElement());
 

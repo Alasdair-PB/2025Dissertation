@@ -24,9 +24,10 @@ struct FVoxelComputeShaderDispatchData
 	GENERATED_BODY()
 	FVoxelComputeShaderDispatchData()
 		: VertexInfoRHIRef(nullptr), NumElements(0), BytesPerElement(0) { }
-	FVoxelComputeShaderDispatchData(FUnorderedAccessViewRHIRef inVertexInfoRHIRef, uint32 inNumElements, uint32 inBytesPerElement) :
-		VertexInfoRHIRef(inVertexInfoRHIRef), NumElements(inNumElements), BytesPerElement(inBytesPerElement) { }
+	FVoxelComputeShaderDispatchData(FUnorderedAccessViewRHIRef inVertexInfoRHIRef, FUnorderedAccessViewRHIRef inVertexNormalsInfoRHIRef, uint32 inNumElements, uint32 inBytesPerElement) :
+		VertexInfoRHIRef(inVertexInfoRHIRef), vertexNormalsInfoRHIRef(inVertexNormalsInfoRHIRef), NumElements(inNumElements), BytesPerElement(inBytesPerElement) { }
 	FUnorderedAccessViewRHIRef VertexInfoRHIRef;
+	FUnorderedAccessViewRHIRef vertexNormalsInfoRHIRef;
 	uint32 NumElements;
 	uint32 BytesPerElement;
 };
@@ -101,7 +102,7 @@ public:
 		Params.Input.nodeIndex = Args.nodeIndex;
 		Params.Input.baseDepthScale = Args.baseDepthScale;
 		Params.Input.isoLevel = Args.isoLevel;
-		Params.Input.vertexBufferRHIRef = Args.vertexBufferRHIRef;
+		Params.Input.vertexBufferRHIRef = Args.vertexBufferRHIRef;		
 
 		FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
 			this->Completed.Broadcast(OutputVal);

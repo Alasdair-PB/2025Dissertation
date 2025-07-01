@@ -18,7 +18,10 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	//UMaterial::GetDefaultMaterial(MD_Surface)->ForceRecompileForRendering();;
 
 	Material = Component->GetMaterial(0);
-	Material->ForceRecompileForRendering();;
+	Material->ForceRecompileForRendering();
+
+	uint32 size = 64 * nodeVoxelCount * 15; // instead of 64 should be * Params.Input.leafCount;
+	VertexFactory = new FVoxelVertexFactory(GetScene().GetFeatureLevel(), size);
 }
 
 FVoxelSceneProxy::~FVoxelSceneProxy() {}
@@ -47,8 +50,6 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactory() { return VertexFactory; }
 
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
-	uint32 size = 64 * nodeVoxelCount * 15; // instead of 64 should be * Params.Input.leafCount;
-	VertexFactory = new FVoxelVertexFactory(GetScene().GetFeatureLevel(), size);
 	VertexFactory->InitResource(RHICmdList);
 	FPrimitiveSceneProxy::CreateRenderThreadResources(RHICmdList);
 }

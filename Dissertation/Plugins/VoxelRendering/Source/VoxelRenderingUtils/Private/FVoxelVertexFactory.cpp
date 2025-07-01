@@ -87,6 +87,8 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
 	EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
 
+
+	//VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, ERHIAccess::VertexOrIndexBuffer, CreateInfo);
 	VertexBufferRHI = RHICmdList.CreateStructuredBuffer(stride, Size, UsageFlags, CreateInfo);
 	void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
 	FMemory::Memzero(LockedData, Size);
@@ -129,7 +131,6 @@ IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelV
 	| EVertexFactoryFlags::SupportsPositionOnly
 	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 	//| EVertexFactoryFlags::SupportsPrimitiveIdStream
-
 );
 
 /*

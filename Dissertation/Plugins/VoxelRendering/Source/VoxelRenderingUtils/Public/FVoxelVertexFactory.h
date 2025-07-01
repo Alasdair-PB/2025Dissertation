@@ -100,8 +100,6 @@ class VOXELRENDERINGUTILS_API FVoxelVertexFactory : public FVertexFactory
 
 public:
 	FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize);
-	//~FVoxelVertexFactory() { ReleaseRHI(); }
-
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
 
@@ -134,10 +132,6 @@ private:
 	FVoxelIndexBuffer indexBuffer;
 	FVoxelVertexBuffer vertexBuffer;
 	FVoxelVertexBuffer normalsBuffer;
-
-
-	//FVoxelComputeFactoryBufferRef computeUniformBuffer;
-	//FVoxelVertexFactoryBufferRef vertexUniformBuffer;
 
 	uint32 firstIndex;
 	bool bUsesDynamicParameter;

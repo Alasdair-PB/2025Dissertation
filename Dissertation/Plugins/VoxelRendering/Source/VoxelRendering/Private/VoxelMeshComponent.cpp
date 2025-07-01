@@ -16,10 +16,10 @@ UVoxelMeshComponent::UVoxelMeshComponent()
         Material = UMaterialInstanceDynamic::Create(MaterialAsset.Object, this);
         SetMaterial(0, Material);
     }
-    /*else {
+    else {
         Material = UMaterial::GetDefaultMaterial(MD_Surface);
         SetMaterial(0, UMaterial::GetDefaultMaterial(MD_Surface));
-    }*/
+    }
 }
 
 void UVoxelMeshComponent::OnRegister()
@@ -75,10 +75,9 @@ FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
     return sceneProxy;
 }
 
-// Override used for collisions
 FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld) const
 {
-    return FBoxSphereBounds(FBox(FVector(-100), FVector(100))); // Replace with actual bounds
+    return FBoxSphereBounds(FBox(FVector(-200), FVector(200))); // Replace with actual bounds
 }
 
 float UVoxelMeshComponent::SampleSDF(FVector3f p) {
@@ -89,7 +88,6 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     if (!sceneProxy) return;
     if (!sceneProxy->IsInitialized()) return;
-    //UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values %d"), tree->GetLeafCount());
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
     FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();

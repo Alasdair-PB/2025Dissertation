@@ -34,21 +34,16 @@ public:
 
 		if (VoxelVF.IsBound())
 			ShaderBindings.Add(VoxelVF, VoxelVertexFactory->GetVertexSRV());
-
-		//FVoxelVertexFactory* VoxelVertexF = (FVoxelVertexFactory*)InVertexFactory;
-		//FRHIUniformBuffer* VertexFactoryUniformBuffer = static_cast<FRHIUniformBuffer*>(BatchElement.VertexFactoryUserData);
 	}
 
 	void Bind(const FShaderParameterMap& ParameterMap)
 	{
 		VoxelVF.Bind(ParameterMap, TEXT("VoxelVF"));
-		//BINDPARAM(VoxelVF);
 		//BINDPARAM(isoLevel);
 	};
 
 private:
 	LAYOUT_FIELD(FShaderResourceParameter, VoxelVF);	
-	//LAYOUT_FIELD(FShaderParameter, voxelsPerAxis);
 };
 IMPLEMENT_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters);
 
@@ -60,7 +55,6 @@ void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 {
 	uint32 Stride = sizeof(uint32);
 	uint32 Size = Stride * numIndices;
-	UE_LOG(LogTemp, Warning, TEXT("Indice count %d"), numIndices);
 
 	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
 	EBufferUsageFlags UsageFlags = BUF_Static | BUF_ShaderResource | BUF_IndexBuffer;
@@ -127,24 +121,7 @@ IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelV
 	| EVertexFactoryFlags::SupportsDynamicLighting
 	| EVertexFactoryFlags::SupportsPositionOnly
 	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
-	//| EVertexFactoryFlags::SupportsPrimitiveIdStream
 );
-
-/*
-EVertexFactoryFlags::UsedWithMaterials
-| EVertexFactoryFlags::SupportsStaticLighting
-| EVertexFactoryFlags::SupportsDynamicLighting
-| EVertexFactoryFlags::SupportsPrecisePrevWorldPos
-| EVertexFactoryFlags::SupportsPositionOnly
-| EVertexFactoryFlags::SupportsCachingMeshDrawCommands
-| EVertexFactoryFlags::SupportsPrimitiveIdStream
-| EVertexFactoryFlags::SupportsRayTracing
-| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
-| EVertexFactoryFlags::SupportsLightmapBaking
-| EVertexFactoryFlags::SupportsManualVertexFetch
-| EVertexFactoryFlags::SupportsPSOPrecaching
-| EVertexFactoryFlags::SupportsGPUSkinPassThrough
-| EVertexFactoryFlags::SupportsLumenMeshCards*/
 
 struct FDynamicVoxelMeshDataType
 {
@@ -174,19 +151,6 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, 0, sizeof(FVector3f), VET_Float3), 0));
 	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&normalsBuffer, 0, sizeof(FVoxelVertexInfo), VET_Float3), 1));
 	bInitialized = true;
-
-	/*FVertexStreamComponent NullTangentXComponent(&GNullVertexBuffer, 0, 0, VET_PackedNormal);
-	FVertexStreamComponent NullTangentZComponent(&GNullVertexBuffer, 0, 0, VET_PackedNormal);
-	FVertexStreamComponent NullColorComponent(&GNullColorVertexBuffer, 0, 0, VET_Color);
-	FVertexStreamComponent NullTexCoordComponent(&GNullVertexBuffer, 0, 0, VET_Float2);
-
-	EVertexInputStreamType VertexStreams = EVertexInputStreamType::Default;
-	Elements.Add(AccessStreamComponent(NullTangentXComponent, 1, VertexStreams));
-	Elements.Add(AccessStreamComponent(NullTangentZComponent, 2, VertexStreams));
-	Elements.Add(AccessStreamComponent(NullColorComponent, 3, VertexStreams));	// Color
-	Elements.Add(AccessStreamComponent(NullTexCoordComponent, 4, VertexStreams));	// TexCoords (Unreal expects at least 1)
-	Elements.Add(AccessStreamComponent(NullTexCoordComponent, 15, VertexStreams));*/	// LightMap (expected by some PSOs)
-	//Elements.Add(AccessStreamComponent(FVertexStreamComponent(nullptr, 0, 0, VET_UInt), 1));
 	InitDeclaration(Elements);
 }
 

@@ -38,7 +38,6 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 		Result.bRenderInMainPass = ShouldRenderInMainPass();
 		Result.bUsesLightingChannels = GetLightingChannelMask() != GetDefaultLightingChannelMask();
 		Result.bRenderCustomDepth = ShouldRenderCustomDepth();
-		//MaterialRelevance.SetPrimitiveViewRelevance(Result);
 		Result.bVelocityRelevance = DrawsVelocity() && Result.bOpaque && Result.bRenderInMainPass;
 	}
 	return Result;
@@ -47,7 +46,6 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 bool FVoxelSceneProxy::IsInitialized() {
 	return bInitialized && VertexFactory == nullptr ? false : VertexFactory->bInitialized;
 }
-
 
 FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactory() { return VertexFactory; }
 
@@ -119,15 +117,12 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 		if (!(VisibilityMap & (1 << viewIndex))) continue;
 		FMeshBatch& meshBatch = Collector.AllocateMesh();
 
-#if true // Used for both of the below
 		SetMeshBatchGeneric(meshBatch, viewIndex);
 		SetMeshBatchElementsGeneric(meshBatch, viewIndex);
 #if false // Push MeshBatch to be used by MeshProcessor
 		CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
-#elif true // Push MechBatch to collector to be handled by Unreals material pipeline with Vertex Factory.ush
+#endif
 		Collector.AddMesh(viewIndex, meshBatch);
-#endif
-#endif
 	}
 }
 
@@ -143,20 +138,14 @@ void FVoxelSceneProxy::SetMeshBatchGeneric(FMeshBatch& meshBatch, int32 viewInde
 }
 
 void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 viewIndex, bool bWireframe) const {
-#if false
 	FMaterialRenderProxy* renderProxy;
-
 	if (!Material) {
 		renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 		UE_LOG(LogTemp, Warning, TEXT("No Material instance set:: switching to default MD_Surface support"));
 	}
 	else renderProxy = Material->GetRenderProxy();
-	renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
-#else 
-	//UE_LOG(LogTemp, Warning, TEXT("Default material: %s"), *UMaterial::GetDefaultMaterial(MD_Surface)->GetName());
-	meshBatch.MaterialRenderProxy = Material->GetRenderProxy(); //UMaterial::GetDefaultMaterial(MD_Surface)
-#endif
 
+	meshBatch.MaterialRenderProxy = renderProxy;
 }
 
 void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, int32 viewIndex) const {

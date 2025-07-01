@@ -8,8 +8,8 @@ int nodeIndex;
 StructuredBuffer<float> isoValues;
 StructuredBuffer<int> marchLookUp;
 
-RWBuffer<float3> outInfo;
-RWBuffer<float3> outNormalInfo;
+RWBuffer<float> outInfo;
+RWBuffer<float> outNormalInfo;
 
 int voxelsPerAxis;
 float baseDepthScale;
@@ -64,8 +64,15 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     float3 normalB = CalculateNormal(cornerPosB);
     float3 normalRes = normalA + (t * (normalB - normalA));
 
-    outNormalInfo[vertexIndex] = normalRes;
-    outInfo[vertexIndex] = position;
+    uint base = vertexIndex * 3;
+   
+    outInfo[base + 0] = position.x;
+    outInfo[base + 1] = position.y;
+    outInfo[base + 2] = position.z;
+
+    outNormalInfo[base + 0] = normalRes.x;
+    outNormalInfo[base + 1] = normalRes.y;
+    outNormalInfo[base + 2] = normalRes.z;
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]

@@ -60,6 +60,7 @@ void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 {
 	uint32 Stride = sizeof(uint32);
 	uint32 Size = Stride * numIndices;
+	UE_LOG(LogTemp, Warning, TEXT("Indice count %d"), numIndices);
 
 	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
 	EBufferUsageFlags UsageFlags = BUF_Static | BUF_ShaderResource | BUF_IndexBuffer;

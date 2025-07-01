@@ -89,7 +89,7 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     if (!sceneProxy) return;
     if (!sceneProxy->IsInitialized()) return;
-    UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values %d"), tree->GetLeafCount());
+    //UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values %d"), tree->GetLeafCount());
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
     FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();

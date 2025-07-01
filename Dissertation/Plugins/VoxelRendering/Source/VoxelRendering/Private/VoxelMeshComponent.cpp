@@ -55,9 +55,7 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
     InvokeVoxelRenderer(tree->root);
 }
 
-void UVoxelMeshComponent::InitVoxelMesh(AABB inBounds, int depth, TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer) {
-    int nodesPerAxisMaxRes = Octree::IntPow(2, depth);
-    int size = voxelsPerAxis * nodesPerAxisMaxRes;
+void UVoxelMeshComponent::InitVoxelMesh(AABB inBounds, int size, int depth, TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer) {
     typeValueBuffer = inTypeValueBuffer;
     isoValueBuffer = inIsovalueBuffer;
     BuildOctree(inBounds, size, depth);
@@ -77,6 +75,7 @@ FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
     return sceneProxy;
 }
 
+// Override used for collisions
 FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld) const
 {
     return FBoxSphereBounds(FBox(FVector(-100), FVector(100))); // Replace with actual bounds
@@ -90,6 +89,7 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     if (!sceneProxy) return;
     if (!sceneProxy->IsInitialized()) return;
+    UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values %d"), tree->GetLeafCount());
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
     FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();

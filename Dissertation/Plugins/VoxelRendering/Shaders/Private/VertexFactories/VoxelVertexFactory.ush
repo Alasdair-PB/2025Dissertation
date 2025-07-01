@@ -2,8 +2,7 @@
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
 // ************************ Required Structs for base feature support ************************
-Buffer<float3> VoxelVF;
-Buffer<float3> VoxelNormalsVF;
+Buffer<float> VoxelVF;
 
 struct FVertexFactoryInput
 {
@@ -203,11 +202,6 @@ float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Inpu
     return RotateLocalToWorld(Input.Normal.xyz);
 }
 
-float4 VertexFactoryGetTranslatedPrimitiveVolumeBounds(FVertexFactoryInterpolantsVSToPS Interpolants)
-{
-    return 0;
-}
-
 uint VertexFactoryGetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
 {
     return 0;
@@ -220,15 +214,15 @@ uint GetVertexFetchBufferOffset(uint VertexId)
 
 float3 VoxelGetInstancePosition(uint VertexId)
 {
-    uint Idx = GetVertexFetchBufferOffset(VertexId);
-    return VoxelVF[Idx];
+    uint Idx = GetVertexFetchBufferOffset(VertexId) * 3;
+    return float3(VoxelVF[Idx], VoxelVF[Idx + 1], VoxelVF[Idx + 2]);
 }
 
 FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int VertexIndex)
 {
     FVertexFactoryInput Input = (FVertexFactoryInput) 0;
     float3 Position = VoxelGetInstancePosition(VertexIndex);
-        Input.Position = Position.xyz;
+    Input.Position = Position.xyz;
     Input.Normal = float3(0, 0, 1);
     Input.VertexId = GetInputVertexIndex(TriangleIndex, VertexIndex);
     return Input;
@@ -244,25 +238,6 @@ FMaterialVertexParameters GetMaterialVertexParameters(FVertexFactoryInput Input,
     Result.VertexColor = Intermediates.Color;
     Result.TangentToWorld = Intermediates.TangentToWorld;
     return Result;
-    /*
-    FMaterialVertexParameters Result = MakeInitializedMaterialVertexParameters();
-    Result.SceneData = Intermediates.SceneData;
-    Result.WorldPosition = WorldPosition;
-    Result.TangentToWorld = Intermediates.TangentToWorld;
-    Result.PreSkinnedNormal = TangentToLocal[2];
-    Result.PreSkinnedPosition = WorldPosition;
-    Result.PositionInstanceSpace = VertexFactoryGetPreviousInstanceSpacePosition(Input, Intermediates);
-    Result.PositionPrimitiveSpace = Result.PositionInstanceSpace;
-    Result.LWCData = MakeMaterialLWCData(Result);
-  
-#if NUM_MATERIAL_TEXCOORDS_VERTEX
-  for (int CoordinateIndex = 0; CoordinateIndex < NUM_MATERIAL_TEXCOORDS_VERTEX; CoordinateIndex++)
-    {
-        Result.TexCoords[CoordinateIndex] = float2(0,0);
-    }
-#endif  //NUM_MATERIAL_TEXCOORDS_VERTEX*/
-    
-   // return Result;
 }
 
 FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
@@ -278,55 +253,12 @@ FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVS
 #endif	//NUM_MATERIAL_TEXCOORDS
 
     Result.TwoSidedSign = 1;
-    Result.PrimitiveId = 0;
     return Result;
 }
 
-/*
-FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 PixelPosition)
-{
-	// GetMaterialPixelParameters is responsible for fully initializing the result
-    FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
-	
-    float3 localPosition = TransformWorldPositionToLocal(PixelPosition.xyz); //Assuming PixelPosition is in world-space
-	
-    Result.AbsoluteWorldPosition = PixelPosition; //TODO Is this right?
-	
-    float3 volumeNormal = normalize(cross(ddx(PixelPosition.xyz), ddy(PixelPosition.xyz)));
-	
-	// This fixes inaccuracies/rounding errors which can otherwise occur
-    volumeNormal = floor(volumeNormal + float3(0.5, 0.5, 0.5));
-	
-    Result.WorldNormal = TransformLocalToTranslatedWorld(volumeNormal);
-	
-	// Because we know our normal is pointing along one of the three main axes we can trivially compute a tangent space.
-    float3 volumeTangent = volumeNormal.yzx;
-    float3 volumeBinormal = volumeNormal.zxy;
-	
-	// And from our tangent space we can now compute texture coordinates.
-    float2 texCoords = float2(dot(PixelPosition.xyz, volumeTangent), dot(PixelPosition.xyz, volumeBinormal));
-    texCoords = texCoords - float2(0.5, 0.5); // Required because integer positions are at the center of the voxel.
-
-#if NUM_MATERIAL_TEXCOORDS
-	Result.TexCoords[0] = texCoords;
-#endif
-	
-	//These are in volume space, should be in world space?
-    Result.TangentToWorld[0] = volumeTangent;
-    Result.TangentToWorld[1] = volumeBinormal;
-    Result.TangentToWorld[2] = volumeNormal;
-	
-    Result.VertexColor = GetColor(Interpolants);
-
-    Result.TwoSidedSign = 1;
-    return Result;
-}*/
-
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
-    FVertexFactoryInterpolantsVSToPS Interpolants;
-    Interpolants = (FVertexFactoryInterpolantsVSToPS) 0;
-    
+    FVertexFactoryInterpolantsVSToPS Interpolants = (FVertexFactoryInterpolantsVSToPS) 0;
     Interpolants.TangentToWorld0 = float4(Intermediates.TangentToWorld[0], 0);
     Interpolants.TangentToWorld2 = float4(Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
     
@@ -338,7 +270,7 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
 
 FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
 {
-    FVertexFactoryIntermediates Intermediates;
+    FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates) 0;
     Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
     Intermediates.Position = Input.Position.xyz;
     Intermediates.TangentToLocal = CalcTangentToLocal(Input);
@@ -346,8 +278,21 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.TangentToWorld = CalcTangentToWorldNoScale(Intermediates.TangentToLocal, (half3x3) Intermediates.SceneData.Primitive.LocalToWorld);
     Intermediates.Color = half4(1,1,1,1);
     Intermediates.Alpha = 1;
-
     return Intermediates;
+}
+
+float4 VertexFactoryGetTranslatedPrimitiveVolumeBounds(FVertexFactoryInterpolantsVSToPS Interpolants)
+{
+    return float4(0,0,0,0);
+}
+
+#if USE_INSTANCING
+float4 VertexFactoryGetInstanceHitProxyId(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates) { return float4(0,0,0,0); }
+#endif
+
+float4 VertexFactoryGetPositionForShadowDepth(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+    return TransformLocalToWorld(Intermediates.Position, Intermediates.SceneData.Primitive.LocalToWorld);
 }
 
 // ************************ RayTrace & Compute Support ************************
@@ -357,6 +302,19 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
 uint GetNumRayTracingDynamicMeshVerticesIndirect()
 {
 	return 0;
+}
+#endif
+
+#if RAYHITGROUPSHADER
+FVertexFactoryInput LoadVertexFactoryInputForHGS(uint TriangleIndex, int VertexIndex)
+{
+	FVertexFactoryInput Input = LoadVertexFactoryInputFromIndices(TriangleIndex, VertexIndex);
+		
+#if VF_USE_PRIMITIVE_SCENE_DATA
+	VF_GPUSCENE_SET_INPUT_FOR_RT(Input, GetInstanceUserData(), 0U);
+#endif // VF_USE_PRIMITIVE_SCENE_DATA
+		
+	return Input;
 }
 #endif
 

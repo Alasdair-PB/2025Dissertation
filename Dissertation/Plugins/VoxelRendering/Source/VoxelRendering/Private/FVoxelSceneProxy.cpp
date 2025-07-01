@@ -14,9 +14,6 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	FPrimitiveSceneProxy(Component),
 	bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
 {
-	//UMaterial::GetDefaultMaterial(MD_Surface)->SetMaterialUsage(true, MATUSAGE_NiagaraMeshParticles);
-	//UMaterial::GetDefaultMaterial(MD_Surface)->ForceRecompileForRendering();;
-
 	Material = Component->GetMaterial(0);
 	Material->ForceRecompileForRendering();
 
@@ -47,18 +44,24 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 	return Result;
 }
 
+bool FVoxelSceneProxy::IsInitialized() {
+	return bInitialized && VertexFactory == nullptr ? false : VertexFactory->bInitialized;
+}
+
+
 FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactory() { return VertexFactory; }
 
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
 	VertexFactory->InitResource(RHICmdList);
 	FPrimitiveSceneProxy::CreateRenderThreadResources(RHICmdList);
+	bInitialized = true;
 }
 
 void FVoxelSceneProxy::DestroyRenderThreadResources() {
 	if (VertexFactory != nullptr)
 	{
 		VertexFactory->ReleaseResource();
-		delete VertexFactory;
+		//delete VertexFactory;
 		VertexFactory = nullptr;
 	}
 }

@@ -13,9 +13,6 @@ USTRUCT(BlueprintType)
 struct FMarchingCubesOutput
 {
 	GENERATED_BODY()
-	//UPROPERTY(BlueprintReadOnly) TArray<FVector3f> outVertices;
-	//UPROPERTY(BlueprintReadOnly) TArray<int> outTris;
-	//UPROPERTY(BlueprintReadOnly) TArray<FVector3f> outNormals;
 };
 
 USTRUCT(BlueprintType)
@@ -24,10 +21,10 @@ struct FVoxelComputeShaderDispatchData
 	GENERATED_BODY()
 	FVoxelComputeShaderDispatchData()
 		: VertexInfoRHIRef(nullptr), NumElements(0), BytesPerElement(0) { }
-	FVoxelComputeShaderDispatchData(FUnorderedAccessViewRHIRef inVertexInfoRHIRef, FUnorderedAccessViewRHIRef inVertexNormalsInfoRHIRef, uint32 inNumElements, uint32 inBytesPerElement) :
-		VertexInfoRHIRef(inVertexInfoRHIRef), vertexNormalsInfoRHIRef(inVertexNormalsInfoRHIRef), NumElements(inNumElements), BytesPerElement(inBytesPerElement) { }
+	FVoxelComputeShaderDispatchData(FUnorderedAccessViewRHIRef inVertexInfoRHIRef, FUnorderedAccessViewRHIRef inVertexNormalInfoRHIRef, uint32 inNumElements, uint32 inBytesPerElement) :
+		VertexInfoRHIRef(inVertexInfoRHIRef), VertexNormalInfoRHIRef(inVertexNormalInfoRHIRef), NumElements(inNumElements), BytesPerElement(inBytesPerElement) { }
 	FUnorderedAccessViewRHIRef VertexInfoRHIRef;
-	FUnorderedAccessViewRHIRef vertexNormalsInfoRHIRef;
+	FUnorderedAccessViewRHIRef VertexNormalInfoRHIRef;
 	uint32 NumElements;
 	uint32 BytesPerElement;
 };

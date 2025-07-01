@@ -128,6 +128,7 @@ public:
 	bool SupportsManualVertexFetch() { return true; }
 	FVoxelVertexBuffer* GetVertexBuffer() { return &vertexBuffer; }
 	FVoxelIndexBuffer* GetIndexBuffer() { return &indexBuffer; }
+	bool bInitialized = false;
 
 private:
 	FVoxelIndexBuffer indexBuffer;

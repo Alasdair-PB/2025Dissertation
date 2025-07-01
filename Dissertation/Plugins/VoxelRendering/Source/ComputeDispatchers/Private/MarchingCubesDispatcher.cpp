@@ -70,7 +70,7 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 	PassParams->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
 	PassParams->marchLookUp = InLookUpSRV;
 	PassParams->outInfo = Params.Input.vertexBufferRHIRef.VertexInfoRHIRef;
-	PassParams->outNormalInfo = Params.Input.vertexBufferRHIRef.vertexNormalsInfoRHIRef;
+	PassParams->outNormalInfo = Params.Input.vertexBufferRHIRef.VertexNormalInfoRHIRef;
 	PassParams->voxelsPerAxis = voxelsPerAxis;
 	PassParams->baseDepthScale = Params.Input.baseDepthScale;
 	PassParams->isoLevel = Params.Input.isoLevel;
@@ -102,20 +102,9 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		if (bIsShaderValid) {
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
 			FRDGBufferSRVRef InLookUpSRV = GraphBuilder.CreateSRV(isoValuesBuffer);
-			//UE_LOG(LogTemp, Warning, TEXT("Shader dispatched"));
-
 			uint32 vertexCount = Params.Input.vertexBufferRHIRef.NumElements;
-
-			//FRDGBufferDesc vertexBufferDec = FRDGBufferDesc::CreateStructuredDesc(sizeof(FVoxelVertexInfo), vertexNumElements);
-			//TRefCountPtr<FRDGPooledBuffer> vertexPooledBuffer = new FRDGPooledBuffer(RHICmdList, Params.Input.vertexBufferRHIRef.BufferRHI, vertexBufferDec, vertexNumElements, TEXT("VoxelVertexPooledBuffer"));
-			//FRDGBufferRef RDGVertexBuffer = GraphBuilder.RegisterExternalBuffer(vertexPooledBuffer, TEXT("VoxelIndexBuffer"));
-
-			//FRDGBuffer* VertexToEdgeBuffer = GraphBuilder.CreateBuffer(FRDGBufferDesc::CreateStructuredDesc(sizeof(FVoxelVertexInfo), vertexNumElements), TEXT("Voxel.VertexToEdge"));
-			//GraphBuilder.QueueBufferUpload(VertexToEdgeBuffer, Params.Input.vertexBufferRHIRef.BufferRHI, vertexNumElements * sizeof(FVoxelVertexInfo));
-			//TRefCountPtr<FRDGPooledBuffer> vertexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(VertexToEdgeBuffer);
-			//FRDGBufferRef RDGVertexBuffer = GraphBuilder.RegisterExternalBuffer(vertexPooledBuffer, TEXT("VoxelVertexBuffer"));
-
 			uint32 nodeIndex = 0;
+
 			AddOctreeMarchingPass(GraphBuilder, Params.Input.tree, 0, &nodeIndex, Params, InLookUpSRV);
 
 			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->
@@ -127,47 +116,6 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 				RunnerFunc(RunnerFunc); });
 		}
 		else {}
-
-			/*FRHIGPUBufferReadback* VerticesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesVertices"));
-			FRHIGPUBufferReadback* TrianglesReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesIndices"));
-			FRHIGPUBufferReadback* NormalsReadback = new FRHIGPUBufferReadback(TEXT("MarchingCubesNormals"));
-
-			AddEnqueueCopyPass(GraphBuilder, NormalsReadback, OutNormalsBuffer, 0u);
-			AddEnqueueCopyPass(GraphBuilder, VerticesReadback, RDGVertexBuffer, 0u);
-			AddEnqueueCopyPass(GraphBuilder, TrianglesReadback, OutTrisBuffer, 0u);
-
-			auto RunnerFunc = [VerticesReadback, TrianglesReadback, NormalsReadback, AsyncCallback, vertexCount, triCount](auto&& RunnerFunc) ->
-				void {
-					if (VerticesReadback->IsReady() && TrianglesReadback->IsReady() && NormalsReadback->IsReady()) {
-						FMarchingCubesOutput OutVal;
-
-						void* VBuf = VerticesReadback->Lock(0);
-						OutVal.outVertices.Append((FVector3f*)VBuf, vertexCount);
-						VerticesReadback->Unlock();
-
-						void* IBuf = TrianglesReadback->Lock(0);
-						OutVal.outTris.Append((int32*)IBuf, triCount);
-						TrianglesReadback->Unlock();
-
-						void* NBuf = NormalsReadback->Lock(0);
-						OutVal.outNormals.Append((FVector3f*)NBuf, vertexCount);
-						NormalsReadback->Unlock();
-
-						AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });
-
-						delete VerticesReadback;
-						delete TrianglesReadback;
-						delete NormalsReadback;
-					}
-					else {
-						AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {
-							RunnerFunc(RunnerFunc); });
-					}
-				};
-			AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {
-				RunnerFunc(RunnerFunc); });
-		}
-		else {}*/
 	}
 	GraphBuilder.Execute();
 }

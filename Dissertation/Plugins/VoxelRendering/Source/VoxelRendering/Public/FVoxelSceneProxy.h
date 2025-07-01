@@ -28,7 +28,11 @@ public:
 	FVoxelVertexFactory* GetVertexFactory();
 	UMaterialInterface* Material;
 
+	bool IsInitialized();
+
 protected:
+	bool bInitialized = false;
+
 	bool bCompatiblePlatform;
 	bool CanBeRendered() const { return bCompatiblePlatform; }
 	FVoxelVertexFactory* VertexFactory;

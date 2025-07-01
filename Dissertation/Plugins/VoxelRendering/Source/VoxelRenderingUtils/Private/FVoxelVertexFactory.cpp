@@ -92,10 +92,6 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	FMemory::Memzero(LockedData, Size);
 	RHICmdList.UnlockBuffer(VertexBufferRHI);
 
-	//VertexBufferRHI = RHICmdList.CreateStructuredBuffer(stride, Size, UsageFlags, CreateInfo);
-	//SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI);
-	//UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, false, false);
-
 	{
 		VertexBufferRHI = RHICmdList.CreateVertexBuffer(Size, UsageFlags, CreateInfo);
 		if (RHISupportsManualVertexFetch(GMaxRHIShaderPlatform))
@@ -115,16 +111,7 @@ FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, 
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
 {
-	if (IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5)){
-		const bool unlit = Parameters.MaterialParameters.ShadingModels.IsUnlit();
-		const bool isDefault = Parameters.MaterialParameters.bIsDefaultMaterial;
-
-		UE_LOG(LogTemp, Warning, TEXT("FVoxelVertexFactory::ShouldCompilePermutation — Platform: %d, Material: %hs, IsDefault: %s"),
-			(int32)Parameters.Platform,
-			"null",
-			isDefault ? TEXT("true") : TEXT("false"));
-	}
-	return true; // IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 }
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {
@@ -185,7 +172,7 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 	FVertexDeclarationElementList Elements;
 	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&vertexBuffer, 0, sizeof(FVector3f), VET_Float3), 0));
 	Elements.Add(AccessStreamComponent(FVertexStreamComponent(&normalsBuffer, 0, sizeof(FVoxelVertexInfo), VET_Float3), 1));
-
+	bInitialized = true;
 
 	/*FVertexStreamComponent NullTangentXComponent(&GNullVertexBuffer, 0, 0, VET_PackedNormal);
 	FVertexStreamComponent NullTangentZComponent(&GNullVertexBuffer, 0, 0, VET_PackedNormal);

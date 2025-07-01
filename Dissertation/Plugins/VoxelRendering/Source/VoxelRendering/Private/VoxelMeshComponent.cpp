@@ -89,6 +89,8 @@ float UVoxelMeshComponent::SampleSDF(FVector3f p) {
 void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
 
     if (!sceneProxy) return;
+    if (!sceneProxy->IsInitialized()) return;
+
     FMarchingCubesDispatchParams Params(1, 1, 1);
     FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();
     FVoxelComputeShaderDispatchData vertexDispatchBuffer = FVoxelComputeShaderDispatchData(

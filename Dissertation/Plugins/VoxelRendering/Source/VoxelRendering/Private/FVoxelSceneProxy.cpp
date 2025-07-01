@@ -18,6 +18,8 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	Material->ForceRecompileForRendering();
 
 	uint32 size = 64 * nodeVoxelCount * 15; // instead of 64 should be * Params.Input.leafCount;
+
+	size += 1000;
 	VertexFactory = new FVoxelVertexFactory(GetScene().GetFeatureLevel(), size);
 }
 
@@ -150,15 +152,15 @@ void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 view
 
 void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, int32 viewIndex) const {
 	FVoxelIndexBuffer* indexBuffer = VertexFactory->GetIndexBuffer();
-	uint32 numTriangles = indexBuffer->GetIndexCount() / 3;
-	uint32 maxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;
+	uint32 numTriangles = (indexBuffer->GetIndexCount() - 1000) / 3;
+	uint32 maxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1 - 1000;
 
 	FMeshBatchElement& batchElement = meshBatch.Elements[0];
 	batchElement.IndexBuffer = indexBuffer;
 	batchElement.FirstIndex = 0;
 	batchElement.NumPrimitives = numTriangles;
 	batchElement.MinVertexIndex = 0;
-	batchElement.MaxVertexIndex = maxVertexIndex - 1;
+	batchElement.MaxVertexIndex = maxVertexIndex;
 	batchElement.PrimitiveUniformBuffer = GetUniformBuffer();
 
 	SetMeshBatchElementsUserData(batchElement);

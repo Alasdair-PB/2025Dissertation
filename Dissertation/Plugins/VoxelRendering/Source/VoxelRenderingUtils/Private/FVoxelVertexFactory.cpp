@@ -6,9 +6,6 @@
 #include "DataDrivenShaderPlatformInfo.h"
 #include "RHIResourceUtils.h"
 
-//IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryUniformParameters, "VoxelVF");
-//IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelComputeFactoryUniformParameters, "VoxelCF");
-
 /*#define BINDPARAM(Name) Name.Bind(ParameterMap, TEXT(#Name))
 #define SETPARAM(Name) if (Name.IsBound()) { ShaderBindings.Add(Name, UserData->Name); }
 #define SETSRVPARAM(Name) if(UserData->Name) { SETPARAM(Name) }*/
@@ -97,7 +94,7 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	}
 }
 
-FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel) //, FVoxelVertexFactoryParameters UniformParams
+FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel), firstIndex(0)//, FVoxelVertexFactoryParameters UniformParams
 {
 	vertexBuffer.SetElementCount(bufferSize);
 	indexBuffer.SetElementCount(bufferSize);
@@ -106,7 +103,7 @@ FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, 
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
 {
-	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);//&& Parameters.MaterialParameters.MaterialDomain == MD_Surface;
 }
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {
@@ -122,24 +119,6 @@ IMPLEMENT_VERTEX_FACTORY_TYPE(FVoxelVertexFactory, "/VertexFactoryShaders/VoxelV
 	| EVertexFactoryFlags::SupportsPositionOnly
 	| EVertexFactoryFlags::SupportsRayTracingDynamicGeometry
 );
-
-struct FDynamicVoxelMeshDataType
-{
-	FVertexStreamComponent PositionComponent;
-	FVertexStreamComponent TangentBasisComponents[2];
-	TArray<FVertexStreamComponent, TFixedAllocator<MAX_STATIC_TEXCOORDS / 2> > TextureCoordinates;
-	FVertexStreamComponent LightMapCoordinateComponent;
-	FVertexStreamComponent ColorComponent;
-	FRHIShaderResourceView* PositionComponentSRV = nullptr;
-	FRHIShaderResourceView* TangentsSRV = nullptr;
-	FRHIShaderResourceView* TextureCoordinatesSRV = nullptr;
-	FRHIShaderResourceView* ColorComponentsSRV = nullptr;
-
-	uint32 ColorIndexMask = ~0u;
-	int8 LightMapCoordinateIndex = -1;
-	uint8 NumTexCoords = 0;
-	uint8 LODLightmapDataIndex = 0;
-};
 
 void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 {		

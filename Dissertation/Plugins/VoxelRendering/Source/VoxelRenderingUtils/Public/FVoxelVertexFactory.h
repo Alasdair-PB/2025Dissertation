@@ -25,28 +25,15 @@
 
 struct FShaderCompilerEnvironment;
 
-/*
-BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelComputeFactoryUniformParameters, )
-	//SHADER_PARAMETER_UAV(RWStructuredBuffer<FVoxelVertexInfo>, VertexFetch_Buffer)
+/*BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelFactoryUniformParameters, )
+	SHADER_PARAMETER_SRV(Buffer<float>, VertexFetch_Buffer)
 END_GLOBAL_SHADER_PARAMETER_STRUCT()
-typedef TUniformBufferRef<FVoxelComputeFactoryUniformParameters> FVoxelComputeFactoryBufferRef;
-*/
-
-/*
-BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelVertexFactoryUniformParameters, )
-	//SHADER_PARAMETER_SRV(Buffer<float>, VertexFetch_Buffer)
-END_GLOBAL_SHADER_PARAMETER_STRUCT()
-typedef TUniformBufferRef<FVoxelVertexFactoryUniformParameters> FVoxelVertexFactoryBufferRef;*/
-
+typedef TUniformBufferRef<FVoxelFactoryUniformParameters> FVoxelFactoryBufferRef;*/
 
 struct VOXELRENDERINGUTILS_API FVoxelBatchElementUserData
 {
-	//int32 voxelsPerAxis;
-	//int32 baseDepthScale;
-	//int32 isoLevel;
 	FVoxelBatchElementUserData();
 };
-
 
 class VOXELRENDERINGUTILS_API FVoxelIndexBuffer : public FIndexBuffer
 {
@@ -105,7 +92,6 @@ public:
 
 	void InitRHI(FRHICommandListBase& RHICmdList) override final;
 	void ReleaseRHI() override;
-
 	static bool ShouldCache(EShaderPlatform Platform, const class FMaterial* Material, const class FShaderType* ShaderType) { return true; }
 
 	FBufferRHIRef GetVertexBufferRHIRef() const { return vertexBuffer.GetRHI();}
@@ -134,6 +120,5 @@ private:
 	FVoxelVertexBuffer normalsBuffer;
 
 	uint32 firstIndex;
-	bool bUsesDynamicParameter;
 	friend class FVoxelVertexFactoryShaderParameters;
 };

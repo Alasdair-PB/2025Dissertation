@@ -308,14 +308,14 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.Alpha = half(1.0);
     return Intermediates;
 }
-/*
+
 float4 VertexFactoryGetTranslatedPrimitiveVolumeBounds(FVertexFactoryInterpolantsVSToPS Interpolants)
 {
-    return float4(0,0,0,0);
+    return float4(0.0,0.0,0.0,0.0);
 }
 
 #if USE_INSTANCING
-float4 VertexFactoryGetInstanceHitProxyId(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates) { return float4(0,0,0,0); }
+float4 VertexFactoryGetInstanceHitProxyId(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates) { return float4(0.0,0.0,0.0,0.0); }
 #endif
 
 
@@ -330,7 +330,7 @@ float4 VertexFactoryGetPositionForShadowDepth(FVertexFactoryInput Input, FVertex
 #if RAYHITGROUPSHADER || COMPUTESHADER
 uint GetNumRayTracingDynamicMeshVerticesIndirect()
 {
-	return 0;
+	return uint(0);
 }
 #endif
 
@@ -357,7 +357,7 @@ FVertexFactoryInput LoadVertexFactoryInputForDynamicUpdate(uint TriangleIndex, i
 	VF_GPUSCENE_SET_INPUT_FOR_RT(Input, PrimitiveData.InstanceSceneDataOffset + DrawInstanceId, DrawInstanceId);
 	return Input;
 }
-#endif*/
+#endif
 
 
 #include "/Engine/Private/VertexFactoryDefaultInterface.ush"

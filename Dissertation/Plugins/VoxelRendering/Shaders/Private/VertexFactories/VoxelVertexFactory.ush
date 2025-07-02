@@ -13,7 +13,6 @@ struct FVertexFactoryInput
     VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
-
 struct FPositionOnlyVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
@@ -52,7 +51,7 @@ struct FVertexFactoryInterpolantsVSToPS
 
 // ************************ Utility Functions ************************
 
-/*
+
 float3 SafeNormalize(float3 V)
 {
     float len = sqrt(dot(V, V));
@@ -64,6 +63,7 @@ float3 ApplyClipping(float3 Position)
 {
     return Position;
 }
+
 
 float3 ProcessPosition(float3 Position, half3x3 TangentToLocal)
 {
@@ -78,14 +78,14 @@ float3 ProcessPosition(float3 Position)
 FPrimitiveSceneData GetPrimitiveData(FVertexFactoryIntermediates Intermediates)
 {
     return Intermediates.SceneData.Primitive;
-}*/
+}
 
 
-/*
+
 float2 NormalBasedPlanarMapping(FVertexFactoryInput Input, float2 UVDensity)
 {
     float3 N = normalize(Input.Normal);
-    float2 UV = float2(0,0);
+    float2 UV = float2(0.0,0.0);
 
     if (abs(N.z) > abs(N.x) && abs(N.z) > abs(N.y))
         UV = Input.Position.xy; // XY plane
@@ -99,19 +99,19 @@ float2 NormalBasedPlanarMapping(FVertexFactoryInput Input, float2 UVDensity)
 void GetTangents(FVertexFactoryInput Input, out float4 Right, out float4 Up)
 {
     float3 N = SafeNormalize(Input.Normal);
-    float3 T = SafeNormalize(cross(N, float3(0, 0, 1)));
+    float3 T = SafeNormalize(cross(N, float3(0.0, 0.0, 1.0)));
     float3 B = cross(N, T);
-    Right = float4((float3)T, 1.0);
-    Up = float4((float3)B, 1.0);
+    Right = float4(T, 1.0);
+    Up = float4(B, 1.0);
 }
 
 half3x3 CalcTangentToLocal(FVertexFactoryInput Input)
 {
     half3x3 TangentToLocal;
     float3 Normal = SafeNormalize(Input.Normal);
-    float3 Tangent = SafeNormalize(cross(Normal, float3(0, 0, 1)));
+    float3 Tangent = SafeNormalize(cross(Normal, float3(0.0, 0.0, 1.0)));
     if (length(Tangent) < 0.1)
-        Tangent = SafeNormalize(cross(Normal, float3(1, 0, 0)));
+        Tangent = SafeNormalize(cross(Normal, float3(1.0, 0.0, 0.0)));
     float3 Binormal = cross(Normal, Tangent);
     
     TangentToLocal[0] = half3(Tangent);
@@ -137,19 +137,19 @@ float3x3 CalcTangentBasis(FVertexFactoryInput Input)
     float4 Right, Up;
     GetTangents(Input, Right, Up);
     return float3x3(Right.xyz, Up.xyz, -normalize(cross(Right.xyz, Up.xyz)));
-}*/
+}
 
-/*
+
 
 uint GetInputVertexIndex(uint TriangleIndex, int VertexIndex)
 {
-    return TriangleIndex * ((uint) 3) + ((uint) VertexIndex);
-}*/
+    return TriangleIndex * uint(3) + uint(VertexIndex);
+}
 
 // ************************ Instancing, LOD, et al Support ************************
 // functions expected by Unreal Engine for feature support. 
 
-/*
+
 float3 VertexFactoryGetInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
     return Intermediates.Position;
@@ -171,7 +171,7 @@ float4 VertexFactoryGetWorldPosition(FPositionOnlyVertexFactoryInput Input)
     float4 WorldPosition = TransformLocalToTranslatedWorld(
         ApplyClipping(Input.Position), Transform);
 
-    //WorldPosition.xyz = ProcessPosition(WorldPosition.xyz);
+    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz);
     return WorldPosition;
 }
 
@@ -181,14 +181,14 @@ float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput In
     float4 WorldPosition = TransformLocalToTranslatedWorld
         (ApplyClipping(Input.Position), Transform);
 
-    //WorldPosition.xyz = ProcessPosition(WorldPosition.xyz);
+    WorldPosition.xyz = ProcessPosition(WorldPosition.xyz);
     return WorldPosition;
 }
 
 float3 TransformWorldPositionToLocal(float3 InWorldPosition)
 {
-    return (mul(float4((float3) InWorldPosition, 1), Primitive.WorldToLocal)).xyz;
-}*/
+    return (mul(float4(InWorldPosition, 1.0), Primitive.WorldToLocal)).xyz;
+}
 
 float4 VertexFactoryGetRasterizedWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, float4 InWorldPosition)
 {

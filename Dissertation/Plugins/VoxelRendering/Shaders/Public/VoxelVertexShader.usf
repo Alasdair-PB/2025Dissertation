@@ -7,7 +7,14 @@ struct VS_OUTPUT
     float4 Position : SV_POSITION;
 };
 
-VS_OUTPUT MainVS(FPositionOnlyVertexFactoryInput input)
+struct FInput
+{
+    float3 Position : ATTRIBUTE0;
+    float3 Normal : ATTRIBUTE1;
+    //uint VertexId : SV_VertexID;
+};
+
+VS_OUTPUT MainVS(FInput input)
 {
     VS_OUTPUT output;
     output.Position = float4(input.Position,1);

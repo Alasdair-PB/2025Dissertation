@@ -17,5 +17,5 @@ public:
 	{
 		return true;
 	}
-	void SetParameters(FRHICommandList& RHICmdList){}
+	//void SetParameters(FRHICommandList& RHICmdList){}
 };

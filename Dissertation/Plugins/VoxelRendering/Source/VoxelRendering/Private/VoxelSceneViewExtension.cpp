@@ -126,27 +126,7 @@ void FVoxelSceneViewExtension::PreRenderView_RenderThread(FRDGBuilder& GraphBuil
 
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
-#if false
-    //----------------- Attempt 3 using Pass processor to render a custom pass from mesh batch data (this may need to be called elsewhere)
-    GraphBuilder.AddPass(
-        RDG_EVENT_NAME("VoxelRenderPass"),
-        ERDGPassFlags::None,
-        [this, &View](FRHICommandListImmediate& RHICmdList)
-        {
-            const FScene* Scene = View.Family->Scene->GetRenderScene();
-            FTextureRHIRef RenderTargetTexture = View.Family->RenderTarget->GetRenderTargetTexture();
-
-            if (!Scene) return;
-            if (!RenderTargetTexture) return;
-
-            sceneProxy->RenderMyCustomPass(RHICmdList, Scene, &View);
-        });
-
-#elif true
-    //----------------- Attempt 4 using Global shader DrawIndexedPrimitive to render data as post process
-    // ended with Shader Compliation failures are fatal. 
-    // It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead
-
+#if true
 	FSceneViewExtensionBase::PrePostProcessPass_RenderThread(GraphBuilder, View, Inputs);
 
     for (const auto& Pair : VoxelBodiesInfos)
@@ -162,6 +142,24 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
                 FVoxelSceneProxy* VoxelSceneProxy = static_cast<FVoxelSceneProxy*>(sceneProxy);
                 FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
 
+                GraphBuilder.AddPass(
+                    RDG_EVENT_NAME("VoxelRenderPass"),
+                    ERDGPassFlags::None,
+                    [this, &View, VoxelSceneProxy](FRHICommandListImmediate& RHICmdList)
+                    {
+                        const FScene* Scene = View.Family->Scene->GetRenderScene();
+                        FTextureRHIRef RenderTargetTexture = View.Family->RenderTarget->GetRenderTargetTexture();
+
+                        if (!Scene) return;
+                        if (!RenderTargetTexture) return;
+
+                        VoxelSceneProxy->RenderMyCustomPass(RHICmdList, Scene, &View);
+                    });
+
+//----------------- Attempt 4 using Global shader DrawIndexedPrimitive to render data as post process
+    // ended with Shader Compliation failures are fatal. 
+    // It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead
+#if false
                 const FMatrix ViewMatrix = View.ViewMatrices.GetViewMatrix();
                 const FMatrix ProjectionMatrix = View.ViewMatrices.GetProjectionMatrix();
                 const FMatrix ViewProj = ViewMatrix * ProjectionMatrix;
@@ -173,11 +171,10 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
                 FRHICommandListImmediate& RHICmdList = GraphBuilder.RHICmdList;
                 FRHIRenderPassInfo RPInfo(RenderTargetTexture, ERenderTargetActions::Load_Store);
                 RHICmdList.BeginRenderPass(RPInfo, TEXT("CustomPass"));
-
+                
                 FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
                 TShaderMapRef<FVoxelVertexShader> VertexShader(GlobalShaderMap);
                 TShaderMapRef<FVoxelPixelShader> PixelShader(GlobalShaderMap);
-
                 FVoxelVertexShader::FParameters VSParams;
                 FVoxelPixelShader::FParameters PSParams;
 
@@ -191,7 +188,7 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
                 GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
                 GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
-                GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = VF->GetDeclaration(EVertexInputStreamType::PositionOnly);
+                GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = VF->GetDeclaration(EVertexInputStreamType::PositionAndNormalOnly);
                 GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
                 GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
                 SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
@@ -212,6 +209,8 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
                 );
 
                 RHICmdList.EndRenderPass();
+
+#endif
             }
         }
     }

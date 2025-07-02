@@ -74,6 +74,7 @@ void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, 
 {
 	check(InScene);
 	check(View);
+	if (!IsInitialized()) return;
 
 	FDynamicMeshDrawCommandStorage DynamicMeshDrawCommandStorage;
 	FMeshCommandOneFrameArray VisibleMeshDrawCommands;
@@ -82,18 +83,20 @@ void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, 
 	FDynamicPassMeshDrawListContext DynamicMeshPassContext(DynamicMeshDrawCommandStorage, VisibleMeshDrawCommands, GraphicsMinimalPipelineStateSet, NeedsShaderInitialisation);
 	FVoxelMeshPassProcessor MeshProcessor(InScene, View, &DynamicMeshPassContext);
 
-#if true // Rebuild batches to avoid nullptr assignments
+#if false // Rebuild batches to avoid nullptr assignments
 	for (int32 viewIndex = 0; viewIndex < 1; viewIndex++)
 	{
 		FMeshBatch MeshBatch;
 		SetMeshBatchGeneric(MeshBatch, viewIndex);
 		SetMeshBatchElementsGeneric(MeshBatch, viewIndex);
-		MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
+		MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
+
+		//MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
 	}
 
-#elif false // Use batches added during GetDynamicMeshElements
+#elif true // Use batches added during GetDynamicMeshElements
 	for (auto& MeshBatch : CustomPassMeshBatches)
-		MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
+		MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
 
 	/*
 	// Copied from LightmapGBUffer/ Lightmap renderer in case needed for rendering
@@ -121,9 +124,8 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 
 		SetMeshBatchGeneric(meshBatch, viewIndex);
 		SetMeshBatchElementsGeneric(meshBatch, viewIndex);
-#if false // Push MeshBatch to be used by MeshProcessor
+
 		CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
-#endif
 		Collector.AddMesh(viewIndex, meshBatch);
 	}
 }

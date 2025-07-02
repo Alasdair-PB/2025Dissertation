@@ -10,7 +10,6 @@ class FVoxelPixelShader : public FGlobalShader
 	SHADER_USE_PARAMETER_STRUCT(FVoxelPixelShader, FGlobalShader)
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-
 	END_SHADER_PARAMETER_STRUCT()
 
 public:
@@ -19,5 +18,5 @@ public:
 		return true;
 	}
 
-	void SetParameters(FRHICommandList& RHICmdList){}
+	//void SetParameters(FRHICommandList& RHICmdList){}
 };

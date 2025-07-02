@@ -43,12 +43,12 @@ public:
 
     void AddMeshBatch(const FMeshBatch& MeshBatch, uint64 BatchElementMask, const FPrimitiveSceneProxy* RESTRICT PrimitiveSceneProxy, int32 StaticMeshId = -1)
     {
-        const FMaterialRenderProxy& DefaultProxy = *UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
         const FVertexFactory* VertexFactory = MeshBatch.VertexFactory;
-
         const FMaterialRenderProxy* FallbackMaterialRenderProxyPtr = nullptr;
         const FMaterial& DefaultMaterial = MeshBatch.MaterialRenderProxy->GetMaterialWithFallback(FeatureLevel, FallbackMaterialRenderProxyPtr);
         const FMaterialRenderProxy& MaterialRenderProxy = FallbackMaterialRenderProxyPtr ? *FallbackMaterialRenderProxyPtr : *MeshBatch.MaterialRenderProxy;
+
+        MaterialRenderProxy.UpdateUniformExpressionCacheIfNeeded(View->FeatureLevel);
         TMeshProcessorShaders<FVoxelVertexMeshMaterialShader, FVoxelPixelMeshMaterialShader> voxelPassShaders;
 
         voxelPassShaders.VertexShader = DefaultMaterial.GetShader<FVoxelVertexMeshMaterialShader>(VertexFactory->GetType());

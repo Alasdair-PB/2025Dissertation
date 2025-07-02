@@ -2,22 +2,22 @@
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
 // ************************ Required Structs for base feature support ************************
-//Buffer<float> VoxelVF;
+Buffer<float> VoxelVF;
 
 struct FVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
     float3 Normal : ATTRIBUTE1;
-    //uint VertexId : SV_VertexID;
+    uint VertexId : SV_VertexID;
 
     VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
-/*
+
 struct FPositionOnlyVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
-   // uint VertexId : SV_VertexID;
+    uint VertexId : SV_VertexID;
 
 	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
@@ -26,11 +26,11 @@ struct FPositionAndNormalOnlyVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
     float3 Normal : ATTRIBUTE1;
-  //  uint VertexId : SV_VertexID;
+    uint VertexId : SV_VertexID;
 
 	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
-*/
+
 struct FVertexFactoryIntermediates
 {
     half3x3 TangentToLocal;
@@ -213,7 +213,7 @@ float3 VertexFactoryGetWorldNormal(FVertexFactoryInput Input, FVertexFactoryInte
 {
     return (float3) Intermediates.TangentToWorld[2];
 }
-/*
+
 
 float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Input)
 {
@@ -222,7 +222,7 @@ float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Inpu
 
 uint VertexFactoryGetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
 {
-    return (uint) 0;
+    return uint(0);
 }
 
 uint GetVertexFetchBufferOffset(uint VertexId)
@@ -232,7 +232,7 @@ uint GetVertexFetchBufferOffset(uint VertexId)
 
 float3 VoxelGetInstancePosition(uint VertexId)
 {
-    uint Idx = GetVertexFetchBufferOffset(VertexId) * ((uint) 3);
+    uint Idx = GetVertexFetchBufferOffset(VertexId) * uint(3);
     return float3(0.0, 0.0, 0.0); //VoxelVF[Idx], VoxelVF[Idx + 1], VoxelVF[Idx + 2]);
 }
 
@@ -241,10 +241,10 @@ FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int Ve
     FVertexFactoryInput Input;// = (FVertexFactoryInput) 0;
     float3 Position = VoxelGetInstancePosition(VertexIndex);
     Input.Position = Position.xyz;
-    Input.Normal = float3(0, 0, 1);
+    Input.Normal = float3(0.0, 0.0, 1.0);
     //Input.VertexId = GetInputVertexIndex(TriangleIndex, VertexIndex);
     return Input;
-}*/
+}
 
 // ************************ Parameters & Intermediates Support ************************
 half3x3 VertexFactoryGetTangentToLocal(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)

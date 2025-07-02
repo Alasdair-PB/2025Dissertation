@@ -15,9 +15,6 @@ void FComputeDispatchersModule::StartupModule()
 {
 	FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("VoxelRendering"))->GetBaseDir(), TEXT("Shaders/Private/ComputePasses"));
 	AddShaderSourceDirectoryMapping(TEXT("/ComputeDispatchersShaders"), PluginShaderDir);
-
-	FString VoxelRenderingShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("VoxelRendering"))->GetBaseDir(), TEXT("Shaders/Private/VertexFactories"));
-	AddShaderSourceDirectoryMapping(TEXT("/VertexFactoryShaders"), VoxelRenderingShaderDir);
 }
 
 void FComputeDispatchersModule::ShutdownModule()

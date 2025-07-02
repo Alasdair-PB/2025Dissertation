@@ -10,13 +10,12 @@ class FVoxelVertexShader : public FGlobalShader
 	SHADER_USE_PARAMETER_STRUCT(FVoxelVertexShader, FGlobalShader)
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER(FMatrix44f, ModelViewProjection)
 	END_SHADER_PARAMETER_STRUCT()
+
 public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 	{
 		return true;
 	}
-
 	void SetParameters(FRHICommandList& RHICmdList){}
 };

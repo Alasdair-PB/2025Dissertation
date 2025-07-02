@@ -112,6 +112,8 @@ public:
 	bool SupportsManualVertexFetch() { return true; }
 	FVoxelVertexBuffer* GetVertexBuffer() { return &vertexBuffer; }
 	FVoxelIndexBuffer* GetIndexBuffer() { return &indexBuffer; }
+	FVoxelVertexBuffer* GetNormalBuffer() { return &normalsBuffer; }
+
 	bool bInitialized = false;
 
 private:

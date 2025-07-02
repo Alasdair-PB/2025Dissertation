@@ -8,22 +8,21 @@
 
 //class UTextureRenderTarget2DArray;
 
-//template <typename KeyType, typename ValueType>
-//using TWeakObjectPtrKeyMap = TMap<TWeakObjectPtr<KeyType>, ValueType, FDefaultSetAllocator, TWeakObjectPtrMapKeyFuncs<TWeakObjectPtr<KeyType>, ValueType>>;
+template <typename KeyType, typename ValueType>
+using TWeakObjectPtrKeyMap = TMap<TWeakObjectPtr<KeyType>, ValueType, FDefaultSetAllocator, TWeakObjectPtrMapKeyFuncs<TWeakObjectPtr<KeyType>, ValueType>>;
 
 class VOXELRENDERING_API FVoxelSceneViewExtension : public FWorldSceneViewExtension
 {
 public:	
 
-#if false
+#if true
 	//----------------- Attempt 1 data: see cpp file- may be refactored to be included.
 
 	struct FRenderingContext
 	{
 		AVoxelBody* RenderedBody = nullptr;
 		//UTextureRenderTarget2DArray* TextureRenderTarget;
-		//TArray<TWeakObjectPtr<UVoxelMeshComponent>> VoxelBodies;
-		//float CaptureZ;
+		TArray<TWeakObjectPtr<UVoxelMeshComponent>> VoxelBodies;
 	};
 
 	struct FVoxelBodyInfo
@@ -36,10 +35,9 @@ public:
 			FVoxelSceneProxy* OldSceneProxy = nullptr;
 			bool bIsDirty = true;
 		};
-		// 1 per viewPlayer
 		TArray<FVoxelBodyViewInfo, TInlineAllocator<4>> ViewInfos;
 	};
-	//TWeakObjectPtrKeyMap<AVoxelBody, FVoxelBodyInfo> VoxelBodiesInfos;	
+	TWeakObjectPtrKeyMap<AVoxelBody, FVoxelBodyInfo> VoxelBodiesInfos;	
 	
 	void UpdateVoxelInfoRendering_CustomRenderPass(FSceneInterface* Scene, const FSceneViewFamily& ViewFamily, const FVoxelBodyInfo* VoxelBodyInfo);
 #endif

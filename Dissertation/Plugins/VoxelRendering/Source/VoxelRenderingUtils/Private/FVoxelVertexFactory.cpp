@@ -103,7 +103,7 @@ FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, 
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
 {
-	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);//&& Parameters.MaterialParameters.MaterialDomain == MD_Surface;
+	return true; // IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);//&& Parameters.MaterialParameters.MaterialDomain == MD_Surface;
 }
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {

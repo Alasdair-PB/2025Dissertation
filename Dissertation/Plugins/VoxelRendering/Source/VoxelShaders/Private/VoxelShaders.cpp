@@ -13,6 +13,9 @@
 
 void FVoxelShadersModule::StartupModule()
 {
+	FString VoxelRenderingShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("VoxelRendering"))->GetBaseDir(), TEXT("Shaders/Private/VertexFactories"));
+	AddShaderSourceDirectoryMapping(TEXT("/VertexFactoryShaders"), VoxelRenderingShaderDir);
+
 	FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("VoxelRendering"))->GetBaseDir(), TEXT("Shaders/Public"));
 	AddShaderSourceDirectoryMapping(TEXT("/VoxelShaders"), PluginShaderDir);
 }

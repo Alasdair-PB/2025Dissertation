@@ -1,5 +1,4 @@
 #include "VoxelSceneViewExtension.h"
-
 #include "VoxelRendering.h"
 #include "RenderGraphUtils.h"
 #include "SceneTextures.h"
@@ -7,27 +6,24 @@
 #include "GlobalShader.h"
 #include "VoxelVertexShader.h"
 #include "VoxelPixelShader.h"
+#include "VoxelMeshComponent.h"
+#include "EngineUtils.h"
 
 IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
 
-
 void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) {
 
-
-#if false
+#if true
     //----------------- Attempt 1 using View extion to call a custom render pass- stopped as custom render path is intended for multi view scenarios like
     // reflections & depth textures. To continue this approach the data for view 1 would need to be rendered to a texture and added to scene output
 
     const FVector ViewLocation = InView.ViewLocation;
     const TWeakObjectPtr<UWorld> WorldPtr = GetWorld();
-
-    if (!ensureMsgf(WorldPtr.IsValid(), TEXT("FVoxelViewExtension::SetupView was called while it's owning world is not valid!")))
-        return;
-
     int32 NumViews = 1;
-    if (WorldPtr->GetGameInstance())
-        NumViews = WorldPtr->GetGameInstance()->GetLocalPlayers().Num();
+
+    if (!ensureMsgf(WorldPtr.IsValid(), TEXT("FVoxelViewExtension::SetupView was called while it's owning world is not valid!"))) return;
+    if (WorldPtr->GetGameInstance()) NumViews = WorldPtr->GetGameInstance()->GetLocalPlayers().Num();
 
     static bool bUpdatingVoxelInfo = false; // Prevent re-entrancy. 
     if (bUpdatingVoxelInfo) return;
@@ -42,14 +38,8 @@ void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneV
     {
         if (VoxelBody->HasActorRegisteredAllComponents())
         {
-            FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindChecked(VoxelBody);
-
-            FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindOrAdd(VoxelBody);
+            FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindOrAdd(VoxelBody); // FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindChecked(VoxelBody);
             VoxelBodyInfo.RenderContext.RenderedBody = VoxelBody;
-
-            //VoxelBodyInfo.RenderContext.TextureRenderTarget = VoxelBody->GetRenderTarget();
-            //VoxelBodyInfo.RenderContext.CaptureZ = SomeZValue;
-
             VoxelBodyInfo.RenderContext.VoxelBodies.Reset();
             UVoxelMeshComponent* MeshComp = VoxelBody->GetComponentByClass<UVoxelMeshComponent>();
 
@@ -61,7 +51,7 @@ void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneV
             if (VoxelBodyInfo.ViewInfos.Num() != ExpectedNumViews)
                 VoxelBodyInfo.ViewInfos.SetNum(ExpectedNumViews);
 
-            UpdateVoxelInfoRendering_CustomRenderPass(Scene, InViewFamily, &VoxelBodyInfo);
+            //UpdateVoxelInfoRendering_CustomRenderPass(Scene, InViewFamily, &VoxelBodyInfo);
         }    
     }
 #endif
@@ -152,63 +142,78 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
             sceneProxy->RenderMyCustomPass(RHICmdList, Scene, &View);
         });
 
-#elif false
+#elif true
     //----------------- Attempt 4 using Global shader DrawIndexedPrimitive to render data as post process
     // ended with Shader Compliation failures are fatal. 
     // It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead
 
 	FSceneViewExtensionBase::PrePostProcessPass_RenderThread(GraphBuilder, View, Inputs);
 
-    const FMatrix ViewMatrix = View.ViewMatrices.GetViewMatrix();
-    const FMatrix ProjectionMatrix = View.ViewMatrices.GetProjectionMatrix();
-    const FMatrix ViewProj = ViewMatrix * ProjectionMatrix;
-    const FMatrix ltw = sceneProxy->GetLocalToWorld();
-    const FMatrix MVP =  ViewProj * ltw;
+    for (const auto& Pair : VoxelBodiesInfos)
+    {
+        const FVoxelBodyInfo& Info = Pair.Value;
 
-    FVoxelVertexFactory* VF = sceneProxy->GetVertexFactory();
+        for (const auto& MeshComp : Info.RenderContext.VoxelBodies)
+        {
+            if (MeshComp.IsValid() && MeshComp->SceneProxy)
+            {
+                FPrimitiveSceneProxy* sceneProxy = MeshComp->SceneProxy;
+                if (sceneProxy == nullptr) continue;
+                FVoxelSceneProxy* VoxelSceneProxy = static_cast<FVoxelSceneProxy*>(sceneProxy);
+                FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
 
-    FTextureRHIRef RenderTargetTexture = View.Family->RenderTarget->GetRenderTargetTexture();
-    FRHICommandListImmediate& RHICmdList = GraphBuilder.RHICmdList;
+                const FMatrix ViewMatrix = View.ViewMatrices.GetViewMatrix();
+                const FMatrix ProjectionMatrix = View.ViewMatrices.GetProjectionMatrix();
+                const FMatrix ViewProj = ViewMatrix * ProjectionMatrix;
+                const FMatrix ltw = sceneProxy->GetLocalToWorld();
+                const FMatrix MVP =  ViewProj * ltw;
 
-    FRHIRenderPassInfo RPInfo(RenderTargetTexture, ERenderTargetActions::Load_Store);
-    RHICmdList.BeginRenderPass(RPInfo, TEXT("CustomPass"));
 
-    FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-    TShaderMapRef<FVoxelVertexShader> VertexShader(GlobalShaderMap);
-    TShaderMapRef<FVoxelPixelShader> PixelShader(GlobalShaderMap);
+                FTextureRHIRef RenderTargetTexture = View.Family->RenderTarget->GetRenderTargetTexture();
+                FRHICommandListImmediate& RHICmdList = GraphBuilder.RHICmdList;
+                FRHIRenderPassInfo RPInfo(RenderTargetTexture, ERenderTargetActions::Load_Store);
+                RHICmdList.BeginRenderPass(RPInfo, TEXT("CustomPass"));
 
-    FGraphicsPipelineStateInitializer GraphicsPSOInit;
-    RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
-    GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
-    GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
-    GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
-    GraphicsPSOInit.PrimitiveType = PT_TriangleList;
-    GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = VF->GetDeclaration();
-    GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
-    GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+                FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+                TShaderMapRef<FVoxelVertexShader> VertexShader(GlobalShaderMap);
+                TShaderMapRef<FVoxelPixelShader> PixelShader(GlobalShaderMap);
 
-    SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
+                FVoxelVertexShader::FParameters VSParams;
+                FVoxelPixelShader::FParameters PSParams;
 
-    FVoxelVertexShader::FParameters VSParams;
-    VSParams.ModelViewProjection = FMatrix44f(MVP);
-    SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
+                SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
+                SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
 
-    FVoxelPixelShader::FParameters PSParams;
-    SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
+                FGraphicsPipelineStateInitializer GraphicsPSOInit;
+                RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+                GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+                GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+                GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+                GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
-    uint32 count = VF->GetVertexBuffer()->GetVertexCount();
+                GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = VF->GetDeclaration(EVertexInputStreamType::PositionOnly);
+                GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+                GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+                SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
 
-    RHICmdList.SetStreamSource(0, VF->GetVertexBuffer()->VertexBufferRHI, 0);
-    RHICmdList.DrawIndexedPrimitive(
-        VF->GetIndexBufferRHIRef(),
-        0,
-        0,
-        VF->GetVertexBuffer()->GetVertexCount(),
-        0,
-        VF->GetIndexBuffer()->GetIndexCount() / 3,
-        1
-    );
+                uint32 count = VF->GetVertexBuffer()->GetVertexCount();
 
-    RHICmdList.EndRenderPass();
+                RHICmdList.SetStreamSource(0, VF->GetVertexBuffer()->VertexBufferRHI, 0);
+                RHICmdList.SetStreamSource(0, VF->GetNormalBuffer()->VertexBufferRHI, 1);
+
+                RHICmdList.DrawIndexedPrimitive(
+                    VF->GetIndexBufferRHIRef(),
+                    0,
+                    0,
+                    count,
+                    0,
+                    count / 3,
+                    1
+                );
+
+                RHICmdList.EndRenderPass();
+            }
+        }
+    }
 #endif
 }

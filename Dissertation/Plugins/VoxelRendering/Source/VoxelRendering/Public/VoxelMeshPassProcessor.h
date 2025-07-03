@@ -40,6 +40,16 @@ public:
         DrawRenderState.SetBlendState(TStaticBlendStateWriteMask<CW_RGBA, CW_RGBA, CW_RGBA, CW_RGBA>::GetRHI());
     }
 
+    bool TryGetMaterialShaders(const FMaterial& InMaterialResource, FMaterialShaders& OutShaders)
+    {
+        FMaterialShaderTypes ShaderTypes;
+        ShaderTypes.AddShaderType<FVoxelVertexMeshMaterialShader>();
+        ShaderTypes.AddShaderType<FVoxelPixelMeshMaterialShader>();
+
+        FVertexFactoryType* VertexFactoryType = FindVertexFactoryType(FName(TEXT("FVoxelVertexFactory"), FNAME_Find));
+        check(VertexFactoryType != nullptr);
+        return InMaterialResource.TryGetShaders(ShaderTypes, VertexFactoryType, OutShaders);
+    }
 
     void AddMeshBatch(const FMeshBatch& MeshBatch, uint64 BatchElementMask, const FPrimitiveSceneProxy* RESTRICT PrimitiveSceneProxy, int32 StaticMeshId = -1)
     {
@@ -49,10 +59,15 @@ public:
         const FMaterialRenderProxy& MaterialRenderProxy = FallbackMaterialRenderProxyPtr ? *FallbackMaterialRenderProxyPtr : *MeshBatch.MaterialRenderProxy;
 
         MaterialRenderProxy.UpdateUniformExpressionCacheIfNeeded(View->FeatureLevel);
-        TMeshProcessorShaders<FVoxelVertexMeshMaterialShader, FVoxelPixelMeshMaterialShader> voxelPassShaders;
 
-        voxelPassShaders.VertexShader = DefaultMaterial.GetShader<FVoxelVertexMeshMaterialShader>(VertexFactory->GetType());
-        voxelPassShaders.PixelShader = DefaultMaterial.GetShader<FVoxelPixelMeshMaterialShader>(VertexFactory->GetType());
+        FMaterialShaders Shaders;
+        verify(TryGetMaterialShaders(DefaultMaterial, Shaders));
+        TMeshProcessorShaders<FVoxelVertexMeshMaterialShader, FVoxelPixelMeshMaterialShader> PassShaders;
+        bool bVertexRecieved = Shaders.TryGetVertexShader(PassShaders.VertexShader);
+        bool bPixelRecieved = Shaders.TryGetPixelShader(PassShaders.PixelShader);
+
+        check(bVertexRecieved);
+        check(bPixelRecieved);
 
         const FMeshDrawingPolicyOverrideSettings OverrideSettings = ComputeMeshOverrideSettings(MeshBatch);
         const ERasterizerFillMode MeshFillMode = ComputeMeshFillMode(DefaultMaterial, OverrideSettings);
@@ -68,7 +83,7 @@ public:
             MaterialRenderProxy,
             DefaultMaterial,
             DrawRenderState,
-            voxelPassShaders,
+            PassShaders,
             MeshFillMode,
             MeshCullMode,
             SortKey,
@@ -76,14 +91,11 @@ public:
             ShaderElementData);
     }
 
-
     struct FVoxelElementData : public FMeshMaterialShaderElementData
     {
         const FLightCacheInterface* LCI;
         FVoxelElementData(const FLightCacheInterface* LCI) : LCI(LCI) {}
     };
-
-    //void AddMeshBatch(const FMeshBatch& MeshBatch, uint64 BatchElementMask, const FPrimitiveSceneProxy* RESTRICT PrimitiveSceneProxy, int32 StaticMeshId = -1);
    
 private:
 	const FSceneView* View;

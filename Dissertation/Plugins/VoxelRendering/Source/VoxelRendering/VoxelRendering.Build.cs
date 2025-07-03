@@ -9,8 +9,12 @@ public class VoxelRendering : ModuleRules
         bUseUnity = false;
 
         PublicIncludePaths.AddRange(new string[] {});
-        PrivateIncludePaths.AddRange(new string[] {});
-
+        //PrivateIncludePaths.AddRange(new string[] {});
+        PrivateIncludePaths.AddRange(
+            new string[] {
+                System.IO.Path.Combine(GetModuleDirectory("Renderer"), "Private"),
+            }
+        );
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "VoxelRenderingUtils", "VoxelShaders", "Octree", "CoreUObject", "Engine", "MaterialShaderQualitySettings", "InputCore", "ProceduralMeshComponent" });
         PrivateDependencyModuleNames.AddRange(new string[] { "CoreUObject", "Core", "VoxelRenderingUtils", "VoxelShaders", "Engine", "ComputeDispatchers", "Renderer", "Octree", "RenderCore", "RHI", "Projects" });
 

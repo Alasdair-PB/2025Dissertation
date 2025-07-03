@@ -80,8 +80,6 @@ FPrimitiveSceneData GetPrimitiveData(FVertexFactoryIntermediates Intermediates)
     return Intermediates.SceneData.Primitive;
 }
 
-
-
 float2 NormalBasedPlanarMapping(FVertexFactoryInput Input, float2 UVDensity)
 {
     float3 N = normalize(Input.Normal);
@@ -139,8 +137,6 @@ float3x3 CalcTangentBasis(FVertexFactoryInput Input)
     return float3x3(Right.xyz, Up.xyz, -normalize(cross(Right.xyz, Up.xyz)));
 }
 
-
-
 uint GetInputVertexIndex(uint TriangleIndex, int VertexIndex)
 {
     return TriangleIndex * uint(3) + uint(VertexIndex);
@@ -148,7 +144,6 @@ uint GetInputVertexIndex(uint TriangleIndex, int VertexIndex)
 
 // ************************ Instancing, LOD, et al Support ************************
 // functions expected by Unreal Engine for feature support. 
-
 
 float3 VertexFactoryGetInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
@@ -278,7 +273,6 @@ FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVS
     return Result;
 }
 
-
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
     FVertexFactoryInterpolantsVSToPS Interpolants;
@@ -326,7 +320,6 @@ float4 VertexFactoryGetPositionForShadowDepth(FVertexFactoryInput Input, FVertex
 
 // ************************ RayTrace & Compute Support ************************
 
-
 #if RAYHITGROUPSHADER || COMPUTESHADER
 uint GetNumRayTracingDynamicMeshVerticesIndirect()
 {
@@ -358,6 +351,5 @@ FVertexFactoryInput LoadVertexFactoryInputForDynamicUpdate(uint TriangleIndex, i
 	return Input;
 }
 #endif
-
 
 #include "/Engine/Private/VertexFactoryDefaultInterface.ush"

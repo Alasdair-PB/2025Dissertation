@@ -70,6 +70,11 @@ void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 	FPrimitiveSceneProxy::OnTransformChanged(RHICmdList);
 }
 
+	//FMeshBatch MeshBatch;
+	//SetMeshBatchGeneric(MeshBatch, View->PrimaryViewIndex);
+	//SetMeshBatchElementsGeneric(MeshBatch, View->PrimaryViewIndex);
+	//MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
+
 void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* InScene, const FSceneView* View)
 {
 	check(InScene);
@@ -80,35 +85,81 @@ void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, 
 	FMeshCommandOneFrameArray VisibleMeshDrawCommands;
 	FGraphicsMinimalPipelineStateSet GraphicsMinimalPipelineStateSet;
 	bool NeedsShaderInitialisation = false;
-	FDynamicPassMeshDrawListContext DynamicMeshPassContext(DynamicMeshDrawCommandStorage, VisibleMeshDrawCommands, GraphicsMinimalPipelineStateSet, NeedsShaderInitialisation);
-	FVoxelMeshPassProcessor MeshProcessor(InScene, View, &DynamicMeshPassContext);
 
-#if false // Rebuild batches to avoid nullptr assignments
-	for (int32 viewIndex = 0; viewIndex < 1; viewIndex++)
+	TArray<FMeshBatch> MeshBatchesToDrawImmediately;
+	TArray<FMeshBatch> MeshBatchesNeedingInstanceOffsetUpdates;
+	for (auto& MeshBatch : CustomPassMeshBatches)
 	{
-		FMeshBatch MeshBatch;
-		SetMeshBatchGeneric(MeshBatch, viewIndex);
-		SetMeshBatchElementsGeneric(MeshBatch, viewIndex);
-		MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
-
-		//MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, nullptr);
+		FMeshBatchElement& Element = MeshBatch.Elements[0];
+		if (Element.UserIndex == INDEX_NONE) MeshBatchesToDrawImmediately.Add(MeshBatch);
+		else MeshBatchesNeedingInstanceOffsetUpdates.Add(MeshBatch);
 	}
 
-#elif true // Use batches added during GetDynamicMeshElements
-	for (auto& MeshBatch : CustomPassMeshBatches)
+	DrawDynamicMeshPass(
+		*View, RHICmdList,
+		[
+			this,
+			&View,
+			InScene,
+			MeshBatchesToDrawImmediately
+		](FDynamicPassMeshDrawListContext* DynamicMeshPassContext)
+		{
+			FVoxelMeshPassProcessor MeshProcessor(InScene, View, DynamicMeshPassContext);
+
+			for (auto& MeshBatch : MeshBatchesToDrawImmediately)
+				MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
+		});
+
+	for (auto& MeshBatch : MeshBatchesNeedingInstanceOffsetUpdates)
+	{	
+		FDynamicPassMeshDrawListContext DynamicMeshPassContext(DynamicMeshDrawCommandStorage, VisibleMeshDrawCommands, GraphicsMinimalPipelineStateSet, NeedsShaderInitialisation);
+		FVoxelMeshPassProcessor MeshProcessor(InScene, View, &DynamicMeshPassContext);
 		MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
 
-	/*
-	// Copied from LightmapGBUffer/ Lightmap renderer in case needed for rendering
-	const uint32 InstanceFactor = 1;
-	FRHIBuffer* PrimitiveIdVertexBuffer = nullptr;
-	const bool bDynamicInstancing = false;
-	const uint32 PrimitiveIdBufferStride = FInstanceCullingContext::GetInstanceIdBufferStride(View->GetShaderPlatform());
-	SortAndMergeDynamicPassMeshDrawCommands(*View, RHICmdList, VisibleMeshDrawCommands, DynamicMeshDrawCommandStorage, PrimitiveIdVertexBuffer, InstanceFactor, nullptr);
-	FMeshDrawCommandSceneArgs SceneArgs;
-	SceneArgs.PrimitiveIdsBuffer = PrimitiveIdVertexBuffer;
-	SubmitMeshDrawCommands(VisibleMeshDrawCommands, GraphicsMinimalPipelineStateSet, SceneArgs, PrimitiveIdBufferStride, bDynamicInstancing, InstanceFactor, RHICmdList);*/
-#endif
+		const uint32 InstanceFactor = 1;
+		FRHIBuffer* PrimitiveIdVertexBuffer = nullptr;
+		const bool bDynamicInstancing = false;
+		const uint32 PrimitiveIdBufferStride = FInstanceCullingContext::GetInstanceIdBufferStride(View->GetShaderPlatform());
+
+		for (FVisibleMeshDrawCommand& Cmd : VisibleMeshDrawCommands)
+			Cmd.PrimitiveIdInfo.DrawPrimitiveId = MeshBatch.Elements[0].UserIndex;
+
+		SortAndMergeDynamicPassMeshDrawCommands(*View, RHICmdList, VisibleMeshDrawCommands, DynamicMeshDrawCommandStorage, PrimitiveIdVertexBuffer, InstanceFactor, nullptr);
+		FMeshDrawCommandSceneArgs SceneArgs;
+		SceneArgs.PrimitiveIdsBuffer = PrimitiveIdVertexBuffer;
+		SubmitMeshDrawCommands(VisibleMeshDrawCommands, GraphicsMinimalPipelineStateSet, SceneArgs, PrimitiveIdBufferStride, bDynamicInstancing, InstanceFactor, RHICmdList);
+	}
+
+	CustomPassMeshBatches.Empty();
+
+
+	
+	/*check(IsInGameThread());
+	if (IsValid() && !IsComplete())
+	{
+		uint32 FrameCount = GTaskPool.FrameCount;
+
+		FLandscapePhysicalMaterialRenderTaskImpl* Task = &GTaskPool.Pool[PoolHandle];
+		check(Task->LandscapeComponent != nullptr);
+
+		UE::RenderCommandPipe::FSyncScope SyncScope;
+
+		// If the material gets recompiled, for example, the component's scene proxy could be changed before the RT update runs, so we need to make sure we're getting the scene proxy on the game thread :
+		const FLandscapeComponentSceneProxy* SceneProxy = static_cast<const FLandscapeComponentSceneProxy*>(Task->LandscapeComponent->SceneProxy);
+		ENQUEUE_RENDER_COMMAND(FLandscapePhysicalMaterialFlush)(
+			[Task, SceneProxy, bInFlush, FrameCount](FRHICommandListImmediate& RHICmdList)
+			{
+				UpdateTask_RenderThread(RHICmdList, *Task, SceneProxy, bInFlush, FrameCount);
+			});
+
+		if (bInFlush)
+		{
+			FlushRenderingCommands();
+		}
+	}*/
+	
+	
+
 }
 
 FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
@@ -126,7 +177,7 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 		SetMeshBatchElementsGeneric(meshBatch, viewIndex);
 
 		CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
-		Collector.AddMesh(viewIndex, meshBatch);
+		//Collector.AddMesh(viewIndex, meshBatch);
 	}
 }
 

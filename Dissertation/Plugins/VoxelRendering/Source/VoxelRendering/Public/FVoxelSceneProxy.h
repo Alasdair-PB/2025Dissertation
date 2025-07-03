@@ -29,6 +29,7 @@ public:
 	UMaterialInterface* Material;
 
 	bool IsInitialized();
+	mutable TArray<FMeshBatch> CustomPassMeshBatches;
 
 protected:
 	bool bInitialized = false;
@@ -42,5 +43,4 @@ protected:
 	void SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 viewIndex, bool bWireframe) const;
 	void SetMeshBatchElementsUserData(FMeshBatchElement& meshBatch) const;
 
-	mutable TArray<FMeshBatch> CustomPassMeshBatches;
 };

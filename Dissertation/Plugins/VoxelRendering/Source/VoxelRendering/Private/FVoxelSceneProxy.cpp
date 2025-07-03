@@ -70,10 +70,10 @@ void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 	FPrimitiveSceneProxy::OnTransformChanged(RHICmdList);
 }
 
-	//FMeshBatch MeshBatch;
-	//SetMeshBatchGeneric(MeshBatch, View->PrimaryViewIndex);
-	//SetMeshBatchElementsGeneric(MeshBatch, View->PrimaryViewIndex);
-	//MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
+//FMeshBatch MeshBatch;
+//SetMeshBatchGeneric(MeshBatch, View->PrimaryViewIndex);
+//SetMeshBatchElementsGeneric(MeshBatch, View->PrimaryViewIndex);
+//MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
 
 void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* InScene, const FSceneView* View)
 {
@@ -97,15 +97,9 @@ void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, 
 
 	DrawDynamicMeshPass(
 		*View, RHICmdList,
-		[
-			this,
-			&View,
-			InScene,
-			MeshBatchesToDrawImmediately
-		](FDynamicPassMeshDrawListContext* DynamicMeshPassContext)
+		[this, &View, InScene, MeshBatchesToDrawImmediately](FDynamicPassMeshDrawListContext* DynamicMeshPassContext)
 		{
 			FVoxelMeshPassProcessor MeshProcessor(InScene, View, DynamicMeshPassContext);
-
 			for (auto& MeshBatch : MeshBatchesToDrawImmediately)
 				MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
 		});
@@ -131,35 +125,6 @@ void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, 
 	}
 
 	CustomPassMeshBatches.Empty();
-
-
-	
-	/*check(IsInGameThread());
-	if (IsValid() && !IsComplete())
-	{
-		uint32 FrameCount = GTaskPool.FrameCount;
-
-		FLandscapePhysicalMaterialRenderTaskImpl* Task = &GTaskPool.Pool[PoolHandle];
-		check(Task->LandscapeComponent != nullptr);
-
-		UE::RenderCommandPipe::FSyncScope SyncScope;
-
-		// If the material gets recompiled, for example, the component's scene proxy could be changed before the RT update runs, so we need to make sure we're getting the scene proxy on the game thread :
-		const FLandscapeComponentSceneProxy* SceneProxy = static_cast<const FLandscapeComponentSceneProxy*>(Task->LandscapeComponent->SceneProxy);
-		ENQUEUE_RENDER_COMMAND(FLandscapePhysicalMaterialFlush)(
-			[Task, SceneProxy, bInFlush, FrameCount](FRHICommandListImmediate& RHICmdList)
-			{
-				UpdateTask_RenderThread(RHICmdList, *Task, SceneProxy, bInFlush, FrameCount);
-			});
-
-		if (bInFlush)
-		{
-			FlushRenderingCommands();
-		}
-	}*/
-	
-	
-
 }
 
 FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
@@ -194,11 +159,12 @@ void FVoxelSceneProxy::SetMeshBatchGeneric(FMeshBatch& meshBatch, int32 viewInde
 
 void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 viewIndex, bool bWireframe) const {
 	FMaterialRenderProxy* renderProxy;
-	if (!Material) {
+	/*if (!Material) {
 		renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 		UE_LOG(LogTemp, Warning, TEXT("No Material instance set:: switching to default MD_Surface support"));
 	}
-	else renderProxy = Material->GetRenderProxy();
+	else*/ 
+	renderProxy = Material->GetRenderProxy();
 
 	meshBatch.MaterialRenderProxy = renderProxy;
 }

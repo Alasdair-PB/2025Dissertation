@@ -76,6 +76,8 @@ public:
         FMeshMaterialShaderElementData ShaderElementData;
         ShaderElementData.InitializeMeshMaterialData(ViewIfDynamicMeshCommand, PrimitiveSceneProxy, MeshBatch, StaticMeshId, true);
 
+        UE_LOG(LogTemp, Warning, TEXT("Building mesh draw commands pass"));
+
         BuildMeshDrawCommands(
             MeshBatch,
             BatchElementMask,

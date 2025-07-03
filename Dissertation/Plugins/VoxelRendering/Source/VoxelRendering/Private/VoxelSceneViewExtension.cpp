@@ -20,9 +20,46 @@
 
 #include "ScreenPass.h"
 #include "SystemTextures.h"
+//#include "VoxelMeshPassProcessor.h"
 
 IMPLEMENT_GLOBAL_SHADER(FVoxelPixelShader, "/VoxelShaders/VoxelPixelShader.usf", "MainPS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FVoxelVertexShader, "/VoxelShaders/VoxelVertexShader.usf", "MainVS", SF_Vertex);
+
+FScreenPassTextureViewportParameters GetTextureViewportParameters(const FScreenPassTextureViewport& InViewport)
+{
+    const FVector2f Extent(InViewport.Extent);
+    const FVector2f ViewportMin(InViewport.Rect.Min.X, InViewport.Rect.Min.Y);
+    const FVector2f ViewportMax(InViewport.Rect.Max.X, InViewport.Rect.Max.Y);
+    const FVector2f ViewportSize = ViewportMax - ViewportMin;
+
+    FScreenPassTextureViewportParameters Parameters;
+
+    if (!InViewport.IsEmpty())
+    {
+        Parameters.Extent = FVector2f(Extent);
+        Parameters.ExtentInverse = FVector2f(1.0f / Extent.X, 1.0f / Extent.Y);
+
+        Parameters.ScreenPosToViewportScale = FVector2f(0.5f, -0.5f) * ViewportSize;
+        Parameters.ScreenPosToViewportBias = (0.5f * ViewportSize) + ViewportMin;
+
+        Parameters.ViewportMin = InViewport.Rect.Min;
+        Parameters.ViewportMax = InViewport.Rect.Max;
+
+        Parameters.ViewportSize = ViewportSize;
+        Parameters.ViewportSizeInverse = FVector2f(1.0f / Parameters.ViewportSize.X, 1.0f / Parameters.ViewportSize.Y);
+
+        Parameters.UVViewportMin = ViewportMin * Parameters.ExtentInverse;
+        Parameters.UVViewportMax = ViewportMax * Parameters.ExtentInverse;
+
+        Parameters.UVViewportSize = Parameters.UVViewportMax - Parameters.UVViewportMin;
+        Parameters.UVViewportSizeInverse = FVector2f(1.0f / Parameters.UVViewportSize.X, 1.0f / Parameters.UVViewportSize.Y);
+
+        Parameters.UVViewportBilinearMin = Parameters.UVViewportMin + 0.5f * Parameters.ExtentInverse;
+        Parameters.UVViewportBilinearMax = Parameters.UVViewportMax - 0.5f * Parameters.ExtentInverse;
+    }
+
+    return Parameters;
+}
 
 void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) {
 
@@ -50,7 +87,7 @@ void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneV
     {
         if (VoxelBody->HasActorRegisteredAllComponents())
         {
-            FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindOrAdd(VoxelBody); // FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindChecked(VoxelBody);
+            FVoxelBodyInfo& VoxelBodyInfo = VoxelBodiesInfos.FindOrAdd(VoxelBody);
             VoxelBodyInfo.RenderContext.RenderedBody = VoxelBody;
             VoxelBodyInfo.RenderContext.VoxelBodies.Reset();
             UVoxelMeshComponent* MeshComp = VoxelBody->GetComponentByClass<UVoxelMeshComponent>();
@@ -62,8 +99,6 @@ void FVoxelSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneV
 
             if (VoxelBodyInfo.ViewInfos.Num() != ExpectedNumViews)
                 VoxelBodyInfo.ViewInfos.SetNum(ExpectedNumViews);
-
-            //UpdateVoxelInfoRendering_CustomRenderPass(Scene, InViewFamily, &VoxelBodyInfo);
         }    
     }
 #endif
@@ -113,39 +148,7 @@ void FVoxelSceneViewExtension::UpdateVoxelInfoRendering_CustomRenderPass(FSceneI
 }
 #endif
 
-void FVoxelSceneViewExtension::PreRenderView_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& View)
-{
-    /*for (const auto& Pair : VoxelBodiesInfos)
-    {
-        const FVoxelBodyInfo& Info = Pair.Value;
-
-        for (const auto& MeshComp : Info.RenderContext.VoxelBodies)
-        {
-            if (MeshComp.IsValid() && MeshComp->SceneProxy)
-            {
-                FPrimitiveSceneProxy* sceneProxy = MeshComp->SceneProxy;
-                if (sceneProxy == nullptr) continue;
-                FVoxelSceneProxy* VoxelSceneProxy = static_cast<FVoxelSceneProxy*>(sceneProxy);
-                FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
-
-                GraphBuilder.AddPass(
-                    RDG_EVENT_NAME("VoxelRenderPass"),
-                    ERDGPassFlags::None,
-                    [this, &View, VoxelSceneProxy](FRHICommandListImmediate& RHICmdList)
-                    {
-                        const FScene* Scene = View.Family->Scene->GetRenderScene();
-                        FTextureRHIRef RenderTargetTexture = View.Family->RenderTarget->GetRenderTargetTexture();
-
-                        if (!Scene) return;
-                        if (!RenderTargetTexture) return;
-
-                        VoxelSceneProxy->RenderMyCustomPass(RHICmdList, Scene, &View);
-                    });
-            }
-        }
-    }
-    GraphBuilder.Execute();*/
-}
+void FVoxelSceneViewExtension::PreRenderView_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& View) {}
 
 BEGIN_SHADER_PARAMETER_STRUCT(FVoxelTargetParameters, )
     RENDER_TARGET_BINDING_SLOTS()
@@ -153,106 +156,170 @@ END_SHADER_PARAMETER_STRUCT()
 
 void FVoxelSceneViewExtension::SubscribeToPostProcessingPass(EPostProcessingPass PassId, const FSceneView& InView, FAfterPassCallbackDelegateArray& InOutPassCallbacks, bool bIsPassEnabled)
 {
-    //if (!CustomRenderTargetPerView_RenderThread.Contains(InView.GetViewKey()))
-    //    return;
-
-    //if (PassId == EPostProcessingPass::SSRInput)// && bCompositeSupportsSSR.load())
-     //   InOutPassCallbacks.Add(FAfterPassCallbackDelegate::CreateRaw(this, &FVoxelSceneViewExtension::PostProcessPassSSRInput_RenderThread));
+   // if (PassId == EPostProcessingPass::SSRInput)
+   //    InOutPassCallbacks.Add(FAfterPassCallbackDelegate::CreateRaw(this, &FVoxelSceneViewExtension::PostProcessPassSSRInput_RenderThread));
 }
 
-FScreenPassTexture FVoxelSceneViewExtension::PostProcessPassSSRInput_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& InView, const FPostProcessMaterialInputs& Inputs) 
+FScreenPassTexture FVoxelSceneViewExtension::PostProcessPassSSRInput_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs)
 {                
-
-    FVoxelTargetParameters* PassParameters = GraphBuilder.AllocParameters<FVoxelTargetParameters>();
-                
     FScreenPassTexture sceneColor = FScreenPassTexture::CopyFromSlice(GraphBuilder, Inputs.GetInput(EPostProcessMaterialInput::SceneColor));
     check(sceneColor.IsValid());
-    FScreenPassRenderTarget output = FScreenPassRenderTarget::CreateFromInput(GraphBuilder, sceneColor, InView.GetOverwriteLoadAction(), TEXT("VoxelOutput"));
+    FScreenPassRenderTarget output = Inputs.OverrideOutput;
+    if (!output.IsValid())
+        output = FScreenPassRenderTarget::CreateFromInput(GraphBuilder, sceneColor, View.GetOverwriteLoadAction(), TEXT("VoxelOutput"));
 
-    for (const auto& Pair : VoxelBodiesInfos)
-    {
-        const FVoxelBodyInfo& Info = Pair.Value;
+    // Copy
+    checkSlow(View.bIsViewInfo);
+    const FViewInfo& viewInfo = static_cast<const FViewInfo&>(View);
+    const FIntRect PrimaryViewRect = viewInfo.ViewRect;
 
-        for (const auto& MeshComp : Info.RenderContext.VoxelBodies)
+    FVoxelTargetParameters* PassParameters = GraphBuilder.AllocParameters<FVoxelTargetParameters>();
+    PassParameters->RenderTargets[0] = output.GetRenderTargetBinding();
+
+    GraphBuilder.AddPass(
+        RDG_EVENT_NAME("VoxelRenderPass"),
+        PassParameters,
+        ERDGPassFlags::Raster,
+        [this, &View, PrimaryViewRect, output](FRHICommandListImmediate& RHICmdList)
         {
-            if (MeshComp.IsValid() && MeshComp->SceneProxy)
+            UE_LOG(LogTemp, Warning, TEXT("Start pass"));
+            FRHIRenderPassInfo RPInfo(output.Texture->GetRHI(), ERenderTargetActions::Load_Store);
+            RHICmdList.SetViewport(
+                 PrimaryViewRect.Min.X, PrimaryViewRect.Min.Y, 0.0f,
+                 PrimaryViewRect.Max.X, PrimaryViewRect.Max.Y, 1.0f
+             );
+
+            for (const auto& Pair : VoxelBodiesInfos)
             {
-                FPrimitiveSceneProxy* sceneProxy = MeshComp->SceneProxy;
-                if (sceneProxy == nullptr) continue;
-                FVoxelSceneProxy* VoxelSceneProxy = static_cast<FVoxelSceneProxy*>(sceneProxy);
-                FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
-
-                // FRDGTextureRef Texture = GraphBuilder.RegisterExternalTexture(LightmapTilePoolGPU.PooledRenderTargets[PoolLayerIndex]);
-                 //PassParameters->RenderTargets[0] = FRenderTargetBinding(Texture, ERenderTargetLoadAction::ENoAction);
-                PassParameters->RenderTargets[0] = output.GetRenderTargetBinding();
-
-                GraphBuilder.AddPass(
-                    RDG_EVENT_NAME("VoxelRenderPass"),
-                    PassParameters,
-                    ERDGPassFlags::Raster,
-                    [this, &InView, VoxelSceneProxy, output](FRHICommandListImmediate& RHICmdList)
+                const FVoxelBodyInfo& Info = Pair.Value;
+                for (const auto& MeshComp : Info.RenderContext.VoxelBodies)
+                {
+                    if (MeshComp.IsValid() && MeshComp->SceneProxy)
                     {
-                        const FScene* Scene = InView.Family->Scene->GetRenderScene();
-                        //FTextureRHIRef RenderTargetTexture = InView.Family->RenderTarget->GetRenderTargetTexture();
+                        FPrimitiveSceneProxy* sceneProxy = MeshComp->SceneProxy;
+                        if (sceneProxy == nullptr) continue;
+                        FVoxelSceneProxy* VoxelSceneProxy = static_cast<FVoxelSceneProxy*>(sceneProxy);
+                        FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
 
+                        const FScene* Scene = View.Family->Scene->GetRenderScene();
                         if (!Scene) return;
-                        //if (!RenderTargetTexture) return;
 
-                        VoxelSceneProxy->RenderMyCustomPass(RHICmdList, Scene, &InView);
-                    });
+                        VoxelSceneProxy->RenderMyCustomPass(RHICmdList, Scene, &View);
+                    }
+                }
             }
-        }
-    }
+        });
 
     return output;
 }
 
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
-    FSceneViewExtensionBase::PrePostProcessPass_RenderThread(GraphBuilder, View, Inputs);
-    FVoxelTargetParameters* PassParameters = GraphBuilder.AllocParameters<FVoxelTargetParameters>();
-
     checkSlow(View.bIsViewInfo);
     const FViewInfo& viewInfo = static_cast<const FViewInfo&>(View);
     const FIntRect PrimaryViewRect = viewInfo.ViewRect;
 
     FScreenPassTexture sceneColor((*Inputs.SceneTextures)->SceneColorTexture, PrimaryViewRect);
     check(sceneColor.IsValid());
-
-    //FRDGTexture* BackBufferRenderTargetTexture = GraphBuilder.CreateTexture(ColorCorrectOutputDesc, TEXT("BackBufferRenderTargetTexture"));
-    //FScreenPassRenderTarget output = FScreenPassRenderTarget(BackBufferRenderTargetTexture, sceneColor.ViewRect, ERenderTragetLoadAction::ELoad);
-
     FScreenPassRenderTarget output = FScreenPassRenderTarget::CreateFromInput(GraphBuilder, sceneColor, View.GetOverwriteLoadAction(), TEXT("VoxelOutput"));
-     //FTextureRHIRef RenderTargetTexture = View.Family->RenderTarget->GetRenderTargetTexture();
+    //FTextureRHIRef RenderTargetTexture = InView.Family->RenderTarget->GetRenderTargetTexture();
 
-    for (const auto& Pair : VoxelBodiesInfos)
+    // Assorted info that is not used but may be useful********************************************************
+    FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+    FRDGTextureDesc ColorCorrectRegionsOutputDesc = sceneColor.Texture->Desc;
+
+    ColorCorrectRegionsOutputDesc.Format = PF_FloatRGBA;
+    FLinearColor ClearColor(0., 0., 0., 0.);
+    ColorCorrectRegionsOutputDesc.ClearValue = FClearValueBinding(ClearColor);
+
+    FRDGTexture* BackBufferRenderTargetTexture = GraphBuilder.CreateTexture(ColorCorrectRegionsOutputDesc, TEXT("BackBufferRenderTargetTexture"));
+    FScreenPassRenderTarget BackBufferRenderTarget = FScreenPassRenderTarget(BackBufferRenderTargetTexture, sceneColor.ViewRect, ERenderTargetLoadAction::EClear);
+    FScreenPassRenderTarget SceneColorRenderTarget(sceneColor, ERenderTargetLoadAction::ELoad);
+    const FScreenPassTextureViewport SceneColorTextureViewport(sceneColor);
+
+    FRHIBlendState* DefaultBlendState = FScreenPassPipelineState::FDefaultBlendState::GetRHI();
+
+    RDG_EVENT_SCOPE(GraphBuilder, "Color Correct Regions %dx%d", SceneColorTextureViewport.Rect.Width(), SceneColorTextureViewport.Rect.Height());
+
+    FRHISamplerState* PointClampSampler = TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
+    const FScreenPassTextureViewportParameters SceneTextureViewportParams = GetTextureViewportParameters(SceneColorTextureViewport);
+    FScreenPassTextureInput SceneTextureInput;
     {
-        const FVoxelBodyInfo& Info = Pair.Value;
+        SceneTextureInput.Viewport = SceneTextureViewportParams;
+        SceneTextureInput.Texture = SceneColorRenderTarget.Texture;
+        SceneTextureInput.Sampler = PointClampSampler;
+    }
+    // end assorted info region********************************************************************************
 
-        for (const auto& MeshComp : Info.RenderContext.VoxelBodies)
-        {
-            if (MeshComp.IsValid() && MeshComp->SceneProxy)
+    FVoxelTargetParameters* PassParameters = GraphBuilder.AllocParameters<FVoxelTargetParameters>();
+    PassParameters->RenderTargets[0] = SceneColorRenderTarget.GetRenderTargetBinding();
+    const FScreenPassTextureViewport RegionViewport(SceneColorRenderTarget.Texture, PrimaryViewRect);
+
+    GraphBuilder.AddPass(
+        RDG_EVENT_NAME("VoxelRenderPass"),
+        PassParameters,
+        ERDGPassFlags::Raster,
+        [this, 
+        &View, 
+        RegionViewport,
+        output,
+        SceneColorTextureViewport
+        ](FRHICommandListImmediate& RHICmdList)
+        {      
+
+            FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+            TShaderMapRef<FVoxelVertexShader> VertexShader(GlobalShaderMap);
+            TShaderMapRef<FVoxelPixelShader> PixelShader(GlobalShaderMap);
+            FVoxelVertexShader::FParameters VSParams;
+            FVoxelPixelShader::FParameters PSParams;
+            FRHIBlendState* CopyBlendState = TStaticBlendState<CW_RGB, BO_Add, BF_SourceAlpha, BF_InverseSourceAlpha, BO_Add, BF_Zero, BF_One>::GetRHI();
+
+            DrawScreenPass(
+                RHICmdList,
+                View,
+                RegionViewport,
+                RegionViewport,
+                FScreenPassPipelineState(VertexShader, PixelShader, CopyBlendState),
+                EScreenPassDrawFlags::None,
+                [&](FRHICommandList&)
+                {            
+                    SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
+                    SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
+                });
+
+            //UE_LOG(LogTemp, Warning, TEXT("Start pass"));
+            //FRHIRenderPassInfo RPInfo(output.Texture->GetRHI(), ERenderTargetActions::Load_Store);
+            //RHICmdList.BeginRenderPass(RPInfo, TEXT("VoxelRenderPass"));
+
+           // UE_LOG(LogTemp, Warning, TEXT("Begin pass"));
+
+            /*RHICmdList.SetViewport(
+                PrimaryViewRect.Min.X, PrimaryViewRect.Min.Y, 0.0f,
+                PrimaryViewRect.Max.X, PrimaryViewRect.Max.Y, 1.0f
+            );*/
+
+
+            for (const auto& Pair : VoxelBodiesInfos)
             {
-                FPrimitiveSceneProxy* sceneProxy = MeshComp->SceneProxy;
-                if (sceneProxy == nullptr) continue;
-                FVoxelSceneProxy* VoxelSceneProxy = static_cast<FVoxelSceneProxy*>(sceneProxy);
-                FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
-                PassParameters->RenderTargets[0] = output.GetRenderTargetBinding();
-
-                GraphBuilder.AddPass(
-                    RDG_EVENT_NAME("VoxelRenderPass"),
-                    PassParameters,
-                    ERDGPassFlags::Raster,
-                    [this, &View, VoxelSceneProxy, output](FRHICommandListImmediate& RHICmdList)
+                const FVoxelBodyInfo& Info = Pair.Value;
+                for (const auto& MeshComp : Info.RenderContext.VoxelBodies)
+                {
+                    if (MeshComp.IsValid() && MeshComp->SceneProxy)
                     {
+                        FPrimitiveSceneProxy* sceneProxy = MeshComp->SceneProxy;
+                        if (sceneProxy == nullptr) continue;
+                        FVoxelSceneProxy* VoxelSceneProxy = static_cast<FVoxelSceneProxy*>(sceneProxy);
+                        FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
+
                         const FScene* Scene = View.Family->Scene->GetRenderScene();
                         if (!Scene) return;
-                        VoxelSceneProxy->RenderMyCustomPass(RHICmdList, Scene, &View);
-                    });
-            }
-        }
-    }
 
+                        VoxelSceneProxy->RenderMyCustomPass(RHICmdList, Scene, &View);
+                    }
+                }  
+            }
+            //RHICmdList.EndRenderPass();
+        });
 //----------------- Attempt 4 using Global shader DrawIndexedPrimitive to render data as post process
     // ended with Shader Compliation failures are fatal. 
     // It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead

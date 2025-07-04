@@ -1,0 +1,36 @@
+#pragma once
+#pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
+#include "/Engine/Public/Platform.ush"
+
+float3 leafPosition;
+int leafDepth;
+int nodeIndex;
+
+Buffer<float> isoValues;
+// some out buffer
+
+int voxelsPerAxis;
+float baseDepthScale;
+float isoLevel;
+
+
+int GetIsoIndex(int3 coord)
+{
+    int maxIsoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
+    int index = coord.x + coord.y * (voxelsPerAxis + 1) + coord.z * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
+    return max(0, min(index, maxIsoCount + 1));
+}
+
+float GetDensity(int3 coord)
+{
+    bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
+    if (isEdge) return isoLevel;
+    int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
+    return isoValues[(GetIsoIndex(coord))];
+}
+
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+void TextureGenerator(int3 id : SV_DispatchThreadID)
+{
+
+}

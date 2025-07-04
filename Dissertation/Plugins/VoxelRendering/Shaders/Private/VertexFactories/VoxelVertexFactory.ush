@@ -254,9 +254,9 @@ FMaterialVertexParameters GetMaterialVertexParameters(FVertexFactoryInput Input,
 {
     
     FMaterialVertexParameters Result = MakeInitializedMaterialVertexParameters();
-    //Result.SceneData = Intermediates.SceneData;
+    Result.SceneData = Intermediates.SceneData;
     Result.WorldPosition = WorldPosition;
-    //Result.VertexColor = Intermediates.Color;
+    Result.VertexColor = Intermediates.Color;
     Result.PositionPrimitiveSpace = Result.PositionInstanceSpace;
     Result.TangentToWorld = float3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
     Result.PreSkinnedPosition = Input.Position.xyz;
@@ -278,7 +278,7 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
     FVertexFactoryInterpolantsVSToPS Interpolants;
     Interpolants.TangentToWorld0 = float4((float3)Intermediates.TangentToWorld[0], 0.0);
     Interpolants.TangentToWorld2 = float4((float3)Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
-    Interpolants.Color = half4(1.0, 1.0, 1.0, 1.0); // VertexParameters.VertexColor;
+    Interpolants.Color = half4(1.0, 0.0, 0.0, 1.0); // VertexParameters.VertexColor;
     Interpolants.Alpha = half(1.0);
     Interpolants.TexCoords = float2(0.0, 0.0); //NormalBasedPlanarMapping(Input, float2(1, 1));
     return Interpolants;
@@ -298,7 +298,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.TangentToLocal = zeroed;//CalcTangentToLocal(Input);
     Intermediates.TangentToWorldSign = Intermediates.SceneData.InstanceData.DeterminantSign;
     Intermediates.TangentToWorld = zeroed; //(half3x3) CalcTangentToWorldNoScale((float3x3) Intermediates.TangentToLocal, (float3x3) Intermediates.SceneData.Primitive.LocalToWorld);
-    Intermediates.Color = half4(1.0,1.0,1.0,1.0);
+    Intermediates.Color = half4(1.0,0.0,0.0,1.0);
     Intermediates.Alpha = half(1.0);
     return Intermediates;
 }

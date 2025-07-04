@@ -1,0 +1,65 @@
+#pragma once
+#pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
+#include "/Engine/Public/Platform.ush"
+
+float3 leafPosition;
+int leafDepth;
+int nodeIndex;
+
+// Full iso buffers
+Buffer<float> isoValues;
+Buffer<float> isoDeformedValues;
+
+// Leaf iso values
+RWBuffer<float> isoCombinedValues;
+
+int voxelsPerAxis;
+float baseDepthScale;
+
+int GetIsoIndex(int3 coord)
+{
+    int maxIsoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
+    int index = coord.x + coord.y * (voxelsPerAxis + 1) + coord.z * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
+    return max(0, min(index, maxIsoCount + 1));
+}
+
+float GetDensity(int3 coord)
+{
+    bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
+    if (isEdge) return 0;
+    int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
+    return isoCombinedValues[(GetIsoIndex(coord))];
+}
+
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+void Deformation(int3 id : SV_DispatchThreadID)
+{
+    if (any(id >= voxelsPerAxis)) return;
+    
+    int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
+    int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
+    int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
+    int triangleStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
+    int vertexStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
+    
+    float scale = baseDepthScale / (pow(2, leafDepth));
+    float centerDis = scale / 2;
+    float isoScale = (scale / (voxelsPerAxis));
+    float3 worldPos = leafPosition - float3(centerDis, centerDis, centerDis);
+
+    int3 cornerCoords[8];
+    cornerCoords[0] = id + int3(0, 0, 0);
+    cornerCoords[1] = id + int3(1, 0, 0);
+    cornerCoords[2] = id + int3(1, 0, 1);
+    cornerCoords[3] = id + int3(0, 0, 1);
+    cornerCoords[4] = id + int3(0, 1, 0);
+    cornerCoords[5] = id + int3(1, 1, 0);
+    cornerCoords[6] = id + int3(1, 1, 1);
+    cornerCoords[7] = id + int3(0, 1, 1);
+    
+    int config = 0;
+    for (int h = 0; h < 8; ++h)
+    {
+        GetDensity(cornerCoords[h]);
+    }
+}

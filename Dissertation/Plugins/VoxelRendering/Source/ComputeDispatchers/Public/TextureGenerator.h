@@ -4,7 +4,7 @@
 #include "RenderGraph.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
-#include "TextureGeneratorDispatcher.generated.h"
+#include "TextureGenerator.generated.h"
 
 
 USTRUCT(BlueprintType)

@@ -1,8 +1,8 @@
-#include "PlanetGeneratorDispatcher.h"
+#include "DeformationDispatcher.h"
 #include "ComputeDispatchers.h"
 #include "CommonRenderResources.h"
 #include "RenderGraph.h"
-#include "ComputeDispatchers/Public/PlanetGeneratorDispatcher.h"
+#include "ComputeDispatchers/Public/DeformationDispatcher.h"
 #include "PixelShaderUtils.h"
 #include "Runtime/RenderCore/Public/RenderGraphUtils.h"
 #include "MeshPassProcessor.inl"
@@ -14,13 +14,13 @@
 #include "CanvasTypes.h"
 #include "MaterialShader.h"
 
-DECLARE_STATS_GROUP(TEXT("PlanetGenerator"), STATGROUP_PlanetGenerator, STATCAT_Advanced);
-DECLARE_CYCLE_STAT(TEXT("PlanetGenerator Execute"), STAT_PlanetGenerator_Execute, STATGROUP_PlanetGenerator);
+DECLARE_STATS_GROUP(TEXT("Deformation"), STATGROUP_Deformation, STATCAT_Advanced);
+DECLARE_CYCLE_STAT(TEXT("Deformation Execute"), STAT_Deformation_Execute, STATGROUP_Deformation);
 
-class FPlanetNoiseGenerator : public FGlobalShader
+class FDeformation : public FGlobalShader
 {
-	DECLARE_GLOBAL_SHADER(FPlanetNoiseGenerator);
-	SHADER_USE_PARAMETER_STRUCT(FPlanetNoiseGenerator, FGlobalShader);
+	DECLARE_GLOBAL_SHADER(FDeformation);
+	SHADER_USE_PARAMETER_STRUCT(FDeformation, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER(uint32, size)
@@ -38,102 +38,45 @@ class FPlanetNoiseGenerator : public FGlobalShader
 	{
 		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 		const FPermutationDomain PermutationVector(Parameters.PermutationId);
-		OutEnvironment.SetDefine(TEXT("THREADS_X"), NUM_THREADS_PlanetGenerator_X);
-		OutEnvironment.SetDefine(TEXT("THREADS_Y"), NUM_THREADS_PlanetGenerator_Y);
-		OutEnvironment.SetDefine(TEXT("THREADS_Z"), NUM_THREADS_PlanetGenerator_Z);
+		OutEnvironment.SetDefine(TEXT("THREADS_X"), NUM_THREADS_Deformation_X);
+		OutEnvironment.SetDefine(TEXT("THREADS_Y"), NUM_THREADS_Deformation_Y);
+		OutEnvironment.SetDefine(TEXT("THREADS_Z"), NUM_THREADS_Deformation_Z);
 	}
 };
 
-class FPlanetBiomeGenerator : public FGlobalShader
-{
-	DECLARE_GLOBAL_SHADER(FPlanetBiomeGenerator);
-	SHADER_USE_PARAMETER_STRUCT(FPlanetBiomeGenerator, FGlobalShader);
+IMPLEMENT_GLOBAL_SHADER(FDeformation, "/ComputeDispatchersShaders/Deformation.usf", "Deformation", SF_Compute);
 
-	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER(uint32, size)
-		SHADER_PARAMETER(uint32, seed)
-		SHADER_PARAMETER(float, isoLevel)
-		SHADER_PARAMETER(float, baseDepthScale)
-		SHADER_PARAMETER(float, planetScaleRatio)
-		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float>, isoValues)
-		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float>, outTypeValues)
-	END_SHADER_PARAMETER_STRUCT()
 
-	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
-		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
-	}
-
-	static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
-	{
-		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
-		const FPermutationDomain PermutationVector(Parameters.PermutationId);
-		OutEnvironment.SetDefine(TEXT("THREADS_X"), NUM_THREADS_PlanetGenerator_X);
-		OutEnvironment.SetDefine(TEXT("THREADS_Y"), NUM_THREADS_PlanetGenerator_Y);
-		OutEnvironment.SetDefine(TEXT("THREADS_Z"), NUM_THREADS_PlanetGenerator_Z);
-	}
-};
-
-IMPLEMENT_GLOBAL_SHADER(FPlanetNoiseGenerator, "/ComputeDispatchersShaders/PlanetNoiseGenerator.usf", "PlanetNoiseGenerator", SF_Compute);
-IMPLEMENT_GLOBAL_SHADER(FPlanetBiomeGenerator, "/ComputeDispatchersShaders/PlanetBiomeGenerator.usf", "PlanetBiomeGenerator", SF_Compute);
-
-void AddSphereGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchParams& Params, FRDGBufferUAVRef OutIsoUAV) {
-	FPlanetNoiseGenerator::FParameters* PassParams = GraphBuilder.AllocParameters<FPlanetNoiseGenerator::FParameters>();
+void AddDeformationPass(FRDGBuilder& GraphBuilder, FDeformationDispatchParams& Params, FRDGBufferUAVRef OutTypeUAV, FRDGBufferSRVRef InIsoSRV) {
+	FDeformation::FParameters* PassParams = GraphBuilder.AllocParameters<FDeformation::FParameters>();
 	PassParams->size = Params.Input.size;
 	PassParams->seed = Params.Input.seed;
-	PassParams->baseDepthScale = Params.Input.baseDepthScale;
-	PassParams->planetScaleRatio = Params.Input.planetScaleRatio;
-	PassParams->outIsoValues = OutIsoUAV;
+
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-	const TShaderMapRef<FPlanetNoiseGenerator> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(PassParams->size, PassParams->size, PassParams->size), FComputeShaderUtils::kGolden2DGroupSize);
-
-	GraphBuilder.AddPass(RDG_EVENT_NAME("Planet Noise Generator"), PassParams, ERDGPassFlags::AsyncCompute,
-		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
-			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); }
-	);
-
-}
-
-void AddBiomeGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchParams& Params, FRDGBufferUAVRef OutTypeUAV, FRDGBufferSRVRef InIsoSRV) {
-	FPlanetBiomeGenerator::FParameters* PassParams = GraphBuilder.AllocParameters<FPlanetBiomeGenerator::FParameters>();
-	PassParams->size = Params.Input.size;
-	PassParams->seed = Params.Input.seed;
-	PassParams->isoLevel = Params.Input.isoLevel;
-	PassParams->baseDepthScale = Params.Input.baseDepthScale;
-	PassParams->planetScaleRatio = Params.Input.planetScaleRatio;
-	PassParams->isoValues = InIsoSRV;
-	PassParams->outTypeValues = OutTypeUAV;
-
-	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-	const TShaderMapRef<FPlanetBiomeGenerator> ComputeShader(ShaderMap);
+	const TShaderMapRef<FDeformation> ComputeShader(ShaderMap);
 	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(PassParams->size, PassParams->size, PassParams->size), FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Planet Biome Generator"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
 			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); }
 	);
-
 }
 
-void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FPlanetGeneratorDispatchParams Params, TFunction<void(FPlanetGeneratorOutput OutputVal)> AsyncCallback) {
+void FDeformationInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FDeformationDispatchParams Params, TFunction<void(FDeformationOutput OutputVal)> AsyncCallback) {
 
 	FRDGBuilder GraphBuilder(RHICmdList);
 	{
-		SCOPE_CYCLE_COUNTER(STAT_PlanetGenerator_Execute);
-		DECLARE_GPU_STAT(PlanetGenerator)
-		RDG_EVENT_SCOPE(GraphBuilder, "PlanetGenerator");
-		RDG_GPU_STAT_SCOPE(GraphBuilder, PlanetGenerator);
+		SCOPE_CYCLE_COUNTER(STAT_Deformation_Execute);
+		DECLARE_GPU_STAT(Deformation)
+		RDG_EVENT_SCOPE(GraphBuilder, "Deformation");
+		RDG_GPU_STAT_SCOPE(GraphBuilder, Deformation);
 
-		typename FPlanetNoiseGenerator::FPermutationDomain NoisePermutationVector;
-		TShaderMapRef<FPlanetNoiseGenerator> NoiseComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), NoisePermutationVector);
-		bool bIsNoiseShaderValid = NoiseComputeShader.IsValid();
+		typename FDeformation::FPermutationDomain DeformationPermutationVector;
+		TShaderMapRef<FDeformation> DeformationComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), DeformationPermutationVector);
+		bool bIsShaderValid = DeformationComputeShader.IsValid();
 
-		typename FPlanetBiomeGenerator::FPermutationDomain BiomePermutationVector;
-		TShaderMapRef<FPlanetBiomeGenerator> BiomeComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), BiomePermutationVector);
-		bool bIsBiomeShaderValid = BiomeComputeShader.IsValid();
-
-		if (bIsNoiseShaderValid && bIsBiomeShaderValid) {
+		if (bIsShaderValid) {
 			const int isoValueCount = Params.Input.size * Params.Input.size * Params.Input.size;
 
 			TArray<float> OutIsoValues;
@@ -149,11 +92,10 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 			FRDGBufferUAVRef OutTypeValuesUAV = GraphBuilder.CreateUAV(OutTypeValuesBuffer);
 			FRDGBufferSRVRef IsoValuesSRV = GraphBuilder.CreateSRV(OutIsoValuesBuffer);
 
-			AddSphereGeneratorPass(GraphBuilder, Params, OutIsoValuesUAV);
-			AddBiomeGeneratorPass(GraphBuilder, Params, OutTypeValuesUAV, IsoValuesSRV);
+			AddDeformationPass(GraphBuilder, Params, OutTypeValuesUAV, IsoValuesSRV);
 
-			FRHIGPUBufferReadback* isoReadback = new FRHIGPUBufferReadback(TEXT("PlanetGeneratorISO"));
-			FRHIGPUBufferReadback* typeReadback = new FRHIGPUBufferReadback(TEXT("PlanetGeneratorTYPE"));
+			FRHIGPUBufferReadback* isoReadback = new FRHIGPUBufferReadback(TEXT("DeformationISO"));
+			FRHIGPUBufferReadback* typeReadback = new FRHIGPUBufferReadback(TEXT("DeformationTYPE"));
 
 			AddEnqueueCopyPass(GraphBuilder, isoReadback, OutIsoValuesBuffer, 0u);
 			AddEnqueueCopyPass(GraphBuilder, typeReadback, OutTypeValuesBuffer, 0u);
@@ -161,7 +103,7 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 			auto RunnerFunc = [isoReadback, typeReadback, AsyncCallback, isoValueCount](auto&& RunnerFunc) ->
 				void {
 				if (isoReadback->IsReady() && typeReadback->IsReady()) {
-					FPlanetGeneratorOutput OutVal;
+					FDeformationOutput OutVal;
 
 					void* VBuf = isoReadback->Lock(0);
 					OutVal.outIsoValues.Append((float*)VBuf, isoValueCount);

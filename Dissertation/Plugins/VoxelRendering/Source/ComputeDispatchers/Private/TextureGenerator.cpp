@@ -2,7 +2,7 @@
 #include "ComputeDispatchers.h"
 #include "CommonRenderResources.h"
 #include "RenderGraph.h"
-#include "ComputeDispatchers/Public/PlanetGeneratorDispatcher.h"
+#include "ComputeDispatchers/Public/TextureGenerator.h"
 #include "PixelShaderUtils.h"
 #include "Runtime/RenderCore/Public/RenderGraphUtils.h"
 #include "MeshPassProcessor.inl"
@@ -14,8 +14,8 @@
 #include "CanvasTypes.h"
 #include "MaterialShader.h"
 
-DECLARE_STATS_GROUP(TEXT("TextureGenerator"), STATGROUP_PlanetGenerator, STATCAT_Advanced);
-DECLARE_CYCLE_STAT(TEXT("TextureGenerator Execute"), STAT_PlanetGenerator_Execute, STATGROUP_PlanetGenerator);
+DECLARE_STATS_GROUP(TEXT("TextureGenerator"), STATGROUP_TextureGenerator, STATCAT_Advanced);
+DECLARE_CYCLE_STAT(TEXT("TextureGenerator Execute"), STAT_TextureGenerator_Execute, STATGROUP_TextureGenerator);
 
 class FTextureGenerator : public FGlobalShader
 {
@@ -47,8 +47,9 @@ class FTextureGenerator : public FGlobalShader
 	}
 };
 
-IMPLEMENT_GLOBAL_SHADER(FPlanetBiomeGenerator, "/ComputeDispatchersShaders/TextureGenerator.usf", "TextureGenerator", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FTextureGenerator, "/ComputeDispatchersShaders/TextureGenerator.usf", "TextureGenerator", SF_Compute);
 
+/*
 void AddSphereGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchParams& Params, FRDGBufferUAVRef OutIsoUAV) {
 	FTextureGenerator::FParameters* PassParams = GraphBuilder.AllocParameters<FTextureGenerator::FParameters>();
 	PassParams->size = Params.Input.size;
@@ -66,16 +67,16 @@ void AddSphereGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchP
 			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); }
 	);
 
-}
+}*/
 
-void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FPlanetGeneratorDispatchParams Params, TFunction<void(FPlanetGeneratorOutput OutputVal)> AsyncCallback) {
+void FTextureGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FTextureGeneratorDispatchParams Params, TFunction<void(FTextureGeneratorOutput OutputVal)> AsyncCallback) {
 
 	FRDGBuilder GraphBuilder(RHICmdList);
 	{
-		SCOPE_CYCLE_COUNTER(STAT_PlanetGenerator_Execute);
-		DECLARE_GPU_STAT(PlanetGenerator)
-		RDG_EVENT_SCOPE(GraphBuilder, "PlanetGenerator");
-		RDG_GPU_STAT_SCOPE(GraphBuilder, PlanetGenerator);
+		SCOPE_CYCLE_COUNTER(STAT_TextureGenerator_Execute);
+		DECLARE_GPU_STAT(TextureGenerator)
+		RDG_EVENT_SCOPE(GraphBuilder, "TextureGenerator");
+		RDG_GPU_STAT_SCOPE(GraphBuilder, TextureGenerator);
 
 		typename FTextureGenerator::FPermutationDomain NoisePermutationVector;
 		TShaderMapRef<FTextureGenerator> NoiseComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), NoisePermutationVector);
@@ -97,10 +98,10 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 			FRDGBufferUAVRef OutTypeValuesUAV = GraphBuilder.CreateUAV(OutTypeValuesBuffer);
 			FRDGBufferSRVRef IsoValuesSRV = GraphBuilder.CreateSRV(OutIsoValuesBuffer);
 
-			AddSphereGeneratorPass(GraphBuilder, Params, OutIsoValuesUAV);
+			//AddSphereGeneratorPass(GraphBuilder, Params, OutIsoValuesUAV);
 
-			FRHIGPUBufferReadback* isoReadback = new FRHIGPUBufferReadback(TEXT("PlanetGeneratorISO"));
-			FRHIGPUBufferReadback* typeReadback = new FRHIGPUBufferReadback(TEXT("PlanetGeneratorTYPE"));
+			FRHIGPUBufferReadback* isoReadback = new FRHIGPUBufferReadback(TEXT("TextureGeneratorISO"));
+			FRHIGPUBufferReadback* typeReadback = new FRHIGPUBufferReadback(TEXT("TextureGeneratorTYPE"));
 
 			AddEnqueueCopyPass(GraphBuilder, isoReadback, OutIsoValuesBuffer, 0u);
 			AddEnqueueCopyPass(GraphBuilder, typeReadback, OutTypeValuesBuffer, 0u);
@@ -108,7 +109,7 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 			auto RunnerFunc = [isoReadback, typeReadback, AsyncCallback, isoValueCount](auto&& RunnerFunc) ->
 				void {
 				if (isoReadback->IsReady() && typeReadback->IsReady()) {
-					FPlanetGeneratorOutput OutVal;
+					FTextureGeneratorOutput OutVal;
 
 					void* VBuf = isoReadback->Lock(0);
 					OutVal.outIsoValues.Append((float*)VBuf, isoValueCount);

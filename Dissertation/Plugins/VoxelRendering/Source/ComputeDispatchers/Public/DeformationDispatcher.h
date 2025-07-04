@@ -40,7 +40,7 @@ struct COMPUTEDISPATCHERS_API FDeformationDispatchParams
 		X(x),Y(y),Z(z){}
 };
 
-class COMPUTEDISPATCHERS_API FPlanetGeneratorInterface {
+class COMPUTEDISPATCHERS_API FDeformationInterface {
 public:
 	static void DispatchRenderThread(FRHICommandListImmediate& RHICmdList,
 		FDeformationDispatchParams Params,TFunction<void(FDeformationOutput OutputVal)> AsyncCallback);
@@ -73,7 +73,7 @@ public:
 		Params.Input.size = Args.size;
 		Params.Input.baseDepthScale = Args.baseDepthScale;
 
-		FPlanetGeneratorInterface::Dispatch(Params, [this](FDeformationOutput OutputVal) {
+		FDeformationInterface::Dispatch(Params, [this](FDeformationOutput OutputVal) {
 			this->Completed.Broadcast(OutputVal);
 			});
 	}

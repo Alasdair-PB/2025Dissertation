@@ -142,7 +142,7 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 		SetMeshBatchElementsGeneric(meshBatch, viewIndex);
 
 		CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
-		//Collector.AddMesh(viewIndex, meshBatch);
+		Collector.AddMesh(viewIndex, meshBatch);
 	}
 }
 

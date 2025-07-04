@@ -221,34 +221,34 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
 
     FScreenPassTexture sceneColor((*Inputs.SceneTextures)->SceneColorTexture, PrimaryViewRect);
     check(sceneColor.IsValid());
-    FScreenPassRenderTarget output = FScreenPassRenderTarget::CreateFromInput(GraphBuilder, sceneColor, View.GetOverwriteLoadAction(), TEXT("VoxelOutput"));
+    FScreenPassRenderTarget SceneColorRenderTarget(sceneColor, ERenderTargetLoadAction::ELoad);
+    FRHIBlendState* DefaultBlendState = FScreenPassPipelineState::FDefaultBlendState::GetRHI();
+
+    // FScreenPassRenderTarget output = FScreenPassRenderTarget::CreateFromInput(GraphBuilder, sceneColor, View.GetOverwriteLoadAction(), TEXT("VoxelOutput"));
     //FTextureRHIRef RenderTargetTexture = InView.Family->RenderTarget->GetRenderTargetTexture();
 
     // Assorted info that is not used but may be useful********************************************************
-    FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-    FRDGTextureDesc ColorCorrectRegionsOutputDesc = sceneColor.Texture->Desc;
+    //FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+    //FRDGTextureDesc ColorCorrectRegionsOutputDesc = sceneColor.Texture->Desc;
 
-    ColorCorrectRegionsOutputDesc.Format = PF_FloatRGBA;
-    FLinearColor ClearColor(0., 0., 0., 0.);
-    ColorCorrectRegionsOutputDesc.ClearValue = FClearValueBinding(ClearColor);
+   // ColorCorrectRegionsOutputDesc.Format = PF_FloatRGBA;
+    //FLinearColor ClearColor(0., 0., 0., 0.);
+   // ColorCorrectRegionsOutputDesc.ClearValue = FClearValueBinding(ClearColor);
 
-    FRDGTexture* BackBufferRenderTargetTexture = GraphBuilder.CreateTexture(ColorCorrectRegionsOutputDesc, TEXT("BackBufferRenderTargetTexture"));
-    FScreenPassRenderTarget BackBufferRenderTarget = FScreenPassRenderTarget(BackBufferRenderTargetTexture, sceneColor.ViewRect, ERenderTargetLoadAction::EClear);
-    FScreenPassRenderTarget SceneColorRenderTarget(sceneColor, ERenderTargetLoadAction::ELoad);
-    const FScreenPassTextureViewport SceneColorTextureViewport(sceneColor);
+   // FRDGTexture* BackBufferRenderTargetTexture = GraphBuilder.CreateTexture(ColorCorrectRegionsOutputDesc, TEXT("BackBufferRenderTargetTexture"));
+    //FScreenPassRenderTarget BackBufferRenderTarget = FScreenPassRenderTarget(BackBufferRenderTargetTexture, sceneColor.ViewRect, ERenderTargetLoadAction::EClear);
+    //const FScreenPassTextureViewport SceneColorTextureViewport(sceneColor);
 
-    FRHIBlendState* DefaultBlendState = FScreenPassPipelineState::FDefaultBlendState::GetRHI();
+    //RDG_EVENT_SCOPE(GraphBuilder, "Color Correct Regions %dx%d", SceneColorTextureViewport.Rect.Width(), SceneColorTextureViewport.Rect.Height());
 
-    RDG_EVENT_SCOPE(GraphBuilder, "Color Correct Regions %dx%d", SceneColorTextureViewport.Rect.Width(), SceneColorTextureViewport.Rect.Height());
-
-    FRHISamplerState* PointClampSampler = TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
-    const FScreenPassTextureViewportParameters SceneTextureViewportParams = GetTextureViewportParameters(SceneColorTextureViewport);
-    FScreenPassTextureInput SceneTextureInput;
+    //FRHISamplerState* PointClampSampler = TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
+   // const FScreenPassTextureViewportParameters SceneTextureViewportParams = GetTextureViewportParameters(SceneColorTextureViewport);
+    /*FScreenPassTextureInput SceneTextureInput;
     {
         SceneTextureInput.Viewport = SceneTextureViewportParams;
         SceneTextureInput.Texture = SceneColorRenderTarget.Texture;
         SceneTextureInput.Sampler = PointClampSampler;
-    }
+    }*/
     // end assorted info region********************************************************************************
 
     FVoxelTargetParameters* PassParameters = GraphBuilder.AllocParameters<FVoxelTargetParameters>();
@@ -261,9 +261,8 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
         ERDGPassFlags::Raster,
         [this, 
         &View, 
-        RegionViewport,
-        output,
-        SceneColorTextureViewport
+        DefaultBlendState,
+        RegionViewport
         ](FRHICommandListImmediate& RHICmdList)
         {      
 
@@ -272,32 +271,29 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
             TShaderMapRef<FVoxelPixelShader> PixelShader(GlobalShaderMap);
             FVoxelVertexShader::FParameters VSParams;
             FVoxelPixelShader::FParameters PSParams;
-            FRHIBlendState* CopyBlendState = TStaticBlendState<CW_RGB, BO_Add, BF_SourceAlpha, BF_InverseSourceAlpha, BO_Add, BF_Zero, BF_One>::GetRHI();
 
-            DrawScreenPass(
+            /*DrawScreenPass(
                 RHICmdList,
                 View,
                 RegionViewport,
                 RegionViewport,
-                FScreenPassPipelineState(VertexShader, PixelShader, CopyBlendState),
+                FScreenPassPipelineState(VertexShader, PixelShader, DefaultBlendState),
                 EScreenPassDrawFlags::None,
                 [&](FRHICommandList&)
-                {            
+                {
                     SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
                     SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PSParams);
-                });
+                });*/
 
             //UE_LOG(LogTemp, Warning, TEXT("Start pass"));
             //FRHIRenderPassInfo RPInfo(output.Texture->GetRHI(), ERenderTargetActions::Load_Store);
-            //RHICmdList.BeginRenderPass(RPInfo, TEXT("VoxelRenderPass"));
-
-           // UE_LOG(LogTemp, Warning, TEXT("Begin pass"));
 
             /*RHICmdList.SetViewport(
                 PrimaryViewRect.Min.X, PrimaryViewRect.Min.Y, 0.0f,
                 PrimaryViewRect.Max.X, PrimaryViewRect.Max.Y, 1.0f
             );*/
 
+            //RHICmdList.BeginRenderPass(RPInfo, TEXT("VoxelRenderPass"));
 
             for (const auto& Pair : VoxelBodiesInfos)
             {

@@ -99,6 +99,7 @@ public:
 
 	FShaderResourceViewRHIRef GetVertexSRV() const { return vertexBuffer.SRV; }
 	FUnorderedAccessViewRHIRef GetVertexUAV() const { return vertexBuffer.UAV; }
+	FShaderResourceViewRHIRef GetVertexNormalsSRV() const { return normalsBuffer.SRV; }
 	FUnorderedAccessViewRHIRef GetVertexNormalsUAV() const { return normalsBuffer.UAV; }
 
 	FShaderResourceViewRHIRef GetIndexSRV() const { return indexBuffer.SRV; }

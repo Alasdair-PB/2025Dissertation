@@ -29,18 +29,24 @@ public:
 		const FVoxelVertexFactory* VoxelVertexFactory = static_cast<const FVoxelVertexFactory*>(InVertexFactory);
 		const FVoxelBatchElementUserData* UserData = (const FVoxelBatchElementUserData*)BatchElement.UserData;
 
-		if (VoxelVF.IsBound())
+		if (VoxelVF.IsBound()) {
 			ShaderBindings.Add(VoxelVF, VoxelVertexFactory->GetVertexSRV());
+			ShaderBindings.Add(VoxelVF, VoxelVertexFactory->GetVertexNormalsSRV());
+		}
 	}
 
 	void Bind(const FShaderParameterMap& ParameterMap)
 	{
 		VoxelVF.Bind(ParameterMap, TEXT("VoxelVF"));
+		VoxelVF.Bind(ParameterMap, TEXT("VoxelNormalVF"));
+
 		//BINDPARAM(isoLevel);
 	};
 
 private:
 	LAYOUT_FIELD(FShaderResourceParameter, VoxelVF);	
+	LAYOUT_FIELD(FShaderResourceParameter, VoxelNormalVF);
+
 };
 IMPLEMENT_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters);
 

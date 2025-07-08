@@ -215,14 +215,14 @@ FScreenPassTexture FVoxelSceneViewExtension::PostProcessPassSSRInput_RenderThrea
 
 void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
-    checkSlow(View.bIsViewInfo);
+   /* checkSlow(View.bIsViewInfo);
     const FViewInfo& viewInfo = static_cast<const FViewInfo&>(View);
     const FIntRect PrimaryViewRect = viewInfo.ViewRect;
 
     FScreenPassTexture sceneColor((*Inputs.SceneTextures)->SceneColorTexture, PrimaryViewRect);
     check(sceneColor.IsValid());
     FScreenPassRenderTarget SceneColorRenderTarget(sceneColor, ERenderTargetLoadAction::ELoad);
-    FRHIBlendState* DefaultBlendState = FScreenPassPipelineState::FDefaultBlendState::GetRHI();
+    FRHIBlendState* DefaultBlendState = FScreenPassPipelineState::FDefaultBlendState::GetRHI();*/
 
     // FScreenPassRenderTarget output = FScreenPassRenderTarget::CreateFromInput(GraphBuilder, sceneColor, View.GetOverwriteLoadAction(), TEXT("VoxelOutput"));
     //FTextureRHIRef RenderTargetTexture = InView.Family->RenderTarget->GetRenderTargetTexture();
@@ -251,7 +251,7 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
     }*/
     // end assorted info region********************************************************************************
 
-    FVoxelTargetParameters* PassParameters = GraphBuilder.AllocParameters<FVoxelTargetParameters>();
+    /*FVoxelTargetParameters* PassParameters = GraphBuilder.AllocParameters<FVoxelTargetParameters>();
     PassParameters->RenderTargets[0] = SceneColorRenderTarget.GetRenderTargetBinding();
     const FScreenPassTextureViewport RegionViewport(SceneColorRenderTarget.Texture, PrimaryViewRect);
 
@@ -270,7 +270,7 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
             TShaderMapRef<FVoxelVertexShader> VertexShader(GlobalShaderMap);
             TShaderMapRef<FVoxelPixelShader> PixelShader(GlobalShaderMap);
             FVoxelVertexShader::FParameters VSParams;
-            FVoxelPixelShader::FParameters PSParams;
+            FVoxelPixelShader::FParameters PSParams;*/
 
             /*DrawScreenPass(
                 RHICmdList,
@@ -295,6 +295,7 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
 
             //RHICmdList.BeginRenderPass(RPInfo, TEXT("VoxelRenderPass"));
 
+#if false
             for (const auto& Pair : VoxelBodiesInfos)
             {
                 const FVoxelBodyInfo& Info = Pair.Value;
@@ -314,8 +315,9 @@ void FVoxelSceneViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& Grap
                     }
                 }  
             }
+#endif
             //RHICmdList.EndRenderPass();
-        });
+       // });
 //----------------- Attempt 4 using Global shader DrawIndexedPrimitive to render data as post process
     // ended with Shader Compliation failures are fatal. 
     // It seems like FGlobalShaders do not support vertex information so need to change to FVoxelPixelMeshMaterialShader instead

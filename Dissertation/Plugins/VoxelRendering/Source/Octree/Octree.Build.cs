@@ -10,8 +10,8 @@ public class Octree : ModuleRules
 		PublicIncludePaths.AddRange(new string[] {});	
 		PrivateIncludePaths.AddRange(new string[] {});
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine"});
-        PrivateDependencyModuleNames.AddRange(new string[] { "CoreUObject", "Engine"});
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "VoxelRenderingUtils", "CoreUObject", "Engine"});
+        PrivateDependencyModuleNames.AddRange(new string[] { "CoreUObject", "VoxelRenderingUtils", "Engine"});
 		DynamicallyLoadedModuleNames.AddRange(new string[]{});
 	}
 }

@@ -1,27 +1,52 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "AABB.h"
+#include "FVoxelVertexFactory.h"
+#include "RenderResource.h"
+#include "VoxelRenderBuffers.h"
+
+#include "Materials/MaterialRelevance.h"
+class FVoxelVertexFactory;
 
 static const int voxelsPerAxis = 5;
 static const int isoValuesPerAxis = voxelsPerAxis + 1;
 static const int nodeVoxelCount = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
 static const int isoCount = isoValuesPerAxis * isoValuesPerAxis * isoValuesPerAxis;
 
-struct IsoCorner {
-    float isoValue; 
-    int typeValue;
-};
 
 class OctreeNode {
 public:
+    TSharedPtr<FVoxelVertexFactory> GetVertexFactory(){ return vertexFactory; }
+
     AABB bounds;
-    bool isLeaf;
     OctreeNode* children[8];
 
-    int32 allocatedIndexStart;
-    int32 allocatedIndexEnd; 
     float isoValues[isoCount];
+    float deformedIsoValues[isoCount];
+
     uint32 typeValues[isoCount];
+    uint32 deformedTypeValues[isoCount];
+
+protected:
+    bool isLeaf;
+    int32 maxVertexIndex;
+
+    TSharedPtr<FVoxelVertexFactory> vertexFactory;
+    TSharedPtr<FIsoDynamicBuffer> avgIsoBuffer;
+    TSharedPtr<FTypeDynamicBuffer> avgTypeBuffer;
+
+public:
+
+    OctreeNode(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) {
+        // 	VertexFactory = new FVoxelVertexFactory(GetScene().GetFeatureLevel(), size);
+        vertexFactory = MakeShareable(new FVoxelVertexFactory(InFeatureLevel, bufferSize));
+        avgIsoBuffer = MakeShareable(new FIsoDynamicBuffer(bufferSize));
+        avgTypeBuffer = MakeShareable(new FTypeDynamicBuffer(bufferSize));
+
+        vertexFactory->Initialize(bufferSize);
+        avgTypeBuffer->Initialize(bufferSize);
+        avgTypeBuffer->Initialize(bufferSize);
+    }
 
     OctreeNode(const AABB& b) : bounds(b), isLeaf(true) {
         for (int i = 0; i < 8; ++i)
@@ -33,10 +58,10 @@ public:
         }
     }
 
-    ~OctreeNode() {
-        for (int i = 0; i < 8; ++i)
-            delete children[i];
-    }
+    ~OctreeNode();
+    void Release();
+
+    bool IsLeaf() { return isLeaf; }
 
     bool IsHomogeneousType() const {
         uint32 firstType = typeValues[0];

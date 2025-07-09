@@ -35,7 +35,7 @@ float GetDensity(int3 coord)
 void Deformation(int3 id : SV_DispatchThreadID)
 {
     if (any(id >= voxelsPerAxis)) return;
-    
+   
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
     int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
     int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
@@ -46,7 +46,26 @@ void Deformation(int3 id : SV_DispatchThreadID)
     float centerDis = scale / 2;
     float isoScale = (scale / (voxelsPerAxis));
     float3 worldPos = leafPosition - float3(centerDis, centerDis, centerDis);
-
+    
+    int minIndex = 0;
+    int maxIndex = 2;
+    int stride = 5;
+    // Average isoValues from minIndex to maxIndex into x values where x is voxelsPerLeaf.
+    for (int i = 0; i < voxelsPerLeaf; i++)
+    {
+        float averagedVal = 0.0;
+        for (int j = minIndex; j < maxIndex; j++)
+        {
+            float x = isoValues[minIndex + 1];
+            float y = isoDeformedValues[minIndex + 1];
+        }
+        averagedVal /= stride;
+        minIndex += stride;
+        maxIndex += stride;
+        isoCombinedValues[i] = averagedVal;
+    }
+    
+    
     int3 cornerCoords[8];
     cornerCoords[0] = id + int3(0, 0, 0);
     cornerCoords[1] = id + int3(1, 0, 0);

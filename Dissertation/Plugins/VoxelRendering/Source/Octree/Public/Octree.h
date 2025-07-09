@@ -2,8 +2,9 @@
 #include "CoreMinimal.h"
 #include "OctreeNode.h"
 #include "AABB.h"
+#include "VoxelRenderBuffers.h"
 
-class Octree {
+class OCTREE_API Octree {
 public:
     OctreeNode* root;
     int maxDepth;
@@ -12,9 +13,9 @@ public:
         root = new OctreeNode(bounds);
     }
 
-    ~Octree() {
-        delete root;
-    }
+    Octree(const AABB& bounds, int nodesPerAxis, int inDepth);
+    ~Octree();
+    void Release();
 
     bool BuildFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint32>& typeBuffer, int nodesPerAxis, int depth) {
         if (typeBuffer.Num() != (nodesPerAxis + 1) * (nodesPerAxis + 1) * (nodesPerAxis + 1)) return false;
@@ -40,6 +41,9 @@ public:
     }
 
 private:
+    TSharedPtr<FTypeUniformBuffer> typeUniformBuffer;
+    TSharedPtr<FIsoUniformBuffer> isoUniformBuffer;
+
     struct NodeData {
         TArray<float> isoValues;
         TArray<uint32> typeValues;
@@ -47,7 +51,7 @@ private:
 
     int GetLeafCountRecursive(OctreeNode* node) {
         if (!node) return 0;
-        if (node->isLeaf) return 1;
+        if (node->IsLeaf()) return 1;
         int count = 0;
         for (int i = 0; i < 8; ++i)
             count += GetLeafCountRecursive(node->children[i]);

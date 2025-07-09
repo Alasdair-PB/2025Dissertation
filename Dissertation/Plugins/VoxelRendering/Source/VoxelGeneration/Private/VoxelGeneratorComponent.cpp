@@ -15,7 +15,6 @@ void UVoxelGeneratorComponent::BeginPlay()
 
 void UVoxelGeneratorComponent::BeginDestroy() {
     Super::BeginDestroy();
-    //voxelRenderer->DestroyComponent();
     delete stopWatch;
 }
 

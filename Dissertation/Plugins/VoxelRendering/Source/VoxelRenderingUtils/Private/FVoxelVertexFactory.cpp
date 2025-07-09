@@ -6,10 +6,6 @@
 #include "DataDrivenShaderPlatformInfo.h"
 #include "RHIResourceUtils.h"
 
-/*#define BINDPARAM(Name) Name.Bind(ParameterMap, TEXT(#Name))
-#define SETPARAM(Name) if (Name.IsBound()) { ShaderBindings.Add(Name, UserData->Name); }
-#define SETSRVPARAM(Name) if(UserData->Name) { SETPARAM(Name) }*/
-
 FVoxelBatchElementUserData::FVoxelBatchElementUserData() {}
 
 class FVoxelVertexFactoryShaderParameters : public FVertexFactoryShaderParameters {
@@ -27,7 +23,7 @@ public:
 		FVertexInputStreamArray& VertexStreams) const
 	{
 		const FVoxelVertexFactory* VoxelVertexFactory = static_cast<const FVoxelVertexFactory*>(InVertexFactory);
-		const FVoxelBatchElementUserData* UserData = (const FVoxelBatchElementUserData*)BatchElement.UserData;
+		const FVoxelBatchElementUserData* UserData = (const FVoxelBatchElementUserData*) BatchElement.UserData;
 
 		if (VoxelVF.IsBound()) {
 			ShaderBindings.Add(VoxelVF, VoxelVertexFactory->GetVertexSRV());
@@ -39,8 +35,6 @@ public:
 	{
 		VoxelVF.Bind(ParameterMap, TEXT("VoxelVF"));
 		VoxelVF.Bind(ParameterMap, TEXT("VoxelNormalVF"));
-
-		//BINDPARAM(isoLevel);
 	};
 
 private:
@@ -53,6 +47,11 @@ IMPLEMENT_TYPE_LAYOUT(FVoxelVertexFactoryShaderParameters);
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Vertex, FVoxelVertexFactoryShaderParameters);
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Compute, FVoxelVertexFactoryShaderParameters);
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(FVoxelVertexFactory, SF_Pixel, FVoxelVertexFactoryShaderParameters);
+
+void FVoxelIndexBuffer::ReleaseRHI() {
+	FIndexBuffer::ReleaseRHI();
+	SRV.SafeRelease();
+}
 
 void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 {
@@ -78,6 +77,12 @@ void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	SRV = RHICmdList.CreateShaderResourceView(IndexBufferRHI, Stride, PF_R32_UINT);
 }
 
+void FVoxelVertexBuffer::ReleaseRHI() {
+	FVertexBuffer::ReleaseRHI();
+	SRV.SafeRelease();
+	UAV.SafeRelease();
+}
+
 void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 {
 	uint32 stride = sizeof(FVector);
@@ -100,16 +105,24 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	}
 }
 
-FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel), firstIndex(0)//, FVoxelVertexFactoryParameters UniformParams
+FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel), firstIndex(0)
 {
 	vertexBuffer.SetElementCount(bufferSize);
 	indexBuffer.SetElementCount(bufferSize);
 	normalsBuffer.SetElementCount(bufferSize);
 }
 
+void FVoxelVertexFactory::Initialize(uint32 bufferSize)
+{
+	vertexBuffer.SetElementCount(bufferSize);
+	indexBuffer.SetElementCount(bufferSize);
+	normalsBuffer.SetElementCount(bufferSize);
+	InitResource(FRHICommandListImmediate::Get());
+}
+
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
 {
-	return true; // IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);//&& Parameters.MaterialParameters.MaterialDomain == MD_Surface;
+	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 }
 
 void FVoxelVertexFactory::ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment) {

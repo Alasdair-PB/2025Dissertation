@@ -25,11 +25,6 @@
 
 struct FShaderCompilerEnvironment;
 
-/*BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FVoxelFactoryUniformParameters, )
-	SHADER_PARAMETER_SRV(Buffer<float>, VertexFetch_Buffer)
-END_GLOBAL_SHADER_PARAMETER_STRUCT()
-typedef TUniformBufferRef<FVoxelFactoryUniformParameters> FVoxelFactoryBufferRef;*/
-
 struct VOXELRENDERINGUTILS_API FVoxelBatchElementUserData
 {
 	FVoxelBatchElementUserData();
@@ -43,16 +38,12 @@ public:
 	FVoxelIndexBuffer(uint32 InNumIndices) : numIndices(InNumIndices) {}
 
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-
-	virtual void ReleaseRHI() override { 
-		FIndexBuffer::ReleaseRHI();
-		SRV.SafeRelease();	
-	}
+	virtual void ReleaseRHI() override;
 
 	uint32 GetIndexCount() const { return numIndices; }
 	void SetElementCount(uint32 InNumIndices) { numIndices = InNumIndices; }
-	FShaderResourceViewRHIRef SRV;
 
+	FShaderResourceViewRHIRef SRV;
 private:
 	uint32 numIndices = 0;
 };
@@ -64,13 +55,8 @@ public:
 	~FVoxelVertexBuffer() = default;
 	FVoxelVertexBuffer(uint32 InNumVertices) : numVertices(InNumVertices) {}
 
-	virtual void ReleaseRHI() override {
-		FVertexBuffer::ReleaseRHI();
-		SRV.SafeRelease();
-		UAV.SafeRelease();
-	}
-
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
+	virtual void ReleaseRHI() override;
 	uint32 GetVertexCount() const { return numVertices;}
 	void SetElementCount(uint32 InNumVertices) { numVertices = InNumVertices; }	
 
@@ -94,6 +80,8 @@ public:
 	void ReleaseRHI() override;
 	static bool ShouldCache(EShaderPlatform Platform, const class FMaterial* Material, const class FShaderType* ShaderType) { return true; }
 
+	void Initialize(uint32 bufferSize);
+
 	FBufferRHIRef GetVertexBufferRHIRef() const { return vertexBuffer.GetRHI();}
 	FBufferRHIRef GetIndexBufferRHIRef() const { return indexBuffer.GetRHI();}
 
@@ -101,7 +89,6 @@ public:
 	FUnorderedAccessViewRHIRef GetVertexUAV() const { return vertexBuffer.UAV; }
 	FShaderResourceViewRHIRef GetVertexNormalsSRV() const { return normalsBuffer.SRV; }
 	FUnorderedAccessViewRHIRef GetVertexNormalsUAV() const { return normalsBuffer.UAV; }
-
 	FShaderResourceViewRHIRef GetIndexSRV() const { return indexBuffer.SRV; }
 
 	uint32 GetVertexBufferBytesPerElement() const { return sizeof(FVoxelVertexInfo); }

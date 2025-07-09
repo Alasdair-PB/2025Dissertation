@@ -19,8 +19,7 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 
 	uint32 size = 64 * nodeVoxelCount * 15; // instead of 64 should be * Params.Input.leafCount;
 
-	size += 1000;
-	VertexFactory = new FVoxelVertexFactory(GetScene().GetFeatureLevel(), size);
+	//size += 1000;
 }
 
 FVoxelSceneProxy::~FVoxelSceneProxy() {}
@@ -46,34 +45,21 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
 }
 
 bool FVoxelSceneProxy::IsInitialized() {
-	return bInitialized && VertexFactory == nullptr ? false : VertexFactory->bInitialized;
+	return bInitialized;
 }
 
-FVoxelVertexFactory* FVoxelSceneProxy::GetVertexFactory() { return VertexFactory; }
-
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {
-	VertexFactory->InitResource(RHICmdList);
 	FPrimitiveSceneProxy::CreateRenderThreadResources(RHICmdList);
 	bInitialized = true;
 }
 
 void FVoxelSceneProxy::DestroyRenderThreadResources() {
-	if (VertexFactory != nullptr)
-	{
-		VertexFactory->ReleaseResource();
-		//delete VertexFactory;
-		VertexFactory = nullptr;
-	}
+
 }
 
 void FVoxelSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList) {
 	FPrimitiveSceneProxy::OnTransformChanged(RHICmdList);
 }
-
-//FMeshBatch MeshBatch;
-//SetMeshBatchGeneric(MeshBatch, View->PrimaryViewIndex);
-//SetMeshBatchElementsGeneric(MeshBatch, View->PrimaryViewIndex);
-//MeshProcessor.AddMeshBatch(MeshBatch, ~0ull, this);
 
 void FVoxelSceneProxy::RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* InScene, const FSceneView* View)
 {
@@ -136,44 +122,51 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 	for (int32 viewIndex = 0; viewIndex < Views.Num(); viewIndex++)
 	{
 		if (!(VisibilityMap & (1 << viewIndex))) continue;
-		FMeshBatch& meshBatch = Collector.AllocateMesh();
 
-		SetMeshBatchGeneric(meshBatch, viewIndex);
-		SetMeshBatchElementsGeneric(meshBatch, viewIndex);
+		for (const FVoxelProxyUpdateDataNode& node : selectedNodes)
+		{
+			if ((node.VertexFactory.IsValid() && node.VertexFactory->IsInitialized()))
+			{
+				FMeshBatch& meshBatch = Collector.AllocateMesh();
+				SetMeshBatchGeneric(meshBatch, node, viewIndex);
+				SetMeshBatchElementsGeneric(meshBatch, node, viewIndex);
 
-		CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
-		Collector.AddMesh(viewIndex, meshBatch);
+				CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
+				Collector.AddMesh(viewIndex, meshBatch);
+			}
+		}
 	}
 }
 
-void FVoxelSceneProxy::SetMeshBatchGeneric(FMeshBatch& meshBatch, int32 viewIndex, bool bWireframe) const {
-	check(VertexFactory);
-	meshBatch.VertexFactory = VertexFactory;
+void FVoxelSceneProxy::SetMeshBatchGeneric(FMeshBatch& meshBatch, const FVoxelProxyUpdateDataNode& node, int32 viewIndex, bool bWireframe) const {
+	check(node.VertexFactory);
+	meshBatch.VertexFactory = node.VertexFactory.Get();
 	meshBatch.ReverseCulling = IsLocalToWorldDeterminantNegative();
 	meshBatch.Type = PT_TriangleList;
 	meshBatch.DepthPriorityGroup = SDPG_World;
 	meshBatch.bCanApplyViewModeOverrides = false;
 	meshBatch.bWireframe = bWireframe;
-	SetMeshBatchRenderProxy(meshBatch, viewIndex, bWireframe);
+	SetMeshBatchRenderProxy(meshBatch);
 }
 
-void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 viewIndex, bool bWireframe) const {
+void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch) const {
 	FMaterialRenderProxy* renderProxy;
-	/*if (!Material) {
+	if (!Material) {
 		renderProxy = UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
 		UE_LOG(LogTemp, Warning, TEXT("No Material instance set:: switching to default MD_Surface support"));
 	}
-	else*/ 
+	else{
 	renderProxy = Material->GetRenderProxy();
-
 	meshBatch.MaterialRenderProxy = renderProxy;
+	}
 }
 
-void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, int32 viewIndex) const {
-	FVoxelIndexBuffer* indexBuffer = VertexFactory->GetIndexBuffer();
-	uint32 numTriangles = (indexBuffer->GetIndexCount() - 1000) / 3;
-	uint32 maxVertexIndex = VertexFactory->GetVertexBuffer()->GetVertexCount() - 1 - 1000;
+void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, const FVoxelProxyUpdateDataNode& node, int32 viewIndex) const {
+	FVoxelIndexBuffer* indexBuffer = node.VertexFactory->GetIndexBuffer();
+	uint32 numTriangles = (indexBuffer->GetIndexCount() - 0) / 3;
+	uint32 maxVertexIndex = node.VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;// -10000;
 
+	// node.visiblePoints
 	FMeshBatchElement& batchElement = meshBatch.Elements[0];
 	batchElement.IndexBuffer = indexBuffer;
 	batchElement.FirstIndex = 0;
@@ -187,12 +180,9 @@ void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, int32 
 
 void FVoxelSceneProxy::SetMeshBatchElementsUserData(FMeshBatchElement& batchElement) const
 {
-#if false
 	FVoxelBatchElementUserData userData;
-	batchElement.UserData = userData;
-#else 
 	batchElement.UserData = nullptr;
-#endif
+
 }
 
 

@@ -4,7 +4,7 @@
 #include "PrimitiveSceneProxy.h"
 #include "FVoxelVertexFactory.h"
 #include "Materials/MaterialRelevance.h"
-class FVoxelVertexFactory;
+#include "RenderData.h"
 
 class VOXELRENDERING_API FVoxelSceneProxy : public FPrimitiveSceneProxy {
 public:
@@ -24,23 +24,20 @@ public:
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
 	void RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* Scene, const FSceneView* View);
+	bool IsInitialized();
 
-	FVoxelVertexFactory* GetVertexFactory();
 	UMaterialInterface* Material;
 
-	bool IsInitialized();
-	mutable TArray<FMeshBatch> CustomPassMeshBatches;
-
 protected:
+	mutable TArray<FMeshBatch> CustomPassMeshBatches;
+	TArray<FVoxelProxyUpdateDataNode> selectedNodes;
 	bool bInitialized = false;
-
 	bool bCompatiblePlatform;
 	bool CanBeRendered() const { return bCompatiblePlatform; }
-	FVoxelVertexFactory* VertexFactory;
 
-	void SetMeshBatchGeneric(FMeshBatch& meshBatch, int32 viewIndex, bool bWireframe = false) const;
-	void SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, int32 viewIndex) const;
-	void SetMeshBatchRenderProxy(FMeshBatch& meshBatch, int32 viewIndex, bool bWireframe) const;
+	void SetMeshBatchRenderProxy(FMeshBatch& meshBatch) const;
+	void SetMeshBatchGeneric(FMeshBatch& meshBatch, const FVoxelProxyUpdateDataNode& node, int32 viewIndex, bool bWireframe = false) const;
+	void SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, const FVoxelProxyUpdateDataNode& node, int32 viewIndex) const;
 	void SetMeshBatchElementsUserData(FMeshBatchElement& meshBatch) const;
 
 };

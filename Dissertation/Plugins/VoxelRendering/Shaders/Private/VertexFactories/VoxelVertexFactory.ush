@@ -325,8 +325,8 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     float3 position = VoxelGetInstancePosition(VertexOffset);
     float3 normal = VoxelGetInstanceNormal(VertexOffset);
     
-    Input.Position = position;
-    Input.Normal = normal;
+    //Input.Position = position;
+    //Input.Normal = normal;
     
     Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
     Intermediates.Position = Input.Position.xyz;

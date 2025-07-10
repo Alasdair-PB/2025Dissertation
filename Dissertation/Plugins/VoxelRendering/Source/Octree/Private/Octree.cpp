@@ -2,7 +2,7 @@
 #include "OctreeModule.h"
 
 Octree::Octree(float inIsoLevel, float inScale, int inVoxelsPerAxis, int inDepth, int inBufferSizePerAxis, const TArray<float>& isoBuffer, const TArray<uint32>& typeBuffer) :
-    voxelsPerAxis(inVoxelsPerAxis), maxDepth(inDepth), voxelsPerAxisMaxRes(inBufferSizePerAxis), scale(inScale), isoLevel(inIsoLevel) {
+    maxDepth(inDepth), voxelsPerAxis(inVoxelsPerAxis), scale(inScale), voxelsPerAxisMaxRes(inBufferSizePerAxis), isoLevel(inIsoLevel) {
 
     float scaleHalfed = inScale / 2;
     AABB bounds = { FVector3f(-scaleHalfed), FVector3f(scaleHalfed) };
@@ -13,8 +13,12 @@ Octree::Octree(float inIsoLevel, float inScale, int inVoxelsPerAxis, int inDepth
     isoUniformBuffer = MakeShareable(new FIsoUniformBuffer(bufferSize));
     typeUniformBuffer = MakeShareable(new FTypeUniformBuffer(bufferSize));
 
-    isoUniformBuffer->Initialize(isoBuffer, bufferSize);
-    typeUniformBuffer->Initialize(typeBuffer, bufferSize);
+    ENQUEUE_RENDER_COMMAND(InitVoxelResources)(
+        [this, bufferSize, isoBuffer, typeBuffer](FRHICommandListImmediate& RHICmdList)
+        {
+            isoUniformBuffer->Initialize(isoBuffer, bufferSize);
+            typeUniformBuffer->Initialize(typeBuffer, bufferSize);
+        });
 }
 
 Octree::~Octree() {

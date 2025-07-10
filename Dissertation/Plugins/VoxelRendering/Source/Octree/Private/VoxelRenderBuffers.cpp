@@ -1,6 +1,9 @@
 #include "VoxelRenderBuffers.h"
 #include "OctreeModule.h"
 
+IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FIsoFetchShaderParameters, "isoFetch_Buffer");
+IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FTypeFetchShaderParameters, "typeFetch_Buffer");
+
 /**
  * Base Uniform Buffer
  */

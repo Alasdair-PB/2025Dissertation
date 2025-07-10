@@ -199,7 +199,7 @@ FScreenPassTexture FVoxelSceneViewExtension::PostProcessPassSSRInput_RenderThrea
                         FPrimitiveSceneProxy* sceneProxy = MeshComp->SceneProxy;
                         if (sceneProxy == nullptr) continue;
                         FVoxelSceneProxy* VoxelSceneProxy = static_cast<FVoxelSceneProxy*>(sceneProxy);
-                        FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
+                        //FVoxelVertexFactory* VF = VoxelSceneProxy->GetVertexFactory();
 
                         const FScene* Scene = View.Family->Scene->GetRenderScene();
                         if (!Scene) return;

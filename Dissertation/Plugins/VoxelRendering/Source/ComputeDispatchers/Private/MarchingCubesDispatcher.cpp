@@ -56,7 +56,7 @@ IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCube
 
 void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FMarchingCubesDispatchParams& Params, FRDGBufferSRVRef InLookUpSRV) {
 	FMarchingCubes::FParameters* PassParams = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
-	int voxelsPerAxis = Params.Input.voxelsPerAxis;
+	int voxelsPerAxis = Params.Input.updateData.voxelsPerAxis;
 
 	PassParams->leafPosition = nodeData.boundsCenter;
 	PassParams->leafDepth = nodeData.leafDepth;
@@ -66,8 +66,8 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeDat
 	PassParams->outInfo = nodeData.vertexFactory->GetVertexUAV();
 	PassParams->outNormalInfo = nodeData.vertexFactory->GetVertexNormalsUAV();
 	PassParams->voxelsPerAxis = voxelsPerAxis;
-	PassParams->baseDepthScale = Params.Input.scale;
-	PassParams->isoLevel = Params.Input.isoLevel;
+	PassParams->baseDepthScale = Params.Input.updateData.scale;
+	PassParams->isoLevel = Params.Input.updateData.isoLevel;
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);
@@ -94,7 +94,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
 			FRDGBufferSRVRef InLookUpSRV = GraphBuilder.CreateSRV(isoValuesBuffer);
 
-			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.nodeData)
+			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.updateData.nodeData)
 				AddOctreeMarchingPass(GraphBuilder, nodeData, Params, InLookUpSRV);
 
 			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->

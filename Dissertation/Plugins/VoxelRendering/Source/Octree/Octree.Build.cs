@@ -10,8 +10,11 @@ public class Octree : ModuleRules
 		PublicIncludePaths.AddRange(new string[] {});	
 		PrivateIncludePaths.AddRange(new string[] {});
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "VoxelRenderingUtils", "CoreUObject", "Engine"});
-        PrivateDependencyModuleNames.AddRange(new string[] { "CoreUObject", "VoxelRenderingUtils", "Engine"});
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "VoxelRenderingUtils", "CoreUObject", "Engine", "MaterialShaderQualitySettings" });
+        PrivateDependencyModuleNames.AddRange(new string[] { "CoreUObject", "VoxelRenderingUtils", "Engine", "Renderer", "RenderCore", "RHI" });
 		DynamicallyLoadedModuleNames.AddRange(new string[]{});
-	}
+
+        if (Target.bBuildEditor == true)
+            PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd", "MaterialUtilities", "SlateCore", "Slate", "TargetPlatform" });
+    }
 }

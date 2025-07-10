@@ -68,6 +68,8 @@ FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld) const
 {
     if (tree) return tree->CalcVoxelBounds(LocalToWorld);
+
+    return UMeshComponent::CalcBounds(LocalToWorld);
 }
 
 float UVoxelMeshComponent::SampleSDF(FVector3f p) {

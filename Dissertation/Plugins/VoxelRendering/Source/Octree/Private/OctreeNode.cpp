@@ -1,15 +1,18 @@
 #include "OctreeNode.h"
 #include "OctreeModule.h"
 
-OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth) : isLeaf(true), depth(inDepth) {
+OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth) : depth(inDepth), isLeaf(true) {
     vertexFactory = MakeShareable(new FVoxelVertexFactory(bufferSize));
     avgIsoBuffer = MakeShareable(new FIsoDynamicBuffer(bufferSize));
     avgTypeBuffer = MakeShareable(new FTypeDynamicBuffer(bufferSize));
 
-    vertexFactory->Initialize(bufferSize);
-    avgTypeBuffer->Initialize(bufferSize);
-    avgTypeBuffer->Initialize(bufferSize);
-
+    ENQUEUE_RENDER_COMMAND(InitVoxelResources)(
+        [this, bufferSize](FRHICommandListImmediate& RHICmdList)
+        {
+            vertexFactory->Initialize(bufferSize);
+            avgTypeBuffer->Initialize(bufferSize);
+            avgTypeBuffer->Initialize(bufferSize);
+        });
     for (int i = 0; i < 8; ++i)
         children[i] = nullptr;
 

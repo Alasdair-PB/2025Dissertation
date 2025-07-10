@@ -16,10 +16,6 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 {
 	Material = Component->GetMaterial(0);
 	Material->ForceRecompileForRendering();
-
-	uint32 size = 64 * nodeVoxelCount * 15; // instead of 64 should be * Params.Input.leafCount;
-
-	//size += 1000;
 }
 
 FVoxelSceneProxy::~FVoxelSceneProxy() {}

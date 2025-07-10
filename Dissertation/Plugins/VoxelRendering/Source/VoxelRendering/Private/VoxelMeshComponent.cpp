@@ -5,6 +5,7 @@
 #include "MarchingCubesDispatcher.h"
 #include "MaterialDomain.h"
 #include "VoxelWorldSubsystem.h"
+#include "RenderData.h"
 
 UVoxelMeshComponent::UVoxelMeshComponent()
 {
@@ -25,7 +26,6 @@ UVoxelMeshComponent::UVoxelMeshComponent()
 void UVoxelMeshComponent::OnRegister()
 {
     Super::OnRegister();
-    //SceneViewExtension = FSceneViewExtensions::NewExtension<FVoxelSceneViewExtension>();
 }
 
 void UVoxelMeshComponent::BeginPlay() {
@@ -51,22 +51,14 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     if (!tree) return;
-    TraverseAndDraw(tree->root);
-    InvokeVoxelRenderer(tree->root);
+    TraverseAndDraw(tree->GetRoot());
+    InvokeVoxelRenderPasses();
 }
-
-void UVoxelMeshComponent::InitVoxelMesh(AABB inBounds, int size, int depth, TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer) {
-    typeValueBuffer = inTypeValueBuffer;
-    isoValueBuffer = inIsovalueBuffer;
-    BuildOctree(inBounds, size, depth);
-}
-
-void UVoxelMeshComponent::BuildOctree(AABB inBounds, int size, int depth)
+void UVoxelMeshComponent::InitVoxelMesh(float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, 
+    TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer) 
 {
-    tree = new Octree(inBounds);
-    bounds = inBounds;
-    if (!tree->BuildFromBuffers(isoValueBuffer, typeValueBuffer, size, depth))
-        UE_LOG(LogTemp, Warning, TEXT("Tree failed to allocate values"));
+    float isoLevel = 0.5f;
+    tree = new Octree(isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
 }
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
@@ -77,32 +69,69 @@ FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 
 FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld) const
 {
-    return FBoxSphereBounds(FBox(FVector(-200), FVector(200))); // Replace with actual bounds
+    if (tree) return tree->CalcVoxelBounds(LocalToWorld);
 }
 
 float UVoxelMeshComponent::SampleSDF(FVector3f p) {
     return (p.Length()) - 1.0f;
 }
 
-void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
+// Move to LOD Manager in the future
+void UVoxelMeshComponent::SetRenderDataLOD() 
+{
+    TArray<OctreeNode*> visibleNodes;
+    GetVisibleNodes(visibleNodes, tree->GetRoot());
+
+
+    TArray<FVoxelComputeUpdateData> computeUpdateData;
+    TArray<FVoxelProxyUpdateDataNode> proxyNodes;
+    for (OctreeNode* node : visibleNodes)
+    {
+        uint8 nodeDepth = node->GetDepth();
+        FVoxelProxyUpdateDataNode proxyNode(nodeDepth, node);
+
+        if (proxyNode.BuildDataCache())
+            proxyNodes.Emplace(proxyNode);
+    }
+    sceneProxy->UpdateSelectedNodes(proxyNodes);
+}
+
+void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
+    if (!node) return;
+
+    if (node->IsLeaf()) 
+        nodes.Add(node);
+    else {
+        AABB bounds = node->GetBounds();
+        float visibleDistance = 50.0f / (1 << node->GetDepth());
+        FVector boundsCenter = FVector(bounds.Center().X, bounds.Center().Y, bounds.Center().Z);
+        float distance = (GetComponentLocation() - boundsCenter).Length();
+
+        if (distance < visibleDistance) {
+            for (int i = 0; i < 8; i++)
+                GetVisibleNodes(nodes, node->children[i]);
+        }
+        else nodes.Add(node);
+    }
+}
+
+void UVoxelMeshComponent::InvokeVoxelRenderPasses() {
+    if (!sceneProxy) return;
+    if (!sceneProxy->IsInitialized()) return;
+
+    SetRenderDataLOD();
+    InvokeVoxelRenderer();
+}
+
+void UVoxelMeshComponent::InvokeVoxelRenderer() {
 
     if (!sceneProxy) return;
     if (!sceneProxy->IsInitialized()) return;
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
-    FVoxelVertexFactory* vf = sceneProxy->GetVertexFactory();
-    FVoxelComputeShaderDispatchData vertexDispatchBuffer = FVoxelComputeShaderDispatchData(
-        vf->GetVertexUAV(),
-        vf->GetVertexNormalsUAV(),
-        vf->GetVertexBufferElementsCount(),
-        vf->GetVertexBufferBytesPerElement());
-
-    Params.Input.baseDepthScale = 400.0f;
-    Params.Input.isoLevel = isoLevel;
-    Params.Input.voxelsPerAxis = voxelsPerAxis;
-    Params.Input.tree = node;
-    Params.Input.vertexBufferRHIRef = vertexDispatchBuffer;
-    Params.Input.leafCount = tree->GetLeafCount(); // Note this may not need to be done every dispatch
+    Params.Input = { tree };
+    Params.Input.nodeData = ;
+    Params.Input.BuildDataCache();
 
     FMarchingCubesInterface::Dispatch(Params,
         [WeakThis = TWeakObjectPtr<UVoxelMeshComponent>(this)](FMarchingCubesOutput OutputVal) {
@@ -114,19 +143,21 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(OctreeNode* node) {
 void UVoxelMeshComponent::TraverseAndDraw(OctreeNode* node) {
     if (!node) return;
 
-    if (node->isLeaf) {
-        DrawDebugBox(GetWorld(), FVector(node->bounds.Center()), FVector(node->bounds.Extent()), FColor::Green, false, -1.f, 0, 1.f);
+    if (node->IsLeaf()) {
+
+        AABB bounds = node->GetBounds();
+        DrawDebugBox(GetWorld(), FVector(bounds.Center()), FVector(bounds.Extent()), FColor::Green, false, -1.f, 0, 1.f);
         const int resolution = 2;
-        FVector3f min = node->bounds.min;
-        FVector3f max = node->bounds.max;
+        FVector3f min = bounds.min;
+        FVector3f max = bounds.max;
 
         for (int x = 0; x <= resolution; ++x) {
             for (int y = 0; y <= resolution; ++y) {
                 for (int z = 0; z <= resolution; ++z) {
                     FVector3f p = FMath::Lerp(min, max, FVector3f(
-                        (float)x / resolution,
-                        (float)y / resolution,
-                        (float)z / resolution
+                        (float) x / resolution,
+                        (float) y / resolution,
+                        (float) z / resolution
                     ));
                     float v = SampleSDF(p);
                     FColor color = (FMath::Abs(v) < 0.01f) ? FColor::White : (v < 0.f ? FColor::Blue : FColor::Red);

@@ -19,23 +19,24 @@ void UVoxelGeneratorComponent::BeginDestroy() {
 }
 
 void UVoxelGeneratorComponent::InitIsoDispatch() {
-    bounds = { FVector3f(-200.0f), FVector3f(200.0f) };
     int depth = 2; 
-    int nodesPerAxisMaxRes = Octree::IntPow(2, depth);
-    int size = voxelsPerAxis * nodesPerAxisMaxRes;
-    DispatchIsoBuffer(size, depth);
+    int voxelsPerAxis = 5;
+    float scale = 400.0f;
+    int size = voxelsPerAxis * (1 << depth); // voxelsPerAxis * Octree::IntPow(2, depth);
+    DispatchIsoBuffer(size, depth, scale, voxelsPerAxis);
 }
 
-void UVoxelGeneratorComponent::InitVoxelMesh(int size, int depth)
+void UVoxelGeneratorComponent::InitVoxelMesh(int size, int depth, float scale, int voxelsPerAxis)
 {
     UWorld* world = GetWorld();
-    AVoxelBody::CreateVoxelMeshActor(world, bounds, size, depth, isoValueBuffer, typeValueBuffer);
+    AVoxelBody::CreateVoxelMeshActor(world, scale, size, depth, voxelsPerAxis, isoValueBuffer, typeValueBuffer);
 }
 
-void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth) {
+void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth, float scale, int voxelsPerAxis) {
     int isoSize = size + 1;
-    isoValueBuffer.Reserve(isoSize * isoSize * isoSize);
-    typeValueBuffer.Reserve(isoSize * isoSize * isoSize);
+    int totalBufferSize = isoSize * isoSize * isoSize;
+    isoValueBuffer.Reserve(totalBufferSize);
+    typeValueBuffer.Reserve(totalBufferSize);
 
     FPlanetGeneratorDispatchParams Params(isoSize, isoSize, isoSize);
     Params.Input.baseDepthScale = 400.0f;
@@ -45,13 +46,13 @@ void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth) {
     Params.Input.seed = 0;
 
     FPlanetGeneratorInterface::Dispatch(Params,
-        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), size, depth](FPlanetGeneratorOutput OutputVal) {
+        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), size, depth, scale, voxelsPerAxis](FPlanetGeneratorOutput OutputVal) {
             if (!WeakThis.IsValid()) return;
             if (IsEngineExitRequested()) return;
 
             WeakThis->isoValueBuffer = OutputVal.outIsoValues;
             WeakThis->typeValueBuffer = OutputVal.outTypeValues;
-            WeakThis->InitVoxelMesh(size, depth);
+            WeakThis->InitVoxelMesh(size, depth, scale, voxelsPerAxis);
         });
 }
 

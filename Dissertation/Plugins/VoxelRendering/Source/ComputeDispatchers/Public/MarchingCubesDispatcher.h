@@ -7,6 +7,7 @@
 #include "../../Octree/Public/OctreeNode.h"
 #include "RenderGraphResources.h"
 #include "RHI.h"
+#include "RenderData.h"
 #include "MarchingCubesDispatcher.generated.h"
 
 USTRUCT(BlueprintType)
@@ -16,34 +17,11 @@ struct FMarchingCubesOutput
 };
 
 USTRUCT(BlueprintType)
-struct FVoxelComputeShaderDispatchData
-{
-	GENERATED_BODY()
-	FVoxelComputeShaderDispatchData()
-		: VertexInfoRHIRef(nullptr), NumElements(0), BytesPerElement(0) { }
-	FVoxelComputeShaderDispatchData(FUnorderedAccessViewRHIRef inVertexInfoRHIRef, FUnorderedAccessViewRHIRef inVertexNormalInfoRHIRef, uint32 inNumElements, uint32 inBytesPerElement) :
-		VertexInfoRHIRef(inVertexInfoRHIRef), VertexNormalInfoRHIRef(inVertexNormalInfoRHIRef), NumElements(inNumElements), BytesPerElement(inBytesPerElement) { }
-	FUnorderedAccessViewRHIRef VertexInfoRHIRef;
-	FUnorderedAccessViewRHIRef VertexNormalInfoRHIRef;
-	uint32 NumElements;
-	uint32 BytesPerElement;
-};
-
-USTRUCT(BlueprintType)
 struct FMarchingCubesInput
 {
 	GENERATED_BODY()
-	OctreeNode* tree;
-	FVoxelComputeShaderDispatchData vertexBufferRHIRef;
-	UPROPERTY(BlueprintReadOnly) int leafCount = 0;
-	UPROPERTY(BlueprintReadOnly) FVector3f leafPosition = FVector3f();
-	UPROPERTY(BlueprintReadOnly) int leafDepth = 0;
-	UPROPERTY(BlueprintReadOnly) int nodeIndex = 0;
-	UPROPERTY(BlueprintReadOnly) int voxelsPerAxis = 0;
-	UPROPERTY(BlueprintReadOnly) float baseDepthScale = 0;
-	UPROPERTY(BlueprintReadOnly) float isoLevel = 0;
-	UPROPERTY(BlueprintReadOnly) TArray<float> isoValues;
-
+public:
+	FVoxelComputeUpdateData Input;
 };
 
 struct COMPUTEDISPATCHERS_API FMarchingCubesDispatchParams
@@ -52,7 +30,7 @@ struct COMPUTEDISPATCHERS_API FMarchingCubesDispatchParams
 	int Y = 1;
 	int Z = 1;
 
-	FMarchingCubesInput Input;
+	FVoxelComputeUpdateData Input;
 	FMarchingCubesOutput Output;
 
 	FMarchingCubesDispatchParams(int x, int y, int z) :
@@ -89,17 +67,13 @@ class COMPUTEDISPATCHERS_API UMarchingCubesLibrary_AsyncExecution : public UBlue
 public:
 	virtual void Activate() override {
 		FMarchingCubesDispatchParams Params(1, 1, 1);
-		Params.Input.leafDepth = Args.leafDepth;
-		Params.Input.isoValues = Args.isoValues;
-		Params.Input.leafPosition = Args.leafPosition;
-
-		Params.Input.tree = Args.tree;
-		Params.Input.leafCount = Args.leafCount;
-		Params.Input.voxelsPerAxis = voxelsPerAxis;
-		Params.Input.nodeIndex = Args.nodeIndex;
-		Params.Input.baseDepthScale = Args.baseDepthScale;
+		Params.Input.isoBuffer = Args.isoBuffer;
 		Params.Input.isoLevel = Args.isoLevel;
-		Params.Input.vertexBufferRHIRef = Args.vertexBufferRHIRef;		
+		Params.Input.nodeData = Args.nodeData;
+
+		Params.Input.scale = Args.scale;
+		Params.Input.typeBuffer = Args.typeBuffer;
+		Params.Input.voxelsPerAxis = Args.voxelsPerAxis;
 
 		FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
 			this->Completed.Broadcast(OutputVal);
@@ -107,7 +81,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", Category = "ComputeShader", WorldContext = "WorldContextObject"))
-	static UMarchingCubesLibrary_AsyncExecution* ExecuteBaseComputeShader(UObject* WorldContextObject, FMarchingCubesInput Args) {
+	static UMarchingCubesLibrary_AsyncExecution* ExecuteBaseComputeShader(UObject* WorldContextObject, FVoxelComputeUpdateData Args) {
 		UMarchingCubesLibrary_AsyncExecution* Action = NewObject<UMarchingCubesLibrary_AsyncExecution>();
 		Action->Args = Args;
 		Action->RegisterWithGameInstance(WorldContextObject);
@@ -116,5 +90,5 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnMarchingCubesLibrary_AsyncExecutionCompleted Completed;
-	FMarchingCubesInput Args;
+	FVoxelComputeUpdateData Args;
 };

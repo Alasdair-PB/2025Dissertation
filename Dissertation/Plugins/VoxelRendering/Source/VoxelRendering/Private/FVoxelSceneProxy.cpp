@@ -125,7 +125,7 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 
 		for (const FVoxelProxyUpdateDataNode& node : selectedNodes)
 		{
-			if ((node.VertexFactory.IsValid() && node.VertexFactory->IsInitialized()))
+			if ((node.vertexFactory.IsValid() && node.vertexFactory->IsInitialized()))
 			{
 				FMeshBatch& meshBatch = Collector.AllocateMesh();
 				SetMeshBatchGeneric(meshBatch, node, viewIndex);
@@ -138,9 +138,13 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 	}
 }
 
+void FVoxelSceneProxy::UpdateSelectedNodes(const TArray<FVoxelProxyUpdateDataNode>& renderData) {
+	selectedNodes = renderData;
+}
+
 void FVoxelSceneProxy::SetMeshBatchGeneric(FMeshBatch& meshBatch, const FVoxelProxyUpdateDataNode& node, int32 viewIndex, bool bWireframe) const {
-	check(node.VertexFactory);
-	meshBatch.VertexFactory = node.VertexFactory.Get();
+	check(node.vertexFactory);
+	meshBatch.VertexFactory = node.vertexFactory.Get();
 	meshBatch.ReverseCulling = IsLocalToWorldDeterminantNegative();
 	meshBatch.Type = PT_TriangleList;
 	meshBatch.DepthPriorityGroup = SDPG_World;
@@ -156,17 +160,16 @@ void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch) const {
 		UE_LOG(LogTemp, Warning, TEXT("No Material instance set:: switching to default MD_Surface support"));
 	}
 	else{
-	renderProxy = Material->GetRenderProxy();
-	meshBatch.MaterialRenderProxy = renderProxy;
+		renderProxy = Material->GetRenderProxy();
+		meshBatch.MaterialRenderProxy = renderProxy;
 	}
 }
 
 void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, const FVoxelProxyUpdateDataNode& node, int32 viewIndex) const {
-	FVoxelIndexBuffer* indexBuffer = node.VertexFactory->GetIndexBuffer();
-	uint32 numTriangles = (indexBuffer->GetIndexCount() - 0) / 3;
-	uint32 maxVertexIndex = node.VertexFactory->GetVertexBuffer()->GetVertexCount() - 1;// -10000;
+	FVoxelIndexBuffer* indexBuffer = node.vertexFactory->GetIndexBuffer();
+	uint32 numTriangles = (indexBuffer->GetVisibleIndiceCount()) / 3;
+	uint32 maxVertexIndex = node.vertexFactory->GetVertexBuffer()->GetVisibleVerticiesCount() - 1;
 
-	// node.visiblePoints
 	FMeshBatchElement& batchElement = meshBatch.Elements[0];
 	batchElement.IndexBuffer = indexBuffer;
 	batchElement.FirstIndex = 0;
@@ -182,7 +185,6 @@ void FVoxelSceneProxy::SetMeshBatchElementsUserData(FMeshBatchElement& batchElem
 {
 	FVoxelBatchElementUserData userData;
 	batchElement.UserData = nullptr;
-
 }
 
 

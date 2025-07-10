@@ -23,8 +23,11 @@ public:
 	virtual void CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
 	virtual void DestroyRenderThreadResources() override;
 	virtual void OnTransformChanged(FRHICommandListBase& RHICmdList) override;
+	void UpdateSelectedNodes(const TArray<FVoxelProxyUpdateDataNode>& renderData);
+
 	void RenderMyCustomPass(FRHICommandListImmediate& RHICmdList, const FScene* Scene, const FSceneView* View);
 	bool IsInitialized();
+	bool CanBeRendered() const { return bCompatiblePlatform; }
 
 	UMaterialInterface* Material;
 
@@ -32,8 +35,7 @@ protected:
 	mutable TArray<FMeshBatch> CustomPassMeshBatches;
 	TArray<FVoxelProxyUpdateDataNode> selectedNodes;
 	bool bInitialized = false;
-	bool bCompatiblePlatform;
-	bool CanBeRendered() const { return bCompatiblePlatform; }
+	bool bCompatiblePlatform = true;
 
 	void SetMeshBatchRenderProxy(FMeshBatch& meshBatch) const;
 	void SetMeshBatchGeneric(FMeshBatch& meshBatch, const FVoxelProxyUpdateDataNode& node, int32 viewIndex, bool bWireframe = false) const;

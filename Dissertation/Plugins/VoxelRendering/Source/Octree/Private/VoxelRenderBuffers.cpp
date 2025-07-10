@@ -32,8 +32,10 @@ void IIsoRenderResource::ReleaseRHI()
 
 void FIsoUniformBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 {
-    FRHIResourceCreateInfo CreateInfo(TEXT("FIsoRenderBuffer"));
-    buffer = RHICmdList.CreateVertexBuffer(sizeof(uint32) * capacity, BUF_ShaderResource | BUF_Dynamic, CreateInfo);
+    FRHIResourceCreateInfo CreateInfo(TEXT("FIsoUniformRenderBuffer"));
+    EBufferUsageFlags UsageFlags = BUF_ShaderResource | BUF_Static;
+
+    buffer = RHICmdList.CreateBuffer(sizeof(uint32) * capacity, UsageFlags, 0, ERHIAccess::SRVMask, CreateInfo);
     bufferSRV = RHICmdList.CreateShaderResourceView(buffer, sizeof(uint32), PF_R32_FLOAT);
 
     FIsoFetchShaderParameters uniformParameters;
@@ -66,8 +68,10 @@ void FIsoUniformBuffer::ReleaseRHI()
 
 void FTypeUniformBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 {
-    FRHIResourceCreateInfo CreateInfo(TEXT("FIsoRenderBuffer"));
-    buffer = RHICmdList.CreateVertexBuffer(sizeof(uint32) * capacity, BUF_ShaderResource | BUF_Dynamic, CreateInfo);
+    FRHIResourceCreateInfo CreateInfo(TEXT("FTypeUnifromRenderBuffer"));
+    EBufferUsageFlags UsageFlags = BUF_ShaderResource | BUF_Static;
+
+    buffer = RHICmdList.CreateBuffer(sizeof(uint32) * capacity, UsageFlags, 0, ERHIAccess::SRVMask, CreateInfo);
     bufferSRV = RHICmdList.CreateShaderResourceView(buffer, sizeof(uint32), PF_R32_UINT);
 
     FTypeFetchShaderParameters uniformParameters;
@@ -111,13 +115,28 @@ void IVoxelDynamicRenderResource::ReleaseRHI()
  * Iso Dynamic Buffer
  */
 
-
 void FIsoDynamicBuffer::Initialize(int32 capacity) {
+    Resize(capacity);
+    FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
 
+    void* LockedData = RHICmdList.LockBuffer(buffer, 0, capacity, RLM_WriteOnly);
+    FMemory::Memzero(LockedData, capacity);
+    RHICmdList.UnlockBuffer(buffer);
 }
 
 void FIsoDynamicBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
 
+    int size = sizeof(uint32) * capacity;
+
+    FRHIResourceCreateInfo CreateInfo(TEXT("FIsoDynamicRenderBuffer"));
+    EBufferUsageFlags UsageFlags = BUF_ShaderResource | BUF_UnorderedAccess | BUF_Dynamic;
+    buffer = RHICmdList.CreateBuffer(sizeof(uint32) * capacity, UsageFlags, 0, ERHIAccess::UAVCompute, CreateInfo);
+    bufferSRV = RHICmdList.CreateShaderResourceView(buffer, sizeof(uint32), PF_R32_FLOAT);
+    bufferUAV = RHICmdList.CreateUnorderedAccessView(buffer, PF_R32_FLOAT);
+
+    void* LockedData = RHICmdList.LockBuffer(buffer, 0, size, RLM_WriteOnly);
+    FMemory::Memzero(LockedData, size);
+    RHICmdList.UnlockBuffer(buffer);
 }
 
 /**
@@ -125,9 +144,24 @@ void FIsoDynamicBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
  */
 
 void FTypeDynamicBuffer::Initialize(int32 capacity) {
+    Resize(capacity);
+    FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
 
+    void* LockedData = RHICmdList.LockBuffer(buffer, 0, capacity, RLM_WriteOnly);
+    FMemory::Memzero(LockedData, capacity);
+    RHICmdList.UnlockBuffer(buffer);
 }
 
 void FTypeDynamicBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
+    int size = sizeof(uint32) * capacity;
 
+    FRHIResourceCreateInfo CreateInfo(TEXT("FIsoDynamicRenderBuffer"));
+    EBufferUsageFlags UsageFlags = BUF_ShaderResource | BUF_UnorderedAccess | BUF_Dynamic;
+    buffer = RHICmdList.CreateBuffer(sizeof(uint32) * capacity, UsageFlags, 0, ERHIAccess::UAVCompute, CreateInfo);
+    bufferSRV = RHICmdList.CreateShaderResourceView(buffer, sizeof(uint32), PF_R32_UINT);
+    bufferUAV = RHICmdList.CreateUnorderedAccessView(buffer, PF_R32_UINT);
+
+    void* LockedData = RHICmdList.LockBuffer(buffer, 0, size, RLM_WriteOnly);
+    FMemory::Memzero(LockedData, size);
+    RHICmdList.UnlockBuffer(buffer);
 }

@@ -54,19 +54,30 @@ public:
     TUniformBufferRef<FTypeFetchShaderParameters> uniformBuffer;
 };
 
-class OCTREE_API IVoxelDynamicRenderResource : public FRenderResource {
+class OCTREE_API IIsoRenderResource : public FRenderResource {
 public:
-    IVoxelDynamicRenderResource() = default;
-    IVoxelDynamicRenderResource(uint32 inCapacity) : capacity(inCapacity) {}
+    IIsoRenderResource() : IIsoRenderResource(100) {}
+    IIsoRenderResource(uint32 inCapacity) : capacity(inCapacity) {}
 
+    virtual void Resize(const uint32& RequestedCapacity);
     virtual void ReleaseRHI() override;
-    uint32 GetCapacity() const { return capacity; }
+
+    FORCEINLINE uint32 GetCapacity() const { return capacity; }
 
     FBufferRHIRef buffer;
     FShaderResourceViewRHIRef bufferSRV;
-    FUnorderedAccessViewRHIRef bufferUAV;
+
 protected:
-    uint32 capacity = 0;
+    uint32 capacity;
+};
+
+class OCTREE_API IVoxelDynamicRenderResource : public IIsoRenderResource {
+public:
+    IVoxelDynamicRenderResource() = default;
+    IVoxelDynamicRenderResource(uint32 inCapacity) : IIsoRenderResource(inCapacity) {}
+
+    virtual void ReleaseRHI() override;
+    FUnorderedAccessViewRHIRef bufferUAV;
 };
 
 class OCTREE_API FIsoDynamicBuffer : public IVoxelDynamicRenderResource

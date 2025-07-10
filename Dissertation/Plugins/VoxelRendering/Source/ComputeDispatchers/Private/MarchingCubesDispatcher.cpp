@@ -27,7 +27,7 @@ class FMarchingCubes : public FGlobalShader
 		SHADER_PARAMETER(FVector3f, leafPosition)
 		SHADER_PARAMETER(uint32, leafDepth)
 		SHADER_PARAMETER(uint32, nodeIndex)
-		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float>, isoValues)
+		SHADER_PARAMETER_SRV(Buffer<float>, isoValues)
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<int>, marchLookUp)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, outInfo)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, outNormalInfo)
@@ -52,27 +52,19 @@ class FMarchingCubes : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
 
-void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 depth, uint32* nodeIndex, FMarchingCubesDispatchParams& Params, FRDGBufferSRVRef InLookUpSRV) {
-
-	if (!node) return;
-	if (!(node->isLeaf)) {	
-		depth++;
-		for (OctreeNode* child : node->children)
-			AddOctreeMarchingPass(GraphBuilder, child, depth, nodeIndex, Params, InLookUpSRV);
-		return;
-	}
-
-	const FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(float), isoCount, node->isoValues, isoCount * sizeof(float));
+void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FMarchingCubesDispatchParams& Params, FRDGBufferSRVRef InLookUpSRV) {
 	FMarchingCubes::FParameters* PassParams = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
-	PassParams->leafPosition = node->bounds.Center();
-	PassParams->leafDepth = depth;
-	PassParams->nodeIndex = (*nodeIndex);
-	PassParams->isoValues = GraphBuilder.CreateSRV(isoValuesBuffer);
+	int voxelsPerAxis = Params.Input.voxelsPerAxis;
+
+	PassParams->leafPosition = nodeData.boundsCenter;
+	PassParams->leafDepth = nodeData.leafDepth;
+	PassParams->nodeIndex = 0; // Shader supports single vertex buffer for mesh, however as each LOD has its own vertex factory we can ignore this.
+	PassParams->isoValues = nodeData.isoBuffer->bufferSRV; 
 	PassParams->marchLookUp = InLookUpSRV;
-	PassParams->outInfo = Params.Input.vertexBufferRHIRef.VertexInfoRHIRef;
-	PassParams->outNormalInfo = Params.Input.vertexBufferRHIRef.VertexNormalInfoRHIRef;
+	PassParams->outInfo = nodeData.vertexFactory->GetVertexUAV();
+	PassParams->outNormalInfo = nodeData.vertexFactory->GetVertexNormalsUAV();
 	PassParams->voxelsPerAxis = voxelsPerAxis;
-	PassParams->baseDepthScale = Params.Input.baseDepthScale;
+	PassParams->baseDepthScale = Params.Input.scale;
 	PassParams->isoLevel = Params.Input.isoLevel;
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
@@ -82,12 +74,9 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, OctreeNode* node, uint32 d
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
 			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); });
-	(*nodeIndex)++;
 }
 
 void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FMarchingCubesDispatchParams Params, TFunction<void(FMarchingCubesOutput OutputVal)> AsyncCallback) {
-	if (Params.Input.leafCount == 0) return;
-
 	FRDGBuilder GraphBuilder(RHICmdList);
 	{
 		SCOPE_CYCLE_COUNTER(STAT_MarchingCubes_Execute);
@@ -102,10 +91,9 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		if (bIsShaderValid) {
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
 			FRDGBufferSRVRef InLookUpSRV = GraphBuilder.CreateSRV(isoValuesBuffer);
-			uint32 vertexCount = Params.Input.vertexBufferRHIRef.NumElements;
-			uint32 nodeIndex = 0;
 
-			AddOctreeMarchingPass(GraphBuilder, Params.Input.tree, 0, &nodeIndex, Params, InLookUpSRV);
+			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.nodeData)
+				AddOctreeMarchingPass(GraphBuilder, nodeData, Params, InLookUpSRV);
 
 			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->
 				void {

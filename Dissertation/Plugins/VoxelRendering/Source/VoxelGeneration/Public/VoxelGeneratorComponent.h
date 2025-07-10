@@ -28,8 +28,8 @@ private:
 	void InitIsoDispatch();
 	UProceduralMeshComponent* ProcMesh;
 
-	void DispatchIsoBuffer(int size, int depth);
-	void InitVoxelMesh(int size, int depth);
+	void DispatchIsoBuffer(int size, int depth, float scale, int voxelsPerAxis);
+	void InitVoxelMesh(int size, int depth, float scale, int voxelsPerAxis);
 	UVoxelMeshComponent* voxelMesh;
 
 	AABB bounds;

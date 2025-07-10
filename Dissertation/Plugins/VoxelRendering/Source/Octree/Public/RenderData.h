@@ -1,29 +1,105 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "OctreeNode.h"
+#include "Octree.h"
+
+struct FVoxelComputeUpdateData {
+
+private:
+	Octree* octree;
+public:
+
+	FVoxelComputeUpdateData() :FVoxelComputeUpdateData(nullptr) {}
+	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0), voxelsPerAxis(0) {}
+
+	float scale;
+	float isoLevel;
+	int voxelsPerAxis;
+
+	bool BuildDataCache() {
+		if (!octree) return false;
+		
+		isoBuffer = octree->GetIsoBuffer();
+		typeBuffer = octree->GetTypeBuffer();
+
+		for (FVoxelComputeUpdateNodeData node : nodeData) {
+			if (!node.BuildDataCache()) return false;
+		}
+
+		voxelsPerAxis = octree->GetVoxelsPerAxs();
+		scale = octree->GetScale();
+		isoLevel = octree->GetIsoLevel();
+
+		octree = nullptr;
+		return  true;
+	}
+
+	TSharedPtr<FIsoUniformBuffer> isoBuffer;
+	TSharedPtr<FTypeUniformBuffer> typeBuffer;
+	TArray<FVoxelComputeUpdateNodeData> nodeData;
+};
+
+/**
+ * Update data for Compute dispatch
+ */
+
+struct FVoxelComputeUpdateNodeData {
+private:
+	OctreeNode* dataNode;
+public:
+	int leafDepth;
+	FVector3f boundsCenter;
+
+	TSharedPtr<class FVoxelVertexFactory> vertexFactory;
+	TSharedPtr<FIsoDynamicBuffer> isoBuffer;
+	TSharedPtr<FTypeDynamicBuffer> typeBuffer;
+
+	FVoxelComputeUpdateNodeData() : FVoxelComputeUpdateNodeData(0, nullptr) {}
+	FVoxelComputeUpdateNodeData(OctreeNode* inDataNode)
+		: dataNode(inDataNode)
+		, leafDepth(0)
+		, boundsCenter(FVector3f())
+		, vertexFactory(nullptr) {
+	}
+
+	bool BuildDataCache() {
+		if (dataNode)
+		{
+			vertexFactory = dataNode->GetVertexFactory();
+			isoBuffer = dataNode->GetIsoBuffer();
+			leafDepth = dataNode->GetDepth();
+			boundsCenter = dataNode->GetBounds().Center();
+			dataNode = nullptr;
+			return  true;
+		}
+		return false;
+	}
+};
+
+/**
+  * Update data for SceneProxy
+ */
 
 struct FVoxelProxyUpdateDataNode
 {
 private:
-	OctreeNode* DataNode;
+	OctreeNode* dataNode;
 public:
 	uint8 leafDepth;
-	int64 visiblePoints;
-	TSharedPtr<class FVoxelVertexFactory> VertexFactory;
+	TSharedPtr<class FVoxelVertexFactory> vertexFactory;
 
-	FVoxelProxyUpdateDataNode() : FVoxelProxyUpdateDataNode(0, 0, nullptr) {}
-	FVoxelProxyUpdateDataNode(uint8 inLeafDepth, int64 inVisiblePoints, OctreeNode* DataNode)
-		: DataNode(DataNode)
+	FVoxelProxyUpdateDataNode() : FVoxelProxyUpdateDataNode(0, nullptr) {}
+	FVoxelProxyUpdateDataNode(uint8 inLeafDepth, OctreeNode* inDataNode)
+		: dataNode(inDataNode)
 		, leafDepth(inLeafDepth)
-		, visiblePoints(inVisiblePoints)
-		, VertexFactory(nullptr) {
+		, vertexFactory(nullptr) {
 	}
 
-	bool BuildDataCache(bool bUseStaticBuffers, bool bUseRayTracing) {
-		if (DataNode)
+	bool BuildDataCache() {
+		if (dataNode)
 		{
-			VertexFactory = DataNode->GetVertexFactory();
-			DataNode = nullptr;
+			vertexFactory = dataNode->GetVertexFactory();
+			dataNode = nullptr;
 			return  true;
 		}
 		return false;

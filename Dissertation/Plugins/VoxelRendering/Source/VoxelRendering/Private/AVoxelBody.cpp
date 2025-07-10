@@ -8,7 +8,7 @@ AVoxelBody::AVoxelBody()
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 }
 
-AVoxelBody* AVoxelBody::CreateVoxelMeshActor(UWorld* World, AABB inBounds, int size, int depth, TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer)
+AVoxelBody* AVoxelBody::CreateVoxelMeshActor(UWorld* World, float scale, int size, int depth, int voxelsPerAxis, TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer)
 {
     if (!World) return nullptr;
 
@@ -21,6 +21,6 @@ AVoxelBody* AVoxelBody::CreateVoxelMeshActor(UWorld* World, AABB inBounds, int s
 
     VoxelMesh->AttachToComponent(NewActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
     VoxelMesh->RegisterComponent();
-    VoxelMesh->InitVoxelMesh(inBounds, size, depth, inIsovalueBuffer, inTypeValueBuffer);
+    VoxelMesh->InitVoxelMesh(scale, size, depth, voxelsPerAxis, inIsovalueBuffer, inTypeValueBuffer);
     return NewActor;
 }

@@ -6,17 +6,35 @@
 
 class OCTREE_API Octree {
 public:
+
+    Octree(float isoLevel, float scale, int inVoxelsPerAxis, int inDepth, int inBufferSizePerAxis, const TArray<float>& isoBuffer, const TArray<uint32>& typeBuffer);
+    ~Octree();
+
+    void Release();
+    OctreeNode* GetRoot() { return root; }
+    FBoxSphereBounds CalcVoxelBounds(const FTransform& LocalToWorld);
+    TSharedPtr<FIsoUniformBuffer> GetIsoBuffer() { return isoUniformBuffer; }
+    TSharedPtr<FTypeUniformBuffer> GetTypeBuffer() { return typeUniformBuffer; }
+
+    int GetVoxelsPerAxs() const { return voxelsPerAxis; }
+    float GetScale() const { return scale; }
+    float GetIsoLevel() const { return isoLevel; }
+
+protected:    
     OctreeNode* root;
     int maxDepth;
+    TSharedPtr<FTypeUniformBuffer> typeUniformBuffer;
+    TSharedPtr<FIsoUniformBuffer> isoUniformBuffer;
+private:
+    float scale;
+    float isoLevel;
+    int voxelsPerAxisMaxRes;
+    int voxelsPerAxis;
+    int isoValuesPerAxis = voxelsPerAxis + 1;
+    int nodeVoxelCount = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
+    int isoCount = isoValuesPerAxis * isoValuesPerAxis * isoValuesPerAxis;
 
-    Octree(const AABB& bounds) : maxDepth(0) {
-        root = new OctreeNode(bounds);
-    }
-
-    Octree(const AABB& bounds, int nodesPerAxis, int inDepth);
-    ~Octree();
-    void Release();
-
+    /*
     bool BuildFromBuffers(const TArray<float>& isovalueBuffer, const TArray<uint32>& typeBuffer, int nodesPerAxis, int depth) {
         if (typeBuffer.Num() != (nodesPerAxis + 1) * (nodesPerAxis + 1) * (nodesPerAxis + 1)) return false;
         if (isovalueBuffer.Num() != (nodesPerAxis + 1) * (nodesPerAxis + 1) * (nodesPerAxis + 1)) return false;
@@ -41,8 +59,7 @@ public:
     }
 
 private:
-    TSharedPtr<FTypeUniformBuffer> typeUniformBuffer;
-    TSharedPtr<FIsoUniformBuffer> isoUniformBuffer;
+
 
     struct NodeData {
         TArray<float> isoValues;
@@ -128,5 +145,5 @@ private:
         }
 
         return true;
-    }
+    }*/
 };

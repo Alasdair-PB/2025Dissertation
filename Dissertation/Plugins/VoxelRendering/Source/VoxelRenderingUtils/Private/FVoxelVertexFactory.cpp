@@ -89,23 +89,21 @@ void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
 	uint32 Size = stride * numVertices;
 	FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
 	EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
-	VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, ERHIAccess::VertexOrIndexBuffer, CreateInfo);
+	//VertexBufferRHI = RHICmdList.CreateBuffer(Size, UsageFlags, 0, ERHIAccess::VertexOrIndexBuffer, CreateInfo);
+	VertexBufferRHI = RHICmdList.CreateVertexBuffer(Size, UsageFlags, CreateInfo);
 
 	void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, Size, RLM_WriteOnly);
 	FMemory::Memzero(LockedData, Size);
 	RHICmdList.UnlockBuffer(VertexBufferRHI);
 
+	if (RHISupportsManualVertexFetch(GMaxRHIShaderPlatform))
 	{
-		VertexBufferRHI = RHICmdList.CreateVertexBuffer(Size, UsageFlags, CreateInfo);
-		if (RHISupportsManualVertexFetch(GMaxRHIShaderPlatform))
-		{
-			SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI, sizeof(float), PF_R32_FLOAT);
-			UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, PF_R32_FLOAT);
-		}
+		SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI, sizeof(float), PF_R32_FLOAT);
+		UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, PF_R32_FLOAT);
 	}
 }
 
-FVoxelVertexFactory::FVoxelVertexFactory(ERHIFeatureLevel::Type InFeatureLevel, uint32 bufferSize) : FVertexFactory(InFeatureLevel), firstIndex(0)
+FVoxelVertexFactory::FVoxelVertexFactory(uint32 bufferSize) : FVertexFactory(ERHIFeatureLevel::SM5)
 {
 	vertexBuffer.SetElementCount(bufferSize);
 	indexBuffer.SetElementCount(bufferSize);

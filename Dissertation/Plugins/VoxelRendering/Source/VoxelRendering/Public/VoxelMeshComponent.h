@@ -19,7 +19,7 @@ class VOXELRENDERING_API UVoxelMeshComponent : public UMeshComponent
 
 public:
     UVoxelMeshComponent();
-    void InitVoxelMesh(AABB bounds, int size, int depth, TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer);
+    void InitVoxelMesh(float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer);
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -38,16 +38,13 @@ protected:
     virtual void BeginDestroy() override;
     virtual void OnRegister() override;
 
-    void InvokeVoxelRenderer(OctreeNode* node);
+    void GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node);
+    void InvokeVoxelRenderPasses();
+    void SetRenderDataLOD();
+    void InvokeVoxelRenderer();
     void TraverseAndDraw(OctreeNode* node);
     float SampleSDF(FVector3f p);
-    void BuildOctree(AABB bounds, int size, int depth);
 
     FVoxelSceneProxy* sceneProxy;
     Octree* tree;
-    AABB bounds;
-
-    TArray<float> isoValueBuffer;
-    TArray<uint32> typeValueBuffer;
-
 };

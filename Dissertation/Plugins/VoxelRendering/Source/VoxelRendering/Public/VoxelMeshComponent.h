@@ -41,7 +41,7 @@ protected:
     void GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node);
     void InvokeVoxelRenderPasses();
     void SetRenderDataLOD();
-    void InvokeVoxelRenderer();
+    void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData);
     void TraverseAndDraw(OctreeNode* node);
     float SampleSDF(FVector3f p);
 

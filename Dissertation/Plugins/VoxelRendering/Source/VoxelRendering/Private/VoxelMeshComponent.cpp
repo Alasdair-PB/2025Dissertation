@@ -56,9 +56,7 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 }
 void UVoxelMeshComponent::InitVoxelMesh(float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, 
     TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer) 
-{
-    float isoLevel = 0.5f;
-    tree = new Octree(isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
+{    tree = new Octree(isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
 }
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
@@ -82,18 +80,22 @@ void UVoxelMeshComponent::SetRenderDataLOD()
     TArray<OctreeNode*> visibleNodes;
     GetVisibleNodes(visibleNodes, tree->GetRoot());
 
-
-    TArray<FVoxelComputeUpdateData> computeUpdateData;
+    TArray<FVoxelComputeUpdateNodeData> computeUpdateDataNodes;
     TArray<FVoxelProxyUpdateDataNode> proxyNodes;
+
     for (OctreeNode* node : visibleNodes)
     {
         uint8 nodeDepth = node->GetDepth();
         FVoxelProxyUpdateDataNode proxyNode(nodeDepth, node);
+        FVoxelComputeUpdateNodeData computeUpdateDataNode(node);
 
         if (proxyNode.BuildDataCache())
             proxyNodes.Emplace(proxyNode);
+        if (computeUpdateDataNode.BuildDataCache())
+            computeUpdateDataNodes.Emplace(computeUpdateDataNode);
     }
     sceneProxy->UpdateSelectedNodes(proxyNodes);
+    InvokeVoxelRenderer(computeUpdateDataNodes);
 }
 
 void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
@@ -120,18 +122,17 @@ void UVoxelMeshComponent::InvokeVoxelRenderPasses() {
     if (!sceneProxy->IsInitialized()) return;
 
     SetRenderDataLOD();
-    InvokeVoxelRenderer();
 }
 
-void UVoxelMeshComponent::InvokeVoxelRenderer() {
+void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData) {
 
     if (!sceneProxy) return;
     if (!sceneProxy->IsInitialized()) return;
 
     FMarchingCubesDispatchParams Params(1, 1, 1);
-    Params.Input = { tree };
-    Params.Input.nodeData = ;
-    Params.Input.BuildDataCache();
+    Params.Input.updateData = { tree };
+    Params.Input.updateData.nodeData = updateData;
+    Params.Input.updateData.BuildDataCache();
 
     FMarchingCubesInterface::Dispatch(Params,
         [WeakThis = TWeakObjectPtr<UVoxelMeshComponent>(this)](FMarchingCubesOutput OutputVal) {

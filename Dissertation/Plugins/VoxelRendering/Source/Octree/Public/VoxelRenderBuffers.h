@@ -54,23 +54,6 @@ public:
     TUniformBufferRef<FTypeFetchShaderParameters> uniformBuffer;
 };
 
-class OCTREE_API IIsoRenderResource : public FRenderResource {
-public:
-    IIsoRenderResource() : IIsoRenderResource(100) {}
-    IIsoRenderResource(uint32 inCapacity) : capacity(inCapacity) {}
-
-    virtual void Resize(const uint32& RequestedCapacity);
-    virtual void ReleaseRHI() override;
-
-    FORCEINLINE uint32 GetCapacity() const { return capacity; }
-
-    FBufferRHIRef buffer;
-    FShaderResourceViewRHIRef bufferSRV;
-
-protected:
-    uint32 capacity;
-};
-
 class OCTREE_API IVoxelDynamicRenderResource : public IIsoRenderResource {
 public:
     IVoxelDynamicRenderResource() = default;

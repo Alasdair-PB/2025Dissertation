@@ -5,7 +5,8 @@
 float3 leafPosition;
 int leafDepth;
 int nodeIndex;
-StructuredBuffer<float> isoValues;
+
+Buffer<float> isoValues;
 StructuredBuffer<int> marchLookUp;
 
 RWBuffer<float> outInfo;

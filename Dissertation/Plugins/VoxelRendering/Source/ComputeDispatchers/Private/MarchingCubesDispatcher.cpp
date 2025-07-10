@@ -14,6 +14,8 @@
 #include "CanvasTypes.h"
 #include "MaterialShader.h"
 #include "VoxelBufferUtils.h"
+#include "TextureGenerator.h"
+#include "DeformationDispatcher.h"
 
 DECLARE_STATS_GROUP(TEXT("MarchingCubes"), STATGROUP_MarchingCubes, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("MarchingCubes Execute"), STAT_MarchingCubes_Execute, STATGROUP_MarchingCubes);

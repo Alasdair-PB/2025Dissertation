@@ -3,7 +3,7 @@
 #include "CommonRenderResources.h"
 #include "RenderGraph.h"
 #include "RenderData.h"
-
+/*
 DECLARE_STATS_GROUP(TEXT("TextureGenerator"), STATGROUP_TextureGenerator, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("TextureGenerator Execute"), STAT_TextureGenerator_Execute, STATGROUP_TextureGenerator);
 
@@ -58,4 +58,4 @@ void TextureGeneratorPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
 			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount); });
-}
+}*/

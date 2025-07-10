@@ -3,42 +3,6 @@
 #include "OctreeNode.h"
 #include "Octree.h"
 
-struct FVoxelComputeUpdateData {
-
-private:
-	Octree* octree;
-public:
-
-	FVoxelComputeUpdateData() :FVoxelComputeUpdateData(nullptr) {}
-	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0), voxelsPerAxis(0) {}
-
-	float scale;
-	float isoLevel;
-	int voxelsPerAxis;
-
-	bool BuildDataCache() {
-		if (!octree) return false;
-		
-		isoBuffer = octree->GetIsoBuffer();
-		typeBuffer = octree->GetTypeBuffer();
-
-		for (FVoxelComputeUpdateNodeData node : nodeData) {
-			if (!node.BuildDataCache()) return false;
-		}
-
-		voxelsPerAxis = octree->GetVoxelsPerAxs();
-		scale = octree->GetScale();
-		isoLevel = octree->GetIsoLevel();
-
-		octree = nullptr;
-		return  true;
-	}
-
-	TSharedPtr<FIsoUniformBuffer> isoBuffer;
-	TSharedPtr<FTypeUniformBuffer> typeBuffer;
-	TArray<FVoxelComputeUpdateNodeData> nodeData;
-};
-
 /**
  * Update data for Compute dispatch
  */
@@ -54,7 +18,7 @@ public:
 	TSharedPtr<FIsoDynamicBuffer> isoBuffer;
 	TSharedPtr<FTypeDynamicBuffer> typeBuffer;
 
-	FVoxelComputeUpdateNodeData() : FVoxelComputeUpdateNodeData(0, nullptr) {}
+	FVoxelComputeUpdateNodeData() : FVoxelComputeUpdateNodeData(nullptr) {}
 	FVoxelComputeUpdateNodeData(OctreeNode* inDataNode)
 		: dataNode(inDataNode)
 		, leafDepth(0)
@@ -74,6 +38,43 @@ public:
 		}
 		return false;
 	}
+};
+
+
+struct FVoxelComputeUpdateData {
+
+private:
+	Octree* octree;
+public:
+
+	FVoxelComputeUpdateData() :FVoxelComputeUpdateData(nullptr) {}
+	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0), voxelsPerAxis(0) {}
+
+	float scale;
+	float isoLevel;
+	int voxelsPerAxis;
+
+	bool BuildDataCache() {
+		if (!octree) return false;
+
+		isoBuffer = octree->GetIsoBuffer();
+		typeBuffer = octree->GetTypeBuffer();
+
+		for (FVoxelComputeUpdateNodeData node : nodeData) {
+			if (!node.BuildDataCache()) return false;
+		}
+
+		voxelsPerAxis = octree->GetVoxelsPerAxs();
+		scale = octree->GetScale();
+		isoLevel = octree->GetIsoLevel();
+
+		octree = nullptr;
+		return  true;
+	}
+
+	TSharedPtr<FIsoUniformBuffer> isoBuffer;
+	TSharedPtr<FTypeUniformBuffer> typeBuffer;
+	TArray<FVoxelComputeUpdateNodeData> nodeData;
 };
 
 /**

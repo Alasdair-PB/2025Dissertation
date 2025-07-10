@@ -7,7 +7,7 @@
 #define NUM_THREADS_Deformation_X 8
 #define NUM_THREADS_Deformation_Y 8
 #define NUM_THREADS_Deformation_Z 8
-
+/*
 DECLARE_STATS_GROUP(TEXT("Deformation"), STATGROUP_Deformation, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("Deformation Execute"), STAT_Deformation_Execute, STATGROUP_Deformation);
 
@@ -52,4 +52,4 @@ void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& 
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
 			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount);  
 		});
-}
+}*/

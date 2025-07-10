@@ -21,7 +21,7 @@ struct FMarchingCubesInput
 {
 	GENERATED_BODY()
 public:
-	FVoxelComputeUpdateData Input;
+	FVoxelComputeUpdateData updateData;
 };
 
 struct COMPUTEDISPATCHERS_API FMarchingCubesDispatchParams
@@ -30,7 +30,7 @@ struct COMPUTEDISPATCHERS_API FMarchingCubesDispatchParams
 	int Y = 1;
 	int Z = 1;
 
-	FVoxelComputeUpdateData Input;
+	FMarchingCubesInput Input;
 	FMarchingCubesOutput Output;
 
 	FMarchingCubesDispatchParams(int x, int y, int z) :
@@ -67,13 +67,7 @@ class COMPUTEDISPATCHERS_API UMarchingCubesLibrary_AsyncExecution : public UBlue
 public:
 	virtual void Activate() override {
 		FMarchingCubesDispatchParams Params(1, 1, 1);
-		Params.Input.isoBuffer = Args.isoBuffer;
-		Params.Input.isoLevel = Args.isoLevel;
-		Params.Input.nodeData = Args.nodeData;
-
-		Params.Input.scale = Args.scale;
-		Params.Input.typeBuffer = Args.typeBuffer;
-		Params.Input.voxelsPerAxis = Args.voxelsPerAxis;
+		Params.Input.updateData = Args.updateData;
 
 		FMarchingCubesInterface::Dispatch(Params, [this](FMarchingCubesOutput OutputVal) {
 			this->Completed.Broadcast(OutputVal);
@@ -81,7 +75,8 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", Category = "ComputeShader", WorldContext = "WorldContextObject"))
-	static UMarchingCubesLibrary_AsyncExecution* ExecuteBaseComputeShader(UObject* WorldContextObject, FVoxelComputeUpdateData Args) {
+
+	static UMarchingCubesLibrary_AsyncExecution* ExecuteBaseComputeShader(UObject* WorldContextObject, FMarchingCubesInput Args) {
 		UMarchingCubesLibrary_AsyncExecution* Action = NewObject<UMarchingCubesLibrary_AsyncExecution>();
 		Action->Args = Args;
 		Action->RegisterWithGameInstance(WorldContextObject);
@@ -90,5 +85,5 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnMarchingCubesLibrary_AsyncExecutionCompleted Completed;
-	FVoxelComputeUpdateData Args;
+	FMarchingCubesInput Args;
 };

@@ -115,7 +115,8 @@ void IVoxelDynamicRenderResource::ReleaseRHI()
  * Iso Dynamic Buffer
  */
 
-void FIsoDynamicBuffer::Initialize(int32 capacity) {
+void FIsoDynamicBuffer::Initialize(int32 inCapacity) {
+    capacity = inCapacity;
     Resize(capacity);
     FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
 
@@ -143,7 +144,8 @@ void FIsoDynamicBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
  * Type Dynamic Buffer
  */
 
-void FTypeDynamicBuffer::Initialize(int32 capacity) {
+void FTypeDynamicBuffer::Initialize(int32 inCapacity) {
+    capacity = inCapacity;
     Resize(capacity);
     FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
 

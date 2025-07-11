@@ -150,11 +150,13 @@ void FVoxelVertexFactory::InitRHI(FRHICommandListBase& RHICmdList)
 	InitDeclaration(Elements);
 }
 
+FVoxelVertexFactory::~FVoxelVertexFactory() {}
+
 void FVoxelVertexFactory::ReleaseRHI()
 {	
-	FVertexFactory::ReleaseRHI();
 	vertexBuffer.ReleaseRHI();
 	indexBuffer.ReleaseRHI();
 	normalsBuffer.ReleaseRHI();
+	FVertexFactory::ReleaseRHI();
 }
 

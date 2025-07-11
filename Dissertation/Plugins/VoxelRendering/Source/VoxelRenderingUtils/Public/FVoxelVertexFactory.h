@@ -88,6 +88,7 @@ class VOXELRENDERINGUTILS_API FVoxelVertexFactory : public FVertexFactory
 
 public:
 	FVoxelVertexFactory(uint32 bufferSize);
+	~FVoxelVertexFactory();
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters);
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
 

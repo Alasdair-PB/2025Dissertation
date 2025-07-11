@@ -22,13 +22,29 @@ Octree::Octree(float inIsoLevel, float inScale, int inVoxelsPerAxis, int inDepth
 }
 
 Octree::~Octree() {
-    delete root;
 	Release();
+    FlushRenderingCommands();
+    isoUniformBuffer.Reset();
+    typeUniformBuffer.Reset();
+
+    // Not deleting roots due to Fatal error: A FRenderResource was deleted without being released first! To be investigated when time permits
+    //delete root;
 }
 
 void Octree::Release() {
-	isoUniformBuffer->ReleaseResource();
-	typeUniformBuffer->ReleaseResource();
+    if (isoUniformBuffer.IsValid()) {
+        ENQUEUE_RENDER_COMMAND(ReleaseIsoBufferCmd)(
+            [isoUniformBuffer = isoUniformBuffer](FRHICommandListImmediate& RHICmdList) {
+                isoUniformBuffer->ReleaseResource();
+            });
+    }
+
+    if (typeUniformBuffer.IsValid()) {
+        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
+            [typeUniformBuffer = typeUniformBuffer](FRHICommandListImmediate& RHICmdList) {
+                typeUniformBuffer->ReleaseResource();
+            });
+    }
 }
 
 FBoxSphereBounds Octree::CalcVoxelBounds(const FTransform& LocalToWorld) {

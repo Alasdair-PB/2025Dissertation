@@ -53,9 +53,13 @@ public:
 	float scale;
 	float isoLevel;
 	int voxelsPerAxis;
+	int highResVoxelsPerAxis;
 
 	bool BuildDataCache() {
 		if (!octree) return false;
+
+		check(octree->GetIsoBuffer());
+		check(octree->GetTypeBuffer());
 
 		isoBuffer = octree->GetIsoBuffer();
 		typeBuffer = octree->GetTypeBuffer();
@@ -67,7 +71,7 @@ public:
 		voxelsPerAxis = octree->GetVoxelsPerAxs();
 		scale = octree->GetScale();
 		isoLevel = octree->GetIsoLevel();
-
+		highResVoxelsPerAxis = octree->GetVoxelsPerAxsMaxRes();
 		octree = nullptr;
 		return  true;
 	}

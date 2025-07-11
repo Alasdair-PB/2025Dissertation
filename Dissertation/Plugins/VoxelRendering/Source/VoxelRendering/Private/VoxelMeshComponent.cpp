@@ -134,7 +134,11 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData
     FMarchingCubesDispatchParams Params(1, 1, 1);
     Params.Input.updateData = { tree };
     Params.Input.updateData.nodeData = updateData;
-    Params.Input.updateData.BuildDataCache();
+
+    if (!Params.Input.updateData.BuildDataCache())
+        return;
+
+    check(Params.Input.updateData.isoBuffer);
 
     FMarchingCubesInterface::Dispatch(Params,
         [WeakThis = TWeakObjectPtr<UVoxelMeshComponent>(this)](FMarchingCubesOutput OutputVal) {
@@ -146,10 +150,11 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData
 void UVoxelMeshComponent::TraverseAndDraw(OctreeNode* node) {
     if (!node) return;
 
+    AABB bounds = node->GetBounds();
+    DrawDebugBox(GetWorld(), FVector(bounds.Center()), FVector(bounds.Extent()), FColor::Green, false, -1.f, 0, 1.f);
+
     if (node->IsLeaf()) {
 
-        AABB bounds = node->GetBounds();
-        DrawDebugBox(GetWorld(), FVector(bounds.Center()), FVector(bounds.Extent()), FColor::Green, false, -1.f, 0, 1.f);
         const int resolution = 2;
         FVector3f min = bounds.min;
         FVector3f max = bounds.max;

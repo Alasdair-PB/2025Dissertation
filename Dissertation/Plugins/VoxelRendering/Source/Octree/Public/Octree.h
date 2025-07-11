@@ -17,6 +17,8 @@ public:
     TSharedPtr<FTypeUniformBuffer> GetTypeBuffer() { return typeUniformBuffer; }
 
     int GetVoxelsPerAxs() const { return voxelsPerAxis; }
+    int GetVoxelsPerAxsMaxRes() const { return voxelsPerAxisMaxRes; }
+
     float GetScale() const { return scale; }
     float GetIsoLevel() const { return isoLevel; }
 

@@ -58,6 +58,7 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeDat
 	FMarchingCubes::FParameters* PassParams = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 	int voxelsPerAxis = Params.Input.updateData.voxelsPerAxis;
 
+	check(nodeData.isoBuffer->bufferSRV);
 	PassParams->leafPosition = nodeData.boundsCenter;
 	PassParams->leafDepth = nodeData.leafDepth;
 	PassParams->nodeIndex = 0; // Shader supports single vertex buffer for mesh, however as each LOD has its own vertex factory we can ignore this.
@@ -91,6 +92,11 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		bool bIsShaderValid = ComputeShader.IsValid();
 
 		if (bIsShaderValid) {
+			// Deformation
+			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.updateData.nodeData)
+				AddDeformationPass(GraphBuilder, nodeData, Params.Input.updateData);
+
+				// Marching Cubes
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
 			FRDGBufferSRVRef InLookUpSRV = GraphBuilder.CreateSRV(isoValuesBuffer);
 

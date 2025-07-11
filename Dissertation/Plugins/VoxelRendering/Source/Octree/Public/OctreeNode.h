@@ -36,7 +36,7 @@ protected:
     TSharedPtr<FIsoDynamicBuffer> avgIsoBuffer;
     TSharedPtr<FTypeDynamicBuffer> avgTypeBuffer;
 
-    void Subdivide(int maxDepth, int bufferSize);
+    void Subdivide(int inDepth, int maxDepth, int bufferSize);
 
 
     //float isoValues[isoCount];

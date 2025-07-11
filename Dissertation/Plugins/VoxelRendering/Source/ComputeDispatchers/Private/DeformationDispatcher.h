@@ -7,7 +7,7 @@
 #define NUM_THREADS_Deformation_X 8
 #define NUM_THREADS_Deformation_Y 8
 #define NUM_THREADS_Deformation_Z 8
-/*
+
 DECLARE_STATS_GROUP(TEXT("Deformation"), STATGROUP_Deformation, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("Deformation Execute"), STAT_Deformation_Execute, STATGROUP_Deformation);
 
@@ -17,11 +17,17 @@ class FDeformation : public FGlobalShader
 	SHADER_USE_PARAMETER_STRUCT(FDeformation, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER(uint32, size)
-		SHADER_PARAMETER(uint32, seed)
+		SHADER_PARAMETER(FVector3f, leafPosition)
+		SHADER_PARAMETER(uint32, leafDepth)
+		SHADER_PARAMETER(uint32, nodeIndex)
+
+		SHADER_PARAMETER_SRV(Buffer<float>, isoValues)
+		SHADER_PARAMETER_UAV(RWBuffer<float>, isoCombinedValues)
+
 		SHADER_PARAMETER(float, baseDepthScale)
-		SHADER_PARAMETER(float, planetScaleRatio)
-		SHADER_PARAMETER_UAV(RWBuffer<float>, outIsoValues)
+		SHADER_PARAMETER(uint32, voxelsPerAxis)
+		SHADER_PARAMETER(uint32, highResVoxelsPerAxis)
+
 	END_SHADER_PARAMETER_STRUCT()
 
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
@@ -40,16 +46,27 @@ class FDeformation : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FDeformation, "/ComputeDispatchersShaders/Deformation.usf", "Deformation", SF_Compute);
 
-void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, int voxelsPerAxis) {
+void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FVoxelComputeUpdateData& updateData) {
+
+	FShaderResourceViewRHIRef baseIsoValues = updateData.isoBuffer.Get()->bufferSRV;
 	FDeformation::FParameters* PassParams = GraphBuilder.AllocParameters<FDeformation::FParameters>();
-	PassParams->size = 0;
-	PassParams->seed = 0;
+	int voxelsPerAxis = updateData.voxelsPerAxis;
+
+	PassParams->leafPosition = nodeData.boundsCenter;
+	PassParams->leafDepth = nodeData.leafDepth;
+	PassParams->nodeIndex = 0;
+	PassParams->isoValues = updateData.isoBuffer->bufferSRV;
+	PassParams->isoCombinedValues = nodeData.isoBuffer->bufferUAV;
+	PassParams->baseDepthScale = updateData.scale;
+	PassParams->voxelsPerAxis = voxelsPerAxis;
+	PassParams->highResVoxelsPerAxis = updateData.highResVoxelsPerAxis;
+
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FDeformation> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(PassParams->size, PassParams->size, PassParams->size), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis), FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Deformation Pass"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {
 			FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, *PassParams, GroupCount);  
 		});
-}*/
+}

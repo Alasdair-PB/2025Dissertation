@@ -1,7 +1,7 @@
 #include "OctreeNode.h"
 #include "OctreeModule.h"
 
-OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth) : depth(inDepth), isLeaf(true) {
+OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth) : depth(inDepth), isLeaf(true), bounds(inBounds) {
     vertexFactory = MakeShareable(new FVoxelVertexFactory(bufferSize));
     avgIsoBuffer = MakeShareable(new FIsoDynamicBuffer(bufferSize));
     avgTypeBuffer = MakeShareable(new FTypeDynamicBuffer(bufferSize));
@@ -10,31 +10,55 @@ OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int
         [this, bufferSize](FRHICommandListImmediate& RHICmdList)
         {
             vertexFactory->Initialize(bufferSize);
-            avgTypeBuffer->Initialize(bufferSize);
-            avgTypeBuffer->Initialize(bufferSize);
         });
+
     for (int i = 0; i < 8; ++i)
         children[i] = nullptr;
 
-    if (depth < maxDepth)
-        Subdivide(maxDepth, bufferSize);
+    if (inDepth < maxDepth)
+        Subdivide(inDepth, maxDepth, bufferSize);
 }
 
-OctreeNode::~OctreeNode() {
-	Release();
-	for (int i = 0; i < 8; ++i)
-		delete children[i];
+ OctreeNode::~OctreeNode() {
+    Release();
+    FlushRenderingCommands();
+    avgIsoBuffer.Reset();
+    avgTypeBuffer.Reset();
+    vertexFactory.Reset();
+    for (int i = 0; i < 8; ++i) {
+        delete children[i];
+        children[i] = nullptr;
+    }
 }
 
 void OctreeNode::Release() {
-	avgIsoBuffer->ReleaseResource();
-	avgTypeBuffer->ReleaseResource();
+
+    if (avgIsoBuffer.IsValid()) {
+        ENQUEUE_RENDER_COMMAND(ReleaseIsoBufferCmd)(
+            [avgIsoBuffer = avgIsoBuffer](FRHICommandListImmediate& RHICmdList) {
+                avgIsoBuffer->ReleaseResource();
+            });
+    }
+
+    if (avgTypeBuffer.IsValid()) {
+        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
+            [avgTypeBuffer = avgTypeBuffer](FRHICommandListImmediate& RHICmdList) {
+                avgTypeBuffer->ReleaseResource();
+            });
+    }
+
+    if (vertexFactory.IsValid()) {
+        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
+            [vertexFactory = vertexFactory](FRHICommandListImmediate& RHICmdList) {
+                vertexFactory->ReleaseResource();
+            });
+    }
 }
 
-void OctreeNode::Subdivide(int maxDepth, int bufferSize) {
+void OctreeNode::Subdivide(int inDepth, int maxDepth, int bufferSize) {
     if (!isLeaf) return;
 
-    int nextDepth = depth + 1;
+    int nextDepth = inDepth + 1;
     isLeaf = false;
     FVector3f c = bounds.Center();
     FVector3f e = bounds.Extent() * 0.5f;
@@ -44,7 +68,7 @@ void OctreeNode::Subdivide(int maxDepth, int bufferSize) {
         FVector3f childCenter = c + offset;
         FVector3f halfSize = e;
 
-        AABB childAABB = { childCenter - halfSize,childCenter + halfSize };
+        AABB childAABB = { childCenter - halfSize, childCenter + halfSize };
         children[i] = new OctreeNode(childAABB, bufferSize, nextDepth, maxDepth);
     }
 }

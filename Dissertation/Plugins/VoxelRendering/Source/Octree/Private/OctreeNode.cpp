@@ -10,6 +10,8 @@ OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int
         [this, bufferSize](FRHICommandListImmediate& RHICmdList)
         {
             vertexFactory->Initialize(bufferSize);
+            avgIsoBuffer->Initialize(bufferSize);
+            avgTypeBuffer->Initialize(bufferSize);
         });
 
     for (int i = 0; i < 8; ++i)

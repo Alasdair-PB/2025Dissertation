@@ -91,7 +91,13 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		TShaderMapRef<FMarchingCubes> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), PermutationVector);
 		bool bIsShaderValid = ComputeShader.IsValid();
 
-		if (bIsShaderValid) {
+		typename FDeformation::FPermutationDomain PermutationVectorDef;
+		TShaderMapRef<FDeformation> DefComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), PermutationVectorDef);
+		bool bIsDefShaderValid = DefComputeShader.IsValid();
+
+		UE_LOG(LogTemp, Warning, TEXT("This: happens"));
+
+		if (bIsShaderValid && bIsDefShaderValid) {
 			// Deformation
 			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.updateData.nodeData)
 				AddDeformationPass(GraphBuilder, nodeData, Params.Input.updateData);

@@ -59,6 +59,7 @@ public:
 	int highResVoxelsPerAxis;
 
 	bool BuildDataCache() {
+
 		if (!octree) return false;
 
 		check(octree->GetIsoBuffer());
@@ -66,10 +67,6 @@ public:
 
 		isoBuffer = octree->GetIsoBuffer();
 		typeBuffer = octree->GetTypeBuffer();
-
-		for (FVoxelComputeUpdateNodeData node : nodeData) {
-			if (!node.BuildDataCache()) return false;
-		}
 
 		octreePosition = octree->GetOctreePosition();
 		voxelsPerAxis = octree->GetVoxelsPerAxs();

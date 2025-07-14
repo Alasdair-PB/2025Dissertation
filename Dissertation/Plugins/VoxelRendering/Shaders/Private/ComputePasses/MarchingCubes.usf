@@ -90,7 +90,7 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
     float scale = baseDepthScale / (pow(2, leafDepth));
     float centerDis = scale / 2;
     float isoScale = (scale / (voxelsPerAxis));
-    float3 worldPos = leafPosition - float3(centerDis, centerDis, centerDis);
+    float3 minimumCornerWorldPos = leafPosition - float3(centerDis, centerDis, centerDis);
 
     int3 cornerCoords[8];
     cornerCoords[0] = id + int3(0, 0, 0);
@@ -131,8 +131,8 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         int indexB = (vertexStartIndex + k + 1);
         int indexC = (vertexStartIndex + k + 2);
 
-        CreateVertex(cornerCoords[a0], cornerCoords[b0], indexA, worldPos, isoScale);
-        CreateVertex(cornerCoords[a1], cornerCoords[b1], indexB, worldPos, isoScale);
-        CreateVertex(cornerCoords[a2], cornerCoords[b2], indexC, worldPos, isoScale);
+        CreateVertex(cornerCoords[a0], cornerCoords[b0], indexA, minimumCornerWorldPos, isoScale);
+        CreateVertex(cornerCoords[a1], cornerCoords[b1], indexB, minimumCornerWorldPos, isoScale);
+        CreateVertex(cornerCoords[a2], cornerCoords[b2], indexC, minimumCornerWorldPos, isoScale);
     }
 }

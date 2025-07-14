@@ -1,50 +1,66 @@
 #pragma once
 #pragma COMPUTE_SHADER_ENTRYPOINT(MarchingCubes)
 #include "/Engine/Public/Platform.ush"
+#include "PlanetGeneratorHelpers.usf"
 
-float3 leafPosition;
+int subdivisionIndex; // 0-7
 int leafDepth;
 int nodeIndex; // always 0 ignore each leaf has its own isoCombinedValues buffer, this is left over from before
 
 Buffer<float> isoValues; // All tree isoValues at maxResolution
 RWBuffer<float> isoCombinedValues; // out leaf iso values (leaf sized ready for averages i.e (voxelsPerAxis + 1)^3 in size)
 
-float baseDepthScale;
 int voxelsPerAxis;
 int highResVoxelsPerAxis;
 
+float3 leafPosition;
+float3 octreePosition;
+float baseDepthScale;
+
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void Deformation(int3 id : SV_DispatchThreadID)
-{
-    if (any(id >= voxelsPerAxis)) return;
-   
-    int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
+{    
+    int isoPerAxis = voxelsPerAxis + 1;
+    if (any(id >= isoPerAxis)) return;
     
-    int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
-    int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
-        
-    float scale = baseDepthScale / (pow(2, leafDepth));
-    float centerDis = scale / 2;
-    float isoScale = (scale / (voxelsPerAxis));
-    float3 worldPos = leafPosition - float3(centerDis, centerDis, centerDis);
-    
+    int isoPerAxisMaxRes = highResVoxelsPerAxis + 1;
+    int stride = isoPerAxisMaxRes / (1 << leafDepth);
 
-    for (int isoIdx = 0; isoIdx < 15; isoIdx++)
+    float ratio = baseDepthScale / 2.0;
+    float3 minimumCornerVoxelBodyPos = octreePosition - float3(ratio, ratio, ratio);
+    
+    //float3 distance = abs(minimumCornerVoxelBodyPos - leafPosition);
+    //float3 scale = distance / baseDepthScale;
+    //int3 isoPerAxisMaxResVector = int3(isoPerAxisMaxRes);
+    //int3 startIndex = isoPerAxisMaxResVector / scale;
+    
+    
+    float voxelWorldSize = baseDepthScale / (isoPerAxisMaxRes - 1);
+    float sizeFlat = baseDepthScale / pow(2, leafDepth);
+    float3 size = float3(sizeFlat, sizeFlat, sizeFlat);
+    float3 leafMinWorld = leafPosition - size / 2.0;
+    
+    float3 offsetWorld = leafMinWorld - minimumCornerVoxelBodyPos; // if root is centered at (0,0,0) then rootMinWorld = -baseDepthScale/2
+    float3 offsetVoxelsF = offsetWorld / voxelWorldSize;
+    int3 startIndex = (int3) floor(offsetVoxelsF + 0.5);
+    
+    float count = 0.0;
+    float sum = 0.0;
+
+    for (int dz = startIndex.z; dz < stride; dz++)
     {
-        float sum = 0.0;
-        int count = 0;
-        
-        for (int dz = 0; dz < ratio; dz++)
+        for (int dy = startIndex.y; dy < stride; dy++)
         {
-            for (int dy = 0; dy < ratio; dy++)
+            for (int dx = startIndex.x; dx < stride; dx++)
             {
-                for (int dx = 0; dx < ratio; dx++)
-                {
-
-                }
+                int3 readBufferIndex = int3(dx,dy,dz);
+                int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
+                sum += isoValues[flat];
+                count++;
             }
         }
-        int leafIndex = voxelIndex * 15 + isoIdx;
-        isoCombinedValues[leafIndex] = sum / count;
     }
+    
+    int writeIndex = GetIsoIndex(id, isoPerAxis);
+    isoCombinedValues[writeIndex] = count > 0 ? sum / count : sum;
 }

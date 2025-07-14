@@ -10,7 +10,7 @@ class FVoxelVertexFactory;
 
 class OctreeNode {
 public:
-    OctreeNode(const AABB& inBounds, uint32 bufferSize, int depth, int maxDepth);
+    OctreeNode(const AABB& inBounds, uint32 bufferSize, int depth, int maxDepth, int inSubdivisionIndex = 0);
     ~OctreeNode();
 
     void Release();
@@ -23,10 +23,12 @@ public:
     AABB GetBounds() const { return bounds; }
     OctreeNode* children[8];
     int GetDepth() const { return depth; }
+    int GetSubdivisionIndex() const { return depth; }
 
 protected:
     int maxVertexIndex;
     int depth;
+    int subDivisonIndex;
 
     bool isLeaf;
     bool isVisible;

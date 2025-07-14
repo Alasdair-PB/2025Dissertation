@@ -22,6 +22,11 @@ public:
     float GetScale() const { return scale; }
     float GetIsoLevel() const { return isoLevel; }
 
+    FVector3f GetOctreePosition() const {
+        if (root) return root->GetBounds().Center();
+        else return (FVector3f());
+    }
+
 protected:    
     OctreeNode* root;
     int maxDepth;

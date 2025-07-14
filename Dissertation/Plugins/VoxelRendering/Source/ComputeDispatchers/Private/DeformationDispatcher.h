@@ -17,17 +17,19 @@ class FDeformation : public FGlobalShader
 	SHADER_USE_PARAMETER_STRUCT(FDeformation, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER(FVector3f, leafPosition)
+		SHADER_PARAMETER(uint32, subdivisionIndex)
 		SHADER_PARAMETER(uint32, leafDepth)
 		SHADER_PARAMETER(uint32, nodeIndex)
 
 		SHADER_PARAMETER_SRV(Buffer<float>, isoValues)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, isoCombinedValues)
 
-		SHADER_PARAMETER(float, baseDepthScale)
 		SHADER_PARAMETER(uint32, voxelsPerAxis)
 		SHADER_PARAMETER(uint32, highResVoxelsPerAxis)
 
+		SHADER_PARAMETER(FVector3f, leafPosition)
+		SHADER_PARAMETER(FVector3f, octreePosition)
+		SHADER_PARAMETER(float, baseDepthScale)
 	END_SHADER_PARAMETER_STRUCT()
 
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
@@ -53,17 +55,19 @@ void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& 
 	int voxelsPerAxis = updateData.voxelsPerAxis;
 
 	PassParams->leafPosition = nodeData.boundsCenter;
+	PassParams->octreePosition = updateData.octreePosition;
+	PassParams->baseDepthScale = updateData.scale;
 	PassParams->leafDepth = nodeData.leafDepth;
 	PassParams->nodeIndex = 0;
+	PassParams->subdivisionIndex = nodeData.subdivisionIndex;
 	PassParams->isoValues = updateData.isoBuffer->bufferSRV;
 	PassParams->isoCombinedValues = nodeData.isoBuffer->bufferUAV;
-	PassParams->baseDepthScale = updateData.scale;
 	PassParams->voxelsPerAxis = voxelsPerAxis;
 	PassParams->highResVoxelsPerAxis = updateData.highResVoxelsPerAxis;
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FDeformation> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((voxelsPerAxis + 1)), FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Deformation Pass"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {

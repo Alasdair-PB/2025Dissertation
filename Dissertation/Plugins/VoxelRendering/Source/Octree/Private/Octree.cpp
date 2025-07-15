@@ -11,12 +11,14 @@ Octree::Octree(float inIsoLevel, float inScale, int inVoxelsPerAxis, int inDepth
     int bufferSize = (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1);
 
     isoUniformBuffer = MakeShareable(new FIsoUniformBuffer(bufferSize));
+    deltaIsoUniformBuffer = MakeShareable(new FIsoUniformBuffer(bufferSize));
     typeUniformBuffer = MakeShareable(new FTypeUniformBuffer(bufferSize));
 
     ENQUEUE_RENDER_COMMAND(InitVoxelResources)(
         [this, bufferSize, isoBuffer, typeBuffer](FRHICommandListImmediate& RHICmdList)
         {
             isoUniformBuffer->Initialize(isoBuffer, bufferSize);
+            deltaIsoUniformBuffer->Initialize(bufferSize);
             typeUniformBuffer->Initialize(typeBuffer, bufferSize);
         });
 }
@@ -25,6 +27,7 @@ Octree::~Octree() {
 	Release();
     FlushRenderingCommands();
     isoUniformBuffer.Reset();
+    deltaIsoUniformBuffer.Reset();
     typeUniformBuffer.Reset();
 
     // Not deleting roots due to Fatal error: A FRenderResource was deleted without being released first! To be investigated when time permits
@@ -38,7 +41,12 @@ void Octree::Release() {
                 isoUniformBuffer->ReleaseResource();
             });
     }
-
+    if (deltaIsoUniformBuffer.IsValid()) {
+        ENQUEUE_RENDER_COMMAND(ReleaseIsoBufferCmd)(
+            [deltaIsoUniformBuffer = deltaIsoUniformBuffer](FRHICommandListImmediate& RHICmdList) {
+                deltaIsoUniformBuffer->ReleaseResource();
+            });
+    }
     if (typeUniformBuffer.IsValid()) {
         ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
             [typeUniformBuffer = typeUniformBuffer](FRHICommandListImmediate& RHICmdList) {

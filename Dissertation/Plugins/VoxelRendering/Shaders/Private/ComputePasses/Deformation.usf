@@ -7,6 +7,8 @@ int leafDepth;
 int nodeIndex; // always 0 ignore each leaf has its own isoCombinedValues buffer, this is left over from before
 
 Buffer<float> isoValues; // All tree isoValues at maxResolution
+Buffer<float> isoDeltaValues; // All tree isoValues at maxResolution
+
 RWBuffer<float> isoCombinedValues; // out leaf iso values (leaf sized ready for averages i.e (voxelsPerAxis + 1)^3 in size)
 
 int voxelsPerAxis;
@@ -67,7 +69,7 @@ void Deformation(int3 id : SV_DispatchThreadID)
                     if (any(readBufferIndex >= isoPerAxisMaxRes)) continue;
                     
                     int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
-                    sum += isoValues[flat];
+                    sum += clamp(isoValues[flat] - isoDeltaValues[flat], 0.0, 1.0);
                     count++;
                 }
             }

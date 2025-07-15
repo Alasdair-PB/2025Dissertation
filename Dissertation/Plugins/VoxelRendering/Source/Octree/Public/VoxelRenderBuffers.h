@@ -33,6 +33,8 @@ public:
     FIsoUniformBuffer(uint32 inCapacity) : IIsoRenderResource(inCapacity) {}
 
     void Initialize(const TArray<float>& isoBuffer, int32 inCapacity);
+    void Initialize(int32 inCapacity);
+
     virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
     virtual FRHIUniformBuffer* GetUniformBuffer() const { return uniformBuffer.GetReference(); }
     virtual void ReleaseRHI() override;

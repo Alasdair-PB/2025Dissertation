@@ -13,8 +13,11 @@ public:
     void Release();
     OctreeNode* GetRoot() { return root; }
     FBoxSphereBounds CalcVoxelBounds(const FTransform& LocalToWorld);
+
     TSharedPtr<FIsoUniformBuffer> GetIsoBuffer() { return isoUniformBuffer; }
     TSharedPtr<FTypeUniformBuffer> GetTypeBuffer() { return typeUniformBuffer; }
+
+    TSharedPtr<FIsoUniformBuffer> GetDeltaIsoBuffer() { return deltaIsoUniformBuffer; }
 
     int GetVoxelsPerAxs() const { return voxelsPerAxis; }
     int GetVoxelsPerAxsMaxRes() const { return voxelsPerAxisMaxRes; }
@@ -32,6 +35,8 @@ protected:
     int maxDepth;
     TSharedPtr<FTypeUniformBuffer> typeUniformBuffer;
     TSharedPtr<FIsoUniformBuffer> isoUniformBuffer;
+    TSharedPtr<FIsoUniformBuffer> deltaIsoUniformBuffer;
+
 private:
     float scale;
     float isoLevel;

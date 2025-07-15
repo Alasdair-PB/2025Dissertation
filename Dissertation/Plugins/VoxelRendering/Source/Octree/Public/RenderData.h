@@ -65,6 +65,7 @@ public:
 
 		isoBuffer = octree->GetIsoBuffer();
 		typeBuffer = octree->GetTypeBuffer();
+		deltaIsoBuffer = octree->GetDeltaIsoBuffer();
 
 		octreePosition = octree->GetOctreePosition();
 		voxelsPerAxis = octree->GetVoxelsPerAxs();
@@ -75,6 +76,7 @@ public:
 		return  true;
 	}
 
+	TSharedPtr<FIsoUniformBuffer> deltaIsoBuffer;
 	TSharedPtr<FIsoUniformBuffer> isoBuffer;
 	TSharedPtr<FTypeUniformBuffer> typeBuffer;
 	TArray<FVoxelComputeUpdateNodeData> nodeData;

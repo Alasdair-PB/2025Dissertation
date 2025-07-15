@@ -21,6 +21,7 @@ class FDeformation : public FGlobalShader
 		SHADER_PARAMETER(uint32, nodeIndex)
 
 		SHADER_PARAMETER_SRV(Buffer<float>, isoValues)
+		SHADER_PARAMETER_SRV(Buffer<float>, isoDeltaValues)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, isoCombinedValues)
 
 		SHADER_PARAMETER(uint32, voxelsPerAxis)
@@ -59,6 +60,7 @@ void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& 
 	PassParams->leafDepth = nodeData.leafDepth;
 	PassParams->nodeIndex = 0;
 	PassParams->isoValues = updateData.isoBuffer->bufferSRV;
+	PassParams->isoDeltaValues = updateData.deltaIsoBuffer->bufferSRV; // here
 	PassParams->isoCombinedValues = nodeData.isoBuffer->bufferUAV;
 	PassParams->voxelsPerAxis = voxelsPerAxis;
 	PassParams->highResVoxelsPerAxis = updateData.highResVoxelsPerAxis;

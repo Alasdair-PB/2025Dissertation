@@ -1,7 +1,7 @@
 #include "OctreeNode.h"
 #include "OctreeModule.h"
 
-OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth, int inSubdivisionIndex) : depth(inDepth), isLeaf(true), bounds(inBounds) {
+OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth) : depth(inDepth), isLeaf(true), bounds(inBounds) {
     vertexFactory = MakeShareable(new FVoxelVertexFactory(bufferSize));
     avgIsoBuffer = MakeShareable(new FIsoDynamicBuffer(bufferSize));
     avgTypeBuffer = MakeShareable(new FTypeDynamicBuffer(bufferSize));
@@ -9,7 +9,7 @@ OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int
     ENQUEUE_RENDER_COMMAND(InitVoxelResources)(
         [this, bufferSize](FRHICommandListImmediate& RHICmdList)
         {
-            vertexFactory->Initialize(bufferSize);
+            vertexFactory->Initialize(bufferSize * 15);
             avgIsoBuffer->Initialize(bufferSize);
             avgTypeBuffer->Initialize(bufferSize);
         });
@@ -71,6 +71,6 @@ void OctreeNode::Subdivide(int inDepth, int maxDepth, int bufferSize) {
         FVector3f halfSize = e;
 
         AABB childAABB = { childCenter - halfSize, childCenter + halfSize };
-        children[i] = new OctreeNode(childAABB, bufferSize, nextDepth, maxDepth, i);
+        children[i] = new OctreeNode(childAABB, bufferSize, nextDepth, maxDepth);
     }
 }

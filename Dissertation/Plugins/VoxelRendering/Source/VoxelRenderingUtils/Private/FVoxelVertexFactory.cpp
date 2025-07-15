@@ -116,7 +116,6 @@ void FVoxelVertexFactory::Initialize(uint32 bufferSize)
 	indexBuffer.SetElementCount(bufferSize);
 	normalsBuffer.SetElementCount(bufferSize);
 	InitResource(FRHICommandListImmediate::Get());
-
 }
 
 bool FVoxelVertexFactory::ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)

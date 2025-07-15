@@ -53,7 +53,7 @@ void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& 
 	FShaderResourceViewRHIRef baseIsoValues = updateData.isoBuffer.Get()->bufferSRV;
 	FDeformation::FParameters* PassParams = GraphBuilder.AllocParameters<FDeformation::FParameters>();
 	int voxelsPerAxis = updateData.voxelsPerAxis;
-	UE_LOG(LogTemp, Warning, TEXT("Debug: deformation pass occurs"));
+
 	PassParams->leafPosition = nodeData.boundsCenter;
 	PassParams->octreePosition = updateData.octreePosition;
 	PassParams->baseDepthScale = updateData.scale;

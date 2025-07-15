@@ -57,7 +57,6 @@ IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCube
 void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FMarchingCubesDispatchParams& Params, FRDGBufferSRVRef InLookUpSRV) {
 	FMarchingCubes::FParameters* PassParams = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 	int voxelsPerAxis = Params.Input.updateData.voxelsPerAxis;
-	UE_LOG(LogTemp, Warning, TEXT("Debug: Marching pass occurs"));
 
 	check(nodeData.isoBuffer->bufferSRV);
 	PassParams->leafPosition = nodeData.boundsCenter;
@@ -100,6 +99,7 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 			// Deformation
 			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.updateData.nodeData)
 				AddDeformationPass(GraphBuilder, nodeData, Params.Input.updateData);
+			UE_LOG(LogTemp, Warning, TEXT("NodeData count: %d"), Params.Input.updateData.nodeData.Num());
 
 				// Marching Cubes
 			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));

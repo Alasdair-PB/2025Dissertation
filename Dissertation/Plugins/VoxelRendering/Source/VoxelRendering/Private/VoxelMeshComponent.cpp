@@ -56,7 +56,8 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 }
 void UVoxelMeshComponent::InitVoxelMesh(float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, 
     TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer) 
-{    tree = new Octree(isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
+{    
+    tree = new Octree(isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
 }
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
@@ -100,6 +101,7 @@ void UVoxelMeshComponent::SetRenderDataLOD()
     InvokeVoxelRenderer(computeUpdateDataNodes);
 }
 
+// This does distance from self change to set target
 void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
     if (!node) return;
 
@@ -107,7 +109,7 @@ void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode
         nodes.Add(node);
     else {
         AABB bounds = node->GetBounds();
-        float visibleDistance = 50.0f / (1 << node->GetDepth());
+        float visibleDistance = 1000.0f / (1 << node->GetDepth());
         FVector boundsCenter = FVector(bounds.Center().X, bounds.Center().Y, bounds.Center().Z);
         float distance = (GetComponentLocation() - boundsCenter).Length();
 

@@ -34,19 +34,16 @@ void Deformation(int3 id : SV_DispatchThreadID)
     int isoPerAxisMaxRes = highResVoxelsPerAxis + 1;
 
     float ratio = baseDepthScale / 2.0; // 100
-    float3 minimumCornerVoxelBodyPos = octreePosition - float3(ratio, ratio, ratio); // -100,-100,-100
+    float3 minimumCornerVoxelBodyPos = octreePosition - float3(ratio, ratio, ratio);
     
-    float scale = baseDepthScale / (1 << leafDepth); // 200
-    float centerDis = scale / 2; // 100
-    float3 leafMinWorld = leafPosition - float3(centerDis, centerDis, centerDis); //-100, -100, -100
+    float scale = baseDepthScale / (1 << leafDepth);
+    float centerDis = scale / 2;
+    float3 leafMinWorld = leafPosition - float3(centerDis, centerDis, centerDis);
     
     float voxelWorldSize = baseDepthScale / (highResVoxelsPerAxis); // 200/isoPerAxiMaxRes
-    float3 offsetWorld = leafMinWorld - minimumCornerVoxelBodyPos; //0,0,0 // if root is centered at (0,0,0) then rootMinWorld = -baseDepthScale/2
-    float3 offsetVoxelsF = offsetWorld / voxelWorldSize; // 0
-    // ids: 0-5 6- isoValuesPerAxis
+    float3 offsetWorld = leafMinWorld - minimumCornerVoxelBodyPos;
+    float3 offsetVoxelsF = offsetWorld / voxelWorldSize;
     
-    // 21 x 21 x 21 maxRes iso values
-    // 20/5 = 4 + 1 => 5
     float stride = (highResVoxelsPerAxis / voxelsPerAxis); //4
     stride /= (1 << leafDepth); 
     
@@ -85,6 +82,6 @@ void Deformation(int3 id : SV_DispatchThreadID)
     
     float density = sum / count;
     int writeIndex = GetIsoIndex(id, isoPerAxis);
-    isoCombinedValues[writeIndex] = density; // > 0.5 ? GetDensity(id) : 0; //count > 0 ? sum / count : sum;
+    isoCombinedValues[writeIndex] = density;
 }
                 

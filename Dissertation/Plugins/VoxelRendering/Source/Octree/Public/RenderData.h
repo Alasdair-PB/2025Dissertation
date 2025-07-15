@@ -12,7 +12,6 @@ private:
 	OctreeNode* dataNode;
 public:
 	int leafDepth;
-	int subdivisionIndex;
 	FVector3f boundsCenter;
 
 	TSharedPtr<class FVoxelVertexFactory> vertexFactory;
@@ -33,7 +32,6 @@ public:
 			vertexFactory = dataNode->GetVertexFactory();
 			isoBuffer = dataNode->GetIsoBuffer();
 			leafDepth = dataNode->GetDepth();
-			subdivisionIndex = dataNode->GetSubdivisionIndex();
 			boundsCenter = dataNode->GetBounds().Center();
 			dataNode = nullptr;
 			return  true;

@@ -105,6 +105,8 @@ void UVoxelMeshComponent::SetRenderDataLOD()
 void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
     if (!node) return;
 
+    //nodes.Add(node);
+    
     if (node->IsLeaf()) 
         nodes.Add(node);
     else {

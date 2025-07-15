@@ -3,7 +3,6 @@
 #include "/Engine/Public/Platform.ush"
 #include "PlanetGeneratorHelpers.usf"
 
-int subdivisionIndex; // 0-7
 int leafDepth;
 int nodeIndex; // always 0 ignore each leaf has its own isoCombinedValues buffer, this is left over from before
 
@@ -17,49 +16,75 @@ float3 leafPosition;
 float3 octreePosition;
 float baseDepthScale;
 
+float GetDensity(int3 coord)
+{
+    float3 p = (float3(coord) / voxelsPerAxis) * 2.0 - 1.0;
+    float sphere = length(p) - 0.5;
+    return sphere;
+}
+
+// 6, 6, 6: (0-5)
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void Deformation(int3 id : SV_DispatchThreadID)
-{    
+{
     int isoPerAxis = voxelsPerAxis + 1;
-    if (any(id >= isoPerAxis)) return;
+    if (any(id >= (isoPerAxis)))
+        return;
     
     int isoPerAxisMaxRes = highResVoxelsPerAxis + 1;
-    int stride = isoPerAxisMaxRes / (1 << leafDepth);
 
-    float ratio = baseDepthScale / 2.0;
-    float3 minimumCornerVoxelBodyPos = octreePosition - float3(ratio, ratio, ratio);
+    float ratio = baseDepthScale / 2.0; // 100
+    float3 minimumCornerVoxelBodyPos = octreePosition - float3(ratio, ratio, ratio); // -100,-100,-100
     
-    //float3 distance = abs(minimumCornerVoxelBodyPos - leafPosition);
-    //float3 scale = distance / baseDepthScale;
-    //int3 isoPerAxisMaxResVector = int3(isoPerAxisMaxRes);
-    //int3 startIndex = isoPerAxisMaxResVector / scale;
+    float scale = baseDepthScale / (1 << leafDepth); // 200
+    float centerDis = scale / 2; // 100
+    float3 leafMinWorld = leafPosition - float3(centerDis, centerDis, centerDis); //-100, -100, -100
     
-    float voxelWorldSize = baseDepthScale / (isoPerAxisMaxRes - 1);
-    float sizeFlat = baseDepthScale / pow(2, leafDepth);
-    float3 size = float3(sizeFlat, sizeFlat, sizeFlat);
-    float3 leafMinWorld = leafPosition - size / 2.0;
+    float voxelWorldSize = baseDepthScale / (highResVoxelsPerAxis); // 200/isoPerAxiMaxRes
+    float3 offsetWorld = leafMinWorld - minimumCornerVoxelBodyPos; //0,0,0 // if root is centered at (0,0,0) then rootMinWorld = -baseDepthScale/2
+    float3 offsetVoxelsF = offsetWorld / voxelWorldSize; // 0
+    // ids: 0-5 6- isoValuesPerAxis
     
-    float3 offsetWorld = leafMinWorld - minimumCornerVoxelBodyPos; // if root is centered at (0,0,0) then rootMinWorld = -baseDepthScale/2
-    float3 offsetVoxelsF = offsetWorld / voxelWorldSize;
-    int3 startIndex = (int3) floor(offsetVoxelsF + 0.5);
+    // 21 x 21 x 21 maxRes iso values
+    // 20/5 = 4 + 1 => 5
+    float stride = (highResVoxelsPerAxis / voxelsPerAxis); //4
+    stride /= (1 << leafDepth); 
     
+    int3 startIndex = (int3) offsetVoxelsF + (id * stride);
+
     float count = 0.0;
     float sum = 0.0;
 
-    for (int dz = startIndex.z; dz < (startIndex.z + stride); dz++)
+    if (stride > 1)
     {
-        for (int dy = startIndex.y; dy < (startIndex.y + stride); dy++)
+        stride /= 2;
+        for (int dz = startIndex.z - stride; dz < (startIndex.z + stride); dz++)
         {
-            for (int dx = startIndex.x; dx < (startIndex.x + stride); dx++)
+            for (int dy = startIndex.y - stride; dy < (startIndex.y + stride); dy++)
             {
-                int3 readBufferIndex = int3(dx,dy,dz);
-                int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
-                sum += isoValues[flat];
-                count++;
+                for (int dx = startIndex.x - stride; dx < (startIndex.x + stride); dx++)
+                {
+                    int3 readBufferIndex = int3(dx, dy, dz);
+
+                    if (any(readBufferIndex < 0)) continue;
+                    if (any(readBufferIndex >= isoPerAxisMaxRes)) continue;
+                    
+                    int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
+                    sum += isoValues[flat];
+                    count++;
+                }
             }
         }
     }
+    else
+    {
+        int flat = GetIsoIndex(startIndex, isoPerAxisMaxRes);
+        sum += isoValues[flat];
+        count = 1;
+    }
     
+    float density = sum / count;
     int writeIndex = GetIsoIndex(id, isoPerAxis);
-    isoCombinedValues[writeIndex] = count > 0 ? sum / count : sum;
+    isoCombinedValues[writeIndex] = density; // > 0.5 ? GetDensity(id) : 0; //count > 0 ? sum / count : sum;
 }
+                

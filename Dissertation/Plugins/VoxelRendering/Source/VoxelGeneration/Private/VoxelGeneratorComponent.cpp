@@ -22,7 +22,7 @@ void UVoxelGeneratorComponent::InitIsoDispatch() {
     int depth = 2; 
     int voxelsPerAxis = 5;
     float scale = 400.0f;
-    int size = voxelsPerAxis * (1 << depth); // voxelsPerAxis * Octree::IntPow(2, depth);
+    int size = voxelsPerAxis * (1 << depth); // 20
     DispatchIsoBuffer(size, depth, scale, voxelsPerAxis);
 }
 
@@ -33,7 +33,7 @@ void UVoxelGeneratorComponent::InitVoxelMesh(int size, int depth, float scale, i
 }
 
 void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth, float scale, int voxelsPerAxis) {
-    int isoSize = size + 1;
+    int isoSize = size + 1; //21
     int totalBufferSize = isoSize * isoSize * isoSize;
     isoValueBuffer.Reserve(totalBufferSize);
     typeValueBuffer.Reserve(totalBufferSize);

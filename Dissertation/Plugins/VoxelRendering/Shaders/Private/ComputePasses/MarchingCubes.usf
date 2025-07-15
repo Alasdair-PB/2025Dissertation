@@ -28,19 +28,12 @@ int GetIsoIndex(int3 coord)
     return max(0, min(index, maxIsoCount + 1));
 }
 
-/*float GetDensity(int3 coord)
+float GetDensity(int3 coord)
 {
     bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
     if (isEdge) return isoLevel;
     int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
     return isoValues[(GetIsoIndex(coord))];
-}*/
-
-float GetDensity(int3 coord)
-{
-    float3 p = (float3(coord) / voxelsPerAxis) * 2.0 - 1.0;
-    float sphere = length(p) - 0.5; 
-    return sphere;
 }
 
 float3 CalculateNormal(int3 coord)

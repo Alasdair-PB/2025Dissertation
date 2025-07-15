@@ -23,7 +23,6 @@ public:
     AABB GetBounds() const { return bounds; }
     OctreeNode* children[8];
     int GetDepth() const { return depth; }
-    int GetSubdivisionIndex() const { return depth; }
 
 protected:
     int maxVertexIndex;

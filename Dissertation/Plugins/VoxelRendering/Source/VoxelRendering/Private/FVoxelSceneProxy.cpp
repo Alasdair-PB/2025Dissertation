@@ -127,7 +127,7 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 				SetMeshBatchGeneric(meshBatch, node, viewIndex);
 				SetMeshBatchElementsGeneric(meshBatch, node, viewIndex);
 
-				CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
+				//CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
 				Collector.AddMesh(viewIndex, meshBatch);
 			}
 		}
@@ -157,8 +157,9 @@ void FVoxelSceneProxy::SetMeshBatchRenderProxy(FMeshBatch& meshBatch) const {
 	}
 	else{
 		renderProxy = Material->GetRenderProxy();
-		meshBatch.MaterialRenderProxy = renderProxy;
-	}
+	}		
+	check(renderProxy);
+	meshBatch.MaterialRenderProxy = renderProxy;
 }
 
 void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, const FVoxelProxyUpdateDataNode& node, int32 viewIndex) const {
@@ -166,6 +167,7 @@ void FVoxelSceneProxy::SetMeshBatchElementsGeneric(FMeshBatch& meshBatch, const 
 	uint32 numTriangles = (indexBuffer->GetVisibleIndiceCount()) / 3;
 	uint32 maxVertexIndex = node.vertexFactory->GetVertexBuffer()->GetVisibleVerticiesCount() - 1;
 
+	check(indexBuffer);
 	FMeshBatchElement& batchElement = meshBatch.Elements[0];
 	batchElement.IndexBuffer = indexBuffer;
 	batchElement.FirstIndex = 0;

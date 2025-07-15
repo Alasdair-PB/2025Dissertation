@@ -57,6 +57,7 @@ IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCube
 void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FMarchingCubesDispatchParams& Params, FRDGBufferSRVRef InLookUpSRV) {
 	FMarchingCubes::FParameters* PassParams = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 	int voxelsPerAxis = Params.Input.updateData.voxelsPerAxis;
+	UE_LOG(LogTemp, Warning, TEXT("Debug: Marching pass occurs"));
 
 	check(nodeData.isoBuffer->bufferSRV);
 	PassParams->leafPosition = nodeData.boundsCenter;
@@ -94,8 +95,6 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		typename FDeformation::FPermutationDomain PermutationVectorDef;
 		TShaderMapRef<FDeformation> DefComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), PermutationVectorDef);
 		bool bIsDefShaderValid = DefComputeShader.IsValid();
-
-		UE_LOG(LogTemp, Warning, TEXT("This: happens"));
 
 		if (bIsShaderValid && bIsDefShaderValid) {
 			// Deformation

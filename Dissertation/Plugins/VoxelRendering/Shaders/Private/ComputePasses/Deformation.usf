@@ -34,7 +34,6 @@ void Deformation(int3 id : SV_DispatchThreadID)
     //int3 isoPerAxisMaxResVector = int3(isoPerAxisMaxRes);
     //int3 startIndex = isoPerAxisMaxResVector / scale;
     
-    
     float voxelWorldSize = baseDepthScale / (isoPerAxisMaxRes - 1);
     float sizeFlat = baseDepthScale / pow(2, leafDepth);
     float3 size = float3(sizeFlat, sizeFlat, sizeFlat);
@@ -47,11 +46,11 @@ void Deformation(int3 id : SV_DispatchThreadID)
     float count = 0.0;
     float sum = 0.0;
 
-    for (int dz = startIndex.z; dz < stride; dz++)
+    for (int dz = startIndex.z; dz < (startIndex.z + stride); dz++)
     {
-        for (int dy = startIndex.y; dy < stride; dy++)
+        for (int dy = startIndex.y; dy < (startIndex.y + stride); dy++)
         {
-            for (int dx = startIndex.x; dx < stride; dx++)
+            for (int dx = startIndex.x; dx < (startIndex.x + stride); dx++)
             {
                 int3 readBufferIndex = int3(dx,dy,dz);
                 int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);

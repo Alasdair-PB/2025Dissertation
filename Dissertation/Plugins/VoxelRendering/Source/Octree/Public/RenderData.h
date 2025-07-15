@@ -108,6 +108,8 @@ public:
 			dataNode = nullptr;
 			return  true;
 		}
+		UE_LOG(LogTemp, Warning, TEXT("WARNING RENDER DATA HAS NOT BEEN BUILT"));
+
 		return false;
 	}
 };

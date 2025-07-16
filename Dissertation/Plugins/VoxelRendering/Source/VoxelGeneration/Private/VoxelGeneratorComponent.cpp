@@ -29,7 +29,7 @@ void UVoxelGeneratorComponent::InitIsoDispatch() {
 void UVoxelGeneratorComponent::InitVoxelMesh(int size, int depth, float scale, int voxelsPerAxis)
 {
     UWorld* world = GetWorld();
-    AVoxelBody::CreateVoxelMeshActor(world, scale, size, depth, voxelsPerAxis, isoValueBuffer, typeValueBuffer);
+    AVoxelBody::CreateVoxelMeshActor(world, scale, size, depth, voxelsPerAxis, isoValueBuffer, typeValueBuffer, targetEraser, targetPlayer);
 }
 
 void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth, float scale, int voxelsPerAxis) {

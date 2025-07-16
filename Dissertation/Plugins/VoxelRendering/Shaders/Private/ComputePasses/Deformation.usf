@@ -69,7 +69,7 @@ void Deformation(int3 id : SV_DispatchThreadID)
                     if (any(readBufferIndex >= isoPerAxisMaxRes)) continue;
                     
                     int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
-                    sum += clamp(isoValues[flat] - isoDeltaValues[flat], 0.0, 1.0);
+                    sum += clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
                     count++;
                 }
             }
@@ -78,7 +78,7 @@ void Deformation(int3 id : SV_DispatchThreadID)
     else
     {
         int flat = GetIsoIndex(startIndex, isoPerAxisMaxRes);
-        sum += isoValues[flat];
+        sum += clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
         count = 1;
     }
     

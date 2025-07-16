@@ -54,10 +54,14 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
     TraverseAndDraw(tree->GetRoot());
     InvokeVoxelRenderPasses();
 }
-void UVoxelMeshComponent::InitVoxelMesh(float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, 
-    TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer) 
+void UVoxelMeshComponent::InitVoxelMesh(
+    float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, 
+    TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer,
+    AActor* inEraser, AActor* inPlayer)
 {    
-    tree = new Octree(isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
+    eraser = inEraser;
+    player = inPlayer;
+    tree = new Octree(isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer, GetComponentLocation());
 }
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
@@ -128,6 +132,11 @@ void UVoxelMeshComponent::InvokeVoxelRenderPasses() {
     if (!sceneProxy->IsInitialized()) return;
 
     SetRenderDataLOD();
+    if (eraser) {
+        FTransform eraserTransform = eraser->GetActorTransform();
+        tree->ApplyDeformationAtPosition(eraserTransform.GetLocation(), 30.0f, 0.5f);
+        tree->CheckIsoValuesDirty();
+    }
 }
 
 void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData) {

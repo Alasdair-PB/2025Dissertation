@@ -19,7 +19,9 @@ class VOXELRENDERING_API UVoxelMeshComponent : public UMeshComponent
 
 public:
     UVoxelMeshComponent();
-    void InitVoxelMesh(float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer);
+    void InitVoxelMesh(float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer,
+        AActor* inEraser, AActor* inPlayer)
+    ;
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -34,6 +36,8 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UMaterialInterface> Material;
 protected:
+    AActor* eraser;
+    AActor* player;
     virtual void BeginPlay() override;
     virtual void BeginDestroy() override;
     virtual void OnRegister() override;

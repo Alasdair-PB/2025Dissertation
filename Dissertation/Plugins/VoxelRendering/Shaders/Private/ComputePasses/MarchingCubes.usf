@@ -87,6 +87,19 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
     int triangleStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
     int vertexStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
     
+    [unroll]
+    for (int i = 0; i < 15; i++)
+    {
+        int base = vertexStartIndex + i;
+        outInfo[base * 3 + 0] = 0.0;
+        outInfo[base * 3 + 1] = 0.0;
+        outInfo[base * 3 + 2] = 0.0;
+
+        outNormalInfo[base * 3 + 0] = 0.0;
+        outNormalInfo[base * 3 + 1] = 0.0;
+        outNormalInfo[base * 3 + 2] = 0.0;
+    }
+    
     float scale = baseDepthScale / (pow(2, leafDepth));
     float centerDis = scale / 2;
     float isoScale = (scale / (voxelsPerAxis));

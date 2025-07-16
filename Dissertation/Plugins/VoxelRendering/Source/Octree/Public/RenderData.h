@@ -48,7 +48,8 @@ private:
 public:
 
 	FVoxelComputeUpdateData() :FVoxelComputeUpdateData(nullptr) {}
-	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0), voxelsPerAxis(0) {}
+	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0), 
+		highResVoxelsPerAxis(0), voxelsPerAxis(0), octreePosition(FVector3f()) {}
 
 	float scale;
 	float isoLevel;
@@ -62,6 +63,7 @@ public:
 
 		check(octree->GetIsoBuffer());
 		check(octree->GetTypeBuffer());
+		check(octree->GetDeltaIsoBuffer());
 
 		isoBuffer = octree->GetIsoBuffer();
 		typeBuffer = octree->GetTypeBuffer();
@@ -76,7 +78,7 @@ public:
 		return  true;
 	}
 
-	TSharedPtr<FIsoUniformBuffer> deltaIsoBuffer;
+	TSharedPtr<FIsoDynamicBuffer> deltaIsoBuffer;
 	TSharedPtr<FIsoUniformBuffer> isoBuffer;
 	TSharedPtr<FTypeUniformBuffer> typeBuffer;
 	TArray<FVoxelComputeUpdateNodeData> nodeData;

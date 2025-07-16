@@ -15,5 +15,7 @@ class VOXELRENDERING_API AVoxelBody : public AActor
 
 public:
     AVoxelBody();
-    static AVoxelBody* CreateVoxelMeshActor(UWorld* World, float scale, int size, int depth, int voxelsPerAxis, TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer);
+    static AVoxelBody* CreateVoxelMeshActor(UWorld* World, float scale, int size, int depth, int voxelsPerAxis, 
+        TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer, 
+        AActor* eraser, AActor* player);
 };

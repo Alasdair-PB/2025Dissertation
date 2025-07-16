@@ -17,6 +17,13 @@ class VOXELGENERATION_API UVoxelGeneratorComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")
+	AActor* targetEraser;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")
+	AActor* targetPlayer;
+
 	UVoxelGeneratorComponent();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -24,7 +31,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void BeginDestroy() override;
 private:
-	void TraverseAndDraw(OctreeNode* node);
 	void InitIsoDispatch();
 	UProceduralMeshComponent* ProcMesh;
 

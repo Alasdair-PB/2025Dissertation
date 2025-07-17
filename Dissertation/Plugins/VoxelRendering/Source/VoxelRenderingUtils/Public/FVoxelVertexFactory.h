@@ -19,7 +19,9 @@
 #include "UnifiedBuffer.h"
 #include "CanvasTypes.h"
 #include "MaterialShader.h"
+#include "VoxelRenderBuffers.h"
 #include "VoxelBufferUtils.h"
+
 #include "Interfaces/Interface_CollisionDataProvider.h"
 #include "FVoxelVertexFactoryShaderParameters.h"
 
@@ -28,58 +30,6 @@ struct FShaderCompilerEnvironment;
 struct VOXELRENDERINGUTILS_API FVoxelBatchElementUserData
 {
 	FVoxelBatchElementUserData();
-};
-
-class VOXELRENDERINGUTILS_API FVoxelIndexBuffer : public FIndexBuffer
-{
-public:
-	FVoxelIndexBuffer() = default;
-	~FVoxelIndexBuffer() = default;
-	FVoxelIndexBuffer(uint32 InNumIndices) : numIndices(InNumIndices) {}
-
-	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-	virtual void ReleaseRHI() override;
-
-	uint32 GetIndexCount() const { return numIndices; }
-	uint32 GetVisibleIndiceCount() const { return visibleIndicies; }
-	void SetVisibleIndiciesCount(uint32 inVisibleIndicies) { visibleIndicies = inVisibleIndicies; }
-
-	void SetElementCount(uint32 inNumIndices) { 
-		numIndices = inNumIndices; 
-		visibleIndicies = inNumIndices;
-	}
-
-	FShaderResourceViewRHIRef SRV;
-private:
-	uint32 numIndices = 0;
-	uint32 visibleIndicies = 0;
-};
-
-class VOXELRENDERINGUTILS_API FVoxelVertexBuffer : public FVertexBuffer
-{
-public:
-	FVoxelVertexBuffer() = default;
-	~FVoxelVertexBuffer() = default;
-	FVoxelVertexBuffer(uint32 InNumVertices) : numVertices(InNumVertices) {}
-
-	virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-	virtual void ReleaseRHI() override;
-	uint32 GetVertexCount() const { return numVertices;}
-
-	void SetElementCount(uint32 InNumVertices) { 
-		numVertices = InNumVertices; 
-		visibleVerticies = InNumVertices;
-	}	
-
-	uint32 GetVisibleVerticiesCount() const { return visibleVerticies; }
-	void SetVisibleVerticiessCount(uint32 inVisibleVerticies) { visibleVerticies = inVisibleVerticies; }
-
-	FShaderResourceViewRHIRef SRV;
-	FUnorderedAccessViewRHIRef UAV;
-
-private:
-	uint32 numVertices = 0;
-	uint32 visibleVerticies = 0;
 };
 
 class VOXELRENDERINGUTILS_API FVoxelVertexFactory : public FVertexFactory
@@ -107,6 +57,8 @@ public:
 	FUnorderedAccessViewRHIRef GetVertexNormalsUAV() const { return normalsBuffer.UAV; }
 	FShaderResourceViewRHIRef GetIndexSRV() const { return indexBuffer.SRV; }
 
+	FUnorderedAccessViewRHIRef GetVertexTypeUAV() const { return typeBuffer.UAV; }
+
 	uint32 GetVertexBufferBytesPerElement() const { return sizeof(FVoxelVertexInfo); }
 	uint32 GetIndexBufferBytesPerElement() const { return sizeof(uint32); }
 
@@ -124,5 +76,7 @@ private:
 	FVoxelIndexBuffer indexBuffer;
 	FVoxelVertexBuffer vertexBuffer;
 	FVoxelVertexBuffer normalsBuffer;
+	FVoxelVertexTypeBuffer typeBuffer;
+
 	friend class FVoxelVertexFactoryShaderParameters;
 };

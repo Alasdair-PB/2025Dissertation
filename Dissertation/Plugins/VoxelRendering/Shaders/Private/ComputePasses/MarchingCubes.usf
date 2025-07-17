@@ -7,10 +7,13 @@ int leafDepth;
 int nodeIndex;
 
 Buffer<float> isoValues;
+Buffer<int> typeValues;
+
 StructuredBuffer<int> marchLookUp;
 
 RWBuffer<float> outInfo;
 RWBuffer<float> outNormalInfo;
+RWBuffer<float> outTypeInfo;
 
 int voxelsPerAxis;
 float baseDepthScale;
@@ -34,6 +37,15 @@ float GetDensity(int3 coord)
     if (isEdge) return isoLevel;
     int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
     return isoValues[(GetIsoIndex(coord))];
+}
+
+float GetType(int3 coord) // Same index system as iso
+{
+    bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
+    if (isEdge)
+        return isoLevel;
+    int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
+    return typeValues[(GetIsoIndex(coord))];
 }
 
 float3 CalculateNormal(int3 coord)
@@ -65,6 +77,11 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     float3 normalB = CalculateNormal(cornerPosB);
     float3 normalRes = normalA + (t * (normalB - normalA));
 
+    int typeA = GetType(cornerPosA);
+    int typeB = GetType(cornerPosB);
+    float fType = lerp((float) typeA, (float) typeB, t);
+    int typeFinal = round(fType);
+    
     uint base = vertexIndex * 3;
    
     outInfo[base + 0] = position.x;
@@ -74,6 +91,7 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     outNormalInfo[base + 0] = normalRes.x;
     outNormalInfo[base + 1] = normalRes.y;
     outNormalInfo[base + 2] = normalRes.z;
+    outTypeInfo[base] = typeFinal;
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]

@@ -29,10 +29,15 @@ class FMarchingCubes : public FGlobalShader
 		SHADER_PARAMETER(FVector3f, leafPosition)
 		SHADER_PARAMETER(uint32, leafDepth)
 		SHADER_PARAMETER(uint32, nodeIndex)
+
 		SHADER_PARAMETER_SRV(Buffer<float>, isoValues)
+		SHADER_PARAMETER_SRV(Buffer<uint32>, typeValues)
+
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<int>, marchLookUp)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, outInfo)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, outNormalInfo)
+		SHADER_PARAMETER_UAV(RWBuffer<uint32>, outTypeInfo)
+
 		SHADER_PARAMETER(uint32, voxelsPerAxis)
 		SHADER_PARAMETER(float, baseDepthScale)
 		SHADER_PARAMETER(float, isoLevel)
@@ -69,6 +74,9 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeDat
 	PassParams->voxelsPerAxis = voxelsPerAxis;
 	PassParams->baseDepthScale = Params.Input.updateData.scale;
 	PassParams->isoLevel = Params.Input.updateData.isoLevel;
+
+	PassParams->typeValues = nodeData.typeBuffer->bufferSRV;
+	PassParams->outTypeInfo = nodeData.vertexFactory->GetVertexTypeUAV();
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);

@@ -1,5 +1,5 @@
 #include "VoxelRenderBuffers.h"
-#include "OctreeModule.h"
+#include "VoxelRenderingUtils.h"
 
 IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FIsoFetchShaderParameters, "isoFetch_Buffer");
 IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FTypeFetchShaderParameters, "typeFetch_Buffer");
@@ -179,4 +179,83 @@ void FTypeDynamicBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
     void* LockedData = RHICmdList.LockBuffer(buffer, 0, size, RLM_WriteOnly);
     FMemory::Memzero(LockedData, size);
     RHICmdList.UnlockBuffer(buffer);
+}
+
+void FVoxelIndexBuffer::ReleaseRHI() {
+    FIndexBuffer::ReleaseRHI();
+    SRV.SafeRelease();
+}
+
+void FVoxelIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
+{
+    uint32 Stride = sizeof(uint32);
+    uint32 size = Stride * numIndices;
+
+    FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelIndexBuffer"));
+    EBufferUsageFlags UsageFlags = BUF_Static | BUF_ShaderResource | BUF_IndexBuffer;
+
+    IndexBufferRHI = RHICmdList.CreateBuffer(size, UsageFlags, 0, ERHIAccess::VertexOrIndexBuffer, CreateInfo);
+
+    void* LockedData = RHICmdList.LockBuffer(IndexBufferRHI, 0, size, RLM_WriteOnly);
+    uint32* IndexData = reinterpret_cast<uint32*>(LockedData);
+
+    for (uint32 i = 0; i < numIndices; i += 3)
+    {
+        IndexData[i + 0] = i + 2;
+        IndexData[i + 1] = i + 1;
+        IndexData[i + 2] = i + 0;
+    }
+
+    RHICmdList.UnlockBuffer(IndexBufferRHI);
+    SRV = RHICmdList.CreateShaderResourceView(IndexBufferRHI, Stride, PF_R32_UINT);
+}
+
+void FVoxelVertexBuffer::ReleaseRHI() {
+    FVertexBuffer::ReleaseRHI();
+    SRV.SafeRelease();
+    UAV.SafeRelease();
+}
+
+void FVoxelVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList)
+{
+    uint32 stride = sizeof(FVector);
+    uint32 size = stride * numVertices;
+    FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
+    EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
+    VertexBufferRHI = RHICmdList.CreateVertexBuffer(size, UsageFlags, CreateInfo);
+
+    void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, size, RLM_WriteOnly);
+    FMemory::Memzero(LockedData, size);
+    RHICmdList.UnlockBuffer(VertexBufferRHI);
+
+    if (RHISupportsManualVertexFetch(GMaxRHIShaderPlatform))
+    {
+        SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI, sizeof(float), PF_R32_FLOAT);
+        UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, PF_R32_FLOAT);
+    }
+}
+
+void FVoxelVertexTypeBuffer::ReleaseRHI() {
+    FVertexBuffer::ReleaseRHI();
+    SRV.SafeRelease();
+    UAV.SafeRelease();
+}
+
+void FVoxelVertexTypeBuffer::InitRHI(FRHICommandListBase& RHICmdList)
+{
+    uint32 stride = sizeof(uint32);
+    uint32 size = stride * numVertices;
+    FRHIResourceCreateInfo CreateInfo(TEXT("FVoxelVertexBuffer"));
+    EBufferUsageFlags UsageFlags = BUF_UnorderedAccess | BUF_ShaderResource | BUF_VertexBuffer;
+    VertexBufferRHI = RHICmdList.CreateVertexBuffer(size, UsageFlags, CreateInfo);
+
+    void* LockedData = RHICmdList.LockBuffer(VertexBufferRHI, 0, size, RLM_WriteOnly);
+    FMemory::Memzero(LockedData, size);
+    RHICmdList.UnlockBuffer(VertexBufferRHI);
+
+    if (RHISupportsManualVertexFetch(GMaxRHIShaderPlatform))
+    {
+        SRV = RHICmdList.CreateShaderResourceView(VertexBufferRHI, sizeof(uint32), PF_R32_UINT);
+        UAV = RHICmdList.CreateUnorderedAccessView(VertexBufferRHI, PF_R32_UINT);
+    }
 }

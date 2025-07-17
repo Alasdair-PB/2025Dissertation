@@ -26,5 +26,8 @@ void PlanetBiomeGenerator(int3 id : SV_DispatchThreadID)
 
     float isoValue = isoValues[NoiseIndex];
     int typeValue = isoValue > isoLevel ? 1 : 0;
+    
+    // Quick grass
+    typeValue = isoValue > isoLevel - 0.1 || isoValue < isoLevel + 0.1 ? 2 : typeValue;
     outTypeValues[NoiseIndex] = typeValue;
 }

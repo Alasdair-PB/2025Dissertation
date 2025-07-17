@@ -9,7 +9,9 @@ struct FVertexFactoryInput
 {
     float3 Position : ATTRIBUTE0;
     float3 Normal : ATTRIBUTE1;
+    uint Type : ATTRIBUTE2;
     uint VertexId : SV_VertexID;
+    
 
     VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
@@ -327,7 +329,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.TangentToWorldSign = 1;
     Intermediates.TangentToWorld = (half3x3) CalcTangentToWorldNoScale((float3x3) Intermediates.TangentToLocal);
     
-    int typeValue = 0.0;
+    int typeValue = Input.Type;
     half4 vertexColourOut = half4(typeValue, 0.0, 0.0, 1.0);
     Intermediates.Color = vertexColourOut;
     Intermediates.Alpha = half(1.0);

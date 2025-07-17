@@ -31,6 +31,7 @@ public:
 		{
 			vertexFactory = dataNode->GetVertexFactory();
 			isoBuffer = dataNode->GetIsoBuffer();
+			typeBuffer = dataNode->GetTypeBuffer();
 			leafDepth = dataNode->GetDepth();
 			boundsCenter = dataNode->GetBounds().Center();
 			dataNode = nullptr;
@@ -46,16 +47,21 @@ struct FVoxelComputeUpdateData {
 private:
 	Octree* octree;
 public:
-
-	FVoxelComputeUpdateData() :FVoxelComputeUpdateData(nullptr) {}
-	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0), 
-		highResVoxelsPerAxis(0), voxelsPerAxis(0), octreePosition(FVector3f()) {}
-
 	float scale;
 	float isoLevel;
 	FVector3f octreePosition;
 	int voxelsPerAxis;
 	int highResVoxelsPerAxis;
+
+	TSharedPtr<FIsoDynamicBuffer> deltaIsoBuffer;
+	TSharedPtr<FTypeDynamicBuffer> deltaTypeBuffer;
+	TSharedPtr<FIsoUniformBuffer> isoBuffer;
+	TSharedPtr<FTypeUniformBuffer> typeBuffer;
+	TArray<FVoxelComputeUpdateNodeData> nodeData;
+
+	FVoxelComputeUpdateData() :FVoxelComputeUpdateData(nullptr) {}
+	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0),
+		highResVoxelsPerAxis(0), voxelsPerAxis(0), octreePosition(FVector3f()) {}
 
 	bool BuildDataCache() {
 
@@ -64,11 +70,12 @@ public:
 		check(octree->GetIsoBuffer());
 		check(octree->GetTypeBuffer());
 		check(octree->GetDeltaIsoBuffer());
+		check(octree->GetDeltaTypeBuffer());
 
 		isoBuffer = octree->GetIsoBuffer();
 		typeBuffer = octree->GetTypeBuffer();
 		deltaIsoBuffer = octree->GetDeltaIsoBuffer();
-
+		deltaTypeBuffer = octree->GetDeltaTypeBuffer();
 		octreePosition = octree->GetOctreePosition();
 		voxelsPerAxis = octree->GetVoxelsPerAxs();
 		scale = octree->GetScale();
@@ -77,11 +84,6 @@ public:
 		octree = nullptr;
 		return  true;
 	}
-
-	TSharedPtr<FIsoDynamicBuffer> deltaIsoBuffer;
-	TSharedPtr<FIsoUniformBuffer> isoBuffer;
-	TSharedPtr<FTypeUniformBuffer> typeBuffer;
-	TArray<FVoxelComputeUpdateNodeData> nodeData;
 };
 
 /**

@@ -62,7 +62,7 @@ void FIsoUniformBuffer::Initialize(int32 NumPoints)
     FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
 
     void* LockedData = RHICmdList.LockBuffer(buffer, 0, NumPoints * sizeof(float), RLM_WriteOnly);
-    FMemory::Memzero(LockedData, NumPoints);
+    FMemory::Memzero(LockedData, NumPoints * sizeof(float));
     RHICmdList.UnlockBuffer(buffer);
 }
 
@@ -71,8 +71,7 @@ void FIsoUniformBuffer::ReleaseRHI()
     check(IsInRenderingThread());
     if (uniformBuffer.IsValid()) uniformBuffer.SafeRelease();
     if (buffer) buffer.SafeRelease();
-
-    bufferSRV.SafeRelease();
+    if (bufferSRV) bufferSRV.SafeRelease();
 }
 
 /**
@@ -163,7 +162,7 @@ void FTypeDynamicBuffer::Initialize(int32 inCapacity) {
     FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
 
     void* LockedData = RHICmdList.LockBuffer(buffer, 0, capacity * sizeof(uint32), RLM_WriteOnly);
-    FMemory::Memzero(LockedData, capacity);
+    FMemory::Memzero(LockedData, capacity * sizeof(uint32));
     RHICmdList.UnlockBuffer(buffer);
 }
 

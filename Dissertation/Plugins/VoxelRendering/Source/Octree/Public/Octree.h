@@ -17,7 +17,7 @@ public:
 
     TSharedPtr<FIsoUniformBuffer> GetIsoBuffer() { return isoUniformBuffer; }
     TSharedPtr<FTypeUniformBuffer> GetTypeBuffer() { return typeUniformBuffer; }
-
+    TSharedPtr<FTypeDynamicBuffer> GetDeltaTypeBuffer() { return deltaTypeBuffer; }
     TSharedPtr<FIsoDynamicBuffer> GetDeltaIsoBuffer() { return deltaIsoBuffer; }
 
     int GetVoxelsPerAxs() const { return voxelsPerAxis; }
@@ -42,8 +42,11 @@ protected:
     FVector worldPosition;
     TSharedPtr<FTypeUniformBuffer> typeUniformBuffer;
     TSharedPtr<FIsoUniformBuffer> isoUniformBuffer;
+
     TSharedPtr<FIsoDynamicBuffer> deltaIsoBuffer;
+    TSharedPtr<FTypeDynamicBuffer> deltaTypeBuffer;
     TArray<float> deltaIsoArray;
+    TArray<int> deltaTypeArray;
     bool bIsoValuesDirty;
 
 private:

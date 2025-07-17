@@ -106,8 +106,6 @@ void GetTangents(FVertexFactoryInput Input, out float4 Right, out float4 Up)
     float3 B = normalize(cross(N, T));
     Right = float4(T, 1.0);
     Up = float4(B, 1.0);
-    
-    
 }
 
 // ************************ Instancing, LOD, et al Support ************************
@@ -299,7 +297,7 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
     Interpolants.TangentToWorld0.w = 0.0;    
     Interpolants.TangentToWorld2 = float4((float3)Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
     
-    Interpolants.Color = VertexParameters.VertexColor;
+    Interpolants.Color = Intermediates.Color;
     Interpolants.Alpha = Intermediates.Alpha;
     Interpolants.TexCoords = NormalBasedPlanarMapping(Input, float2(1.0, 1.0));
     return Interpolants;
@@ -328,7 +326,10 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.TangentToLocal = CalcTangentToLocal(Input);
     Intermediates.TangentToWorldSign = 1;
     Intermediates.TangentToWorld = (half3x3) CalcTangentToWorldNoScale((float3x3) Intermediates.TangentToLocal);
-    Intermediates.Color = half4(1.0, 0.0, 0.0, 1.0);
+    
+    int typeValue = 0.0;
+    half4 vertexColourOut = half4(typeValue, 0.0, 0.0, 1.0);
+    Intermediates.Color = vertexColourOut;
     Intermediates.Alpha = half(1.0);
     Intermediates.Normal = Input.Normal.xyz;
     return Intermediates;

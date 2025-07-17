@@ -105,19 +105,19 @@ void UVoxelMeshComponent::SetRenderDataLOD()
     InvokeVoxelRenderer(computeUpdateDataNodes);
 }
 
-// This does distance from self change to set target
 void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
     if (!node) return;
 
-    //nodes.Add(node);
-    
+    FTransform playerTransform = player->GetActorTransform();
+    FVector playerPos = playerTransform.GetLocation();
+
     if (node->IsLeaf()) 
         nodes.Add(node);
     else {
         AABB bounds = node->GetBounds();
         float visibleDistance = 1000.0f / (1 << node->GetDepth());
         FVector boundsCenter = FVector(bounds.Center().X, bounds.Center().Y, bounds.Center().Z);
-        float distance = (GetComponentLocation() - boundsCenter).Length();
+        float distance = (playerPos - boundsCenter).Length();
 
         if (distance < visibleDistance) {
             for (int i = 0; i < 8; i++)

@@ -41,7 +41,6 @@ void UDraggableSphere::BeginPlay()
 
     Sphere->OnClicked.AddUniqueDynamic(this, &UDraggableSphere::OnClicked);
     Sphere->OnReleased.AddUniqueDynamic(this, &UDraggableSphere::OnReleased);
-
 }
 
 
@@ -81,7 +80,6 @@ void UDraggableSphere::StartDrag()
 
         if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
         {
-            DrawDebugSphere(GetWorld(), Hit.Location, 10.0f, 12, FColor::Red, false, 1.0f);
             FVector CameraLocation;
             FRotator CameraRotation;
             PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);

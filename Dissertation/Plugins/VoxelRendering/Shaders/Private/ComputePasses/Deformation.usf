@@ -57,11 +57,11 @@ void Deformation(int3 id : SV_DispatchThreadID)
     if (stride > 1)
     {
         stride /= 2;
-        for (int dz = startIndex.z - stride; dz < (startIndex.z + stride); dz++)
+        for (int dz = startIndex.z - stride; dz < (startIndex.z + stride + 1); dz++)
         {
-            for (int dy = startIndex.y - stride; dy < (startIndex.y + stride); dy++)
+            for (int dy = startIndex.y - stride; dy < (startIndex.y + stride + 1); dy++)
             {
-                for (int dx = startIndex.x - stride; dx < (startIndex.x + stride); dx++)
+                for (int dx = startIndex.x - stride; dx < (startIndex.x + stride + 1); dx++)
                 {
                     int3 readBufferIndex = int3(dx, dy, dz);
 

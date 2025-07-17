@@ -30,7 +30,7 @@ Octree::~Octree() {
     isoUniformBuffer.Reset();
     deltaIsoBuffer.Reset();
     typeUniformBuffer.Reset();
-
+    deltaIsoArray.Reset();
     // Not deleting roots due to Fatal error: A FRenderResource was deleted without being released first! To be investigated when time permits
     //delete root;
 }

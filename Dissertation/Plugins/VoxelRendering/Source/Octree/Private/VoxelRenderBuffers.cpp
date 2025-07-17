@@ -134,7 +134,7 @@ void FIsoDynamicBuffer::Initialize(int32 inCapacity) {
     FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
 
     void* LockedData = RHICmdList.LockBuffer(buffer, 0, capacity * sizeof(float), RLM_WriteOnly);
-    FMemory::Memzero(LockedData, capacity);
+    FMemory::Memzero(LockedData, capacity * sizeof(float));
     RHICmdList.UnlockBuffer(buffer);
 }
 

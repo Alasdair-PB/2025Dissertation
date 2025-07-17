@@ -39,6 +39,7 @@ struct FVertexFactoryIntermediates
     half4 Color;
     half Alpha;
     float3 Position;
+    float3 Normal;
     FSceneDataIntermediates SceneData;
 };
 
@@ -101,10 +102,12 @@ float4 TransformTranslatedWorldToLocal(float4 TranslatedWorldPosition, FDFInvers
 void GetTangents(FVertexFactoryInput Input, out float4 Right, out float4 Up)
 {
     float3 N = SafeNormalize(Input.Normal);
-    float3 T = SafeNormalize(cross(N, float3(0.0, 0.0, 1.0)));
-    float3 B = cross(N, T);
+    float3 T = abs(N.z) < 0.999 ? normalize(cross(float3(0, 0, 1), N)) : float3(1, 0, 0);
+    float3 B = normalize(cross(N, T));
     Right = float4(T, 1.0);
     Up = float4(B, 1.0);
+    
+    
 }
 
 // ************************ Instancing, LOD, et al Support ************************
@@ -205,7 +208,7 @@ FVertexFactoryInput LoadVertexFactoryInputFromIndices(uint TriangleIndex, int Ve
     float3 normal = VoxelGetInstanceNormal(VertexOffset);
 
     Input.Position = Position.xyz;
-    Input.Normal = normal.xyz;
+    Input.Normal = normalize(normal.xyz);
     return Input;
 }
 
@@ -224,7 +227,7 @@ FMaterialVertexParameters GetMaterialVertexParameters(FVertexFactoryInput Input,
     Result.PositionPrimitiveSpace = Result.PositionInstanceSpace; 
     Result.TangentToWorld = mul(TangentToLocal, GetLocalToWorld3x3());
     Result.PreSkinnedPosition = WorldPosition;
-    Result.PreSkinnedNormal = TangentToLocal[2];
+    Result.PreSkinnedNormal = Intermediates.Normal; //TangentToLocal[2];
 
     if (bIsPreviousFrame)
     {
@@ -240,20 +243,21 @@ FMaterialVertexParameters GetMaterialVertexParameters(FVertexFactoryInput Input,
     return Result;
 }
 
+uint GetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
+{
+    return 0;
+}
+
 FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
 {
     FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
     
     Result.Particle.Color = half4(1, 1, 1, 1);
-    Result.TwoSidedSign = 1;
+    Result.TwoSidedSign = 0;
     Result.VertexColor = Interpolants.Color;
     Result.VertexColor.a = saturate((lerp(1, 1 - distance(Interpolants.TexCoords, 0.5), Interpolants.Color.a) - 0.5) * 10000) * Interpolants.Alpha;
+    Result.PrimitiveId = GetPrimitiveId(Interpolants);
 
-    half3 TangentToWorld0 = Interpolants.TangentToWorld0.xyz;
-    half4 TangentToWorld2 = Interpolants.TangentToWorld2;
-    Result.UnMirrored = TangentToWorld2.w;
-    Result.TangentToWorld = AssembleTangentToWorld(TangentToWorld0, TangentToWorld2);
-    
     #if NUM_TEX_COORD_INTERPOLATORS
         Result.TexCoords[0] = Interpolants.TexCoords;
     #endif
@@ -275,8 +279,7 @@ float2 NormalBasedPlanarMapping(FVertexFactoryInput Input, float2 UVDensity)
 
 float3x3 CalcTangentBasis(FVertexFactoryInput Input)
 {
-    float4 Right,
-			Up;
+    float4 Right, Up;
     GetTangents(Input, Right, Up);
     return float3x3(
 			Right.xyz,
@@ -293,9 +296,9 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
     float3x3 TangentToWorld = mul(TangentToLocal, GetLocalToWorld3x3());
 
     Interpolants.TangentToWorld0.xyz = TangentToWorld[0];
-    Interpolants.TangentToWorld0.w = 0.0;
-    Interpolants.TangentToWorld2 = float4(TangentToWorld[2], sign(determinant(TangentToLocal)));
-    //Interpolants.TangentToWorld2 = float4((float3)Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
+    Interpolants.TangentToWorld0.w = 0.0;    
+    Interpolants.TangentToWorld2 = float4((float3)Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
+    
     Interpolants.Color = VertexParameters.VertexColor;
     Interpolants.Alpha = Intermediates.Alpha;
     Interpolants.TexCoords = NormalBasedPlanarMapping(Input, float2(1.0, 1.0));
@@ -317,24 +320,17 @@ half3x3 CalcTangentToLocal(FVertexFactoryInput Input)
     return TangentToLocal;
 }
 
-// eRROR IS HERE?
 FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
 {
     FVertexFactoryIntermediates Intermediates;
-    uint VertexOffset = GetVertexFetchBufferOffset(Input.VertexId);
-    float3 position = VoxelGetInstancePosition(VertexOffset);
-    float3 normal = VoxelGetInstanceNormal(VertexOffset);
-    
-    //Input.Position = position;
-    //Input.Normal = normal;
-    
     Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
     Intermediates.Position = Input.Position.xyz;
     Intermediates.TangentToLocal = CalcTangentToLocal(Input);
-    Intermediates.TangentToWorldSign = Intermediates.SceneData.InstanceData.DeterminantSign;
+    Intermediates.TangentToWorldSign = 1;
     Intermediates.TangentToWorld = (half3x3) CalcTangentToWorldNoScale((float3x3) Intermediates.TangentToLocal);
     Intermediates.Color = half4(1.0, 0.0, 0.0, 1.0);
     Intermediates.Alpha = half(1.0);
+    Intermediates.Normal = Input.Normal.xyz;
     return Intermediates;
 }
 
@@ -371,7 +367,7 @@ FVertexFactoryInput LoadVertexFactoryInputForHGS(uint TriangleIndex, int VertexI
 		
 #if VF_USE_PRIMITIVE_SCENE_DATA
 	VF_GPUSCENE_SET_INPUT_FOR_RT(Input, GetInstanceUserData(), 0U);
-#endif // VF_USE_PRIMITIVE_SCENE_DATA
+#endif
 		
 	return Input;
 }

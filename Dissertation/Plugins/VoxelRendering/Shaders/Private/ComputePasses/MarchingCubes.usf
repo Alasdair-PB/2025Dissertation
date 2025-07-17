@@ -35,16 +35,13 @@ float GetDensity(int3 coord)
 {
     bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
     if (isEdge) return isoLevel;
-    int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
     return isoValues[(GetIsoIndex(coord))];
 }
 
-float GetType(int3 coord) // Same index system as iso
+int GetType(int3 coord)
 {
     bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
-    if (isEdge)
-        return isoLevel;
-    int3 safeCoord = clamp(coord, 0, voxelsPerAxis);
+    if (isEdge) return 0;
     return typeValues[(GetIsoIndex(coord))];
 }
 
@@ -91,7 +88,7 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     outNormalInfo[base + 0] = normalRes.x;
     outNormalInfo[base + 1] = normalRes.y;
     outNormalInfo[base + 2] = normalRes.z;
-    outTypeInfo[base] = typeFinal;
+    outTypeInfo[vertexIndex] = typeFinal;
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]

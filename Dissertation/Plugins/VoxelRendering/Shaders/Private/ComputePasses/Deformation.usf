@@ -59,22 +59,22 @@ uint2 PackDataFromType(uint type, uint2 packedCounts)
 {
     uint shift = (type % 4) * 8;
     uint mask = 0xFFu << shift;
+    uint weight = 1;
 
     if (type < 4)
     {
         uint count = (packedCounts.x & mask) >> shift;
-        count = min(count + 1, 255);
+        count = min(count + weight, 255);
         packedCounts.x = (packedCounts.x & ~mask) | (count << shift);
     }
     else
     {
         uint count = (packedCounts.y & mask) >> shift;
-        count = min(count + 1, 255);
+        count = min(count + weight, 255);
         packedCounts.y = (packedCounts.y & ~mask) | (count << shift);
     }
     return packedCounts;
 }
-
 
 // 6, 6, 6: (0-5)
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
@@ -108,10 +108,10 @@ void Deformation(int3 id : SV_DispatchThreadID)
     {
         int flat = GetIsoIndex(startIndex, isoPerAxisMaxRes);
         float density = clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
-        int type = GetType(typeValues[flat], typeDeltaValues[flat]);
+        int type = typeValues[flat];  //GetType(typeValues[flat], typeDeltaValues[flat]);
         
         int writeIndex = GetIsoIndex(id, isoPerAxis);
-        typeCombinedValues[writeIndex] = 
+        typeCombinedValues[writeIndex] = type;
         isoCombinedValues[writeIndex] = density;
         return;
     }
@@ -138,7 +138,7 @@ void Deformation(int3 id : SV_DispatchThreadID)
                 int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
                     
                 sum += clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
-                int type = GetType(typeValues[flat], typeDeltaValues[flat]);
+                int type = typeValues[flat]; //GetType(typeValues[flat], typeDeltaValues[flat]);
                     
                 if (type >= 0 && type < 8)
                     packedCounts = PackDataFromType(type, packedCounts);

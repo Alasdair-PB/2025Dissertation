@@ -16,18 +16,39 @@ RWStructuredBuffer<int> outTypeValues;
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void PlanetBiomeGenerator(int3 id : SV_DispatchThreadID)
 {
-    if (any(id >= size))
-        return;
-
-    float isoScale = (baseDepthScale / (size));
-    float3 position = (id * isoScale);
+    if (any(id >= size)) return;
 
     int NoiseIndex = GetIsoIndex(id, size);
-
     float isoValue = isoValues[NoiseIndex];
-    int typeValue = isoValue > isoLevel ? 1 : 0;
     
-    // Quick grass
-    typeValue = isoValue > isoLevel - 0.1 || isoValue < isoLevel + 0.1 ? 2 : typeValue;
+    int typeValue = 1; 
+
+    if (isoValue > isoLevel - (isoLevel / 2))
+    {
+        typeValue = 0; // Core
+        
+        /*bool hasAirNeighbor = false;
+
+        [unroll]
+        for (int i = 0; i < 6; i++)
+        {
+            int3 offset = int3(0, 0, 0);
+            offset[i % 3] = (i < 3) ? -1 : 1;
+
+            int3 neighbor = id + offset;
+            if (any(neighbor < 0) || any(neighbor >= size))
+                continue;
+
+            int neighborIdx = GetIsoIndex(neighbor, size);
+            float neighborIso = isoValues[neighborIdx];
+
+            if (neighborIso <= isoLevel)
+            {
+                hasAirNeighbor = true;
+                break;
+            }
+        }
+        if (hasAirNeighbor) typeValue = 1; // Surface*/
+    }
     outTypeValues[NoiseIndex] = typeValue;
 }

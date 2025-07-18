@@ -39,11 +39,20 @@ void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth, float scal
     typeValueBuffer.Reserve(totalBufferSize);
 
     FPlanetGeneratorDispatchParams Params(isoSize, isoSize, isoSize);
-    Params.Input.baseDepthScale = 400.0f;
+    Params.Input.baseDepthScale = scale;
     Params.Input.size = isoSize;
     Params.Input.isoLevel = isoLevel;
-    Params.Input.planetScaleRatio = 0.9;
+    Params.Input.planetScaleRatio = planetScaleRatio;
     Params.Input.seed = 0;
+    Params.Input.surfaceLayers = surfaceLayers;
+    Params.Input.fbmAmplitude = fbmAmplitude;
+    Params.Input.fbmFrequency = fbmFrequency;
+    Params.Input.voronoiScale = voronoiScale;
+    Params.Input.voronoiJitter = voronoiJitter;
+    Params.Input.voronoiWeight = voronoiWeight;
+    Params.Input.fbmWeight = fbmWeight;
+    Params.Input.surfaceWeight = surfaceWeight;
+    Params.Input.voronoiThreshold = voronoiThreshold;
 
     FPlanetGeneratorInterface::Dispatch(Params,
         [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), size, depth, scale, voxelsPerAxis](FPlanetGeneratorOutput OutputVal) {

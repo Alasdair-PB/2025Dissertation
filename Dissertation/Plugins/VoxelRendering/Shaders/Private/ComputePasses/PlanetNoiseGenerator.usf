@@ -2,12 +2,29 @@
 #pragma COMPUTE_SHADER_ENTRYPOINT(PlanetNoiseGenerator)
 #include "/Engine/Public/Platform.ush"
 #include "PlanetGeneratorHelpers.usf"
+#include "NoiseHelpers.usf"
 
 int size;
 int seed;
 float baseDepthScale;
 float planetScaleRatio;
+float isoLevel;
+
+float fbmAmplitude; // Reduce to make spikes less common
+float fbmFrequency; // Reduce to make neightbour isovalues more consistent
+
+float voronoiScale;
+float voronoiJitter;
+float voronoiWeight;
+float voronoiThreshold;
+
+float fbmWeight;
+float surfaceWeight;
+
+int surfaceLayers;
+
 RWStructuredBuffer<float> outIsoValues;
+
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void PlanetNoiseGenerator(int3 id : SV_DispatchThreadID)
@@ -18,10 +35,38 @@ void PlanetNoiseGenerator(int3 id : SV_DispatchThreadID)
     float isoScale = (baseDepthScale / (size));
     float3 position = (id * isoScale) + (isoScale / 2);
     float distance = GetCenterDistance(position, isoScale, size, baseDepthScale);
-    float distanceMult = 380 * clamp(planetScaleRatio, 0.01, 1.0);
+    float distanceMult = baseDepthScale * clamp(planetScaleRatio, 0.01, 1.0);
     distance = distance / distanceMult;
     
     int NoiseIdx = GetIsoIndex(id, size);
     float isoValue = clamp(distance, 0.0, 1.0);
+    
+    float noisePerlinFBM = FractalBrownianMotion(position, 5, fbmFrequency, fbmAmplitude);
+    noisePerlinFBM = clamp(noisePerlinFBM, -1.0, 1.0);
+    noisePerlinFBM = (noisePerlinFBM + 1.0) * 0.5; 
+
+    float step = 1.0 / (surfaceLayers - 1);
+    int layerIndex = min((int) floor(noisePerlinFBM * surfaceLayers), surfaceLayers - 1);
+    
+    isoValue += (surfaceWeight * layerIndex);
+    
+    /*float voronoiIsoValue = isoValue;
+    for (int i = 0; i < surfaceLayers; i++)
+    {
+        float noiseVoronoi = VoxelVoronoiNoise(position*i, voronoiScale, voronoiJitter, 2);
+        noiseVoronoi = clamp(noiseVoronoi, 0.0, 1.0);
+        noiseVoronoi = 1.0 - noiseVoronoi;
+        noiseVoronoi /= ((i + 1) * surfaceWeight);
+        
+        if (noiseVoronoi < voronoiThreshold)s
+            voronoiIsoValue = isoValue + clamp(noiseVoronoi * voronoiWeight, 0.0, 1.0);
+        else
+            voronoiIsoValue += clamp(noiseVoronoi * voronoiWeight, 0.0, 1.0);
+    }
+    isoValue = voronoiIsoValue;
+    isoValue += noisePerlinFBM * fbmWeight;*/
+    
+    isoValue = clamp(isoValue, 0.0, 1.0);
+    isoValue = isoValue > (isoLevel - 0.1) ? isoValue: 0;
     outIsoValues[NoiseIdx] = isoValue;
 }

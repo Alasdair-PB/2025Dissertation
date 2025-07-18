@@ -13,7 +13,7 @@ StructuredBuffer<int> marchLookUp;
 
 RWBuffer<float> outInfo;
 RWBuffer<float> outNormalInfo;
-RWBuffer<float> outTypeInfo;
+RWBuffer<int> outTypeInfo;
 
 int voxelsPerAxis;
 float baseDepthScale;
@@ -113,6 +113,7 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         outNormalInfo[base * 3 + 0] = 0.0;
         outNormalInfo[base * 3 + 1] = 0.0;
         outNormalInfo[base * 3 + 2] = 0.0;
+        //outTypeInfo[base] = 0.0;
     }
     
     float scale = baseDepthScale / (pow(2, leafDepth));

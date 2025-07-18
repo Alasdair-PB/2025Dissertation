@@ -6,28 +6,31 @@
 int size;
 int seed;
 
-float isoLevel; 
+float isoLevel;
 float baseDepthScale;
 float planetScaleRatio;
 
 StructuredBuffer<float> isoValues;
 RWStructuredBuffer<int> outTypeValues;
 
+// Core type = 0
+// Surface type = 1
+// Cliff type = 2
+
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void PlanetBiomeGenerator(int3 id : SV_DispatchThreadID)
 {
-    if (any(id >= size)) return;
-
+    if (any(id >= size))
+        return;
     int NoiseIndex = GetIsoIndex(id, size);
     float isoValue = isoValues[NoiseIndex];
-    
-    int typeValue = 1; 
 
-    if (isoValue > isoLevel - (isoLevel / 2))
+    int typeValue = 1;
+    bool hasAirNeighbor = false;
+
+    if (isoValue < isoLevel)
     {
-        typeValue = 0; // Core
-        
-        /*bool hasAirNeighbor = false;
+        typeValue = 0;
 
         [unroll]
         for (int i = 0; i < 6; i++)
@@ -42,13 +45,43 @@ void PlanetBiomeGenerator(int3 id : SV_DispatchThreadID)
             int neighborIdx = GetIsoIndex(neighbor, size);
             float neighborIso = isoValues[neighborIdx];
 
-            if (neighborIso <= isoLevel)
+            if (neighborIso > isoLevel - 0.1)
             {
                 hasAirNeighbor = true;
                 break;
             }
         }
-        if (hasAirNeighbor) typeValue = 1; // Surface*/
     }
+    
+    if (hasAirNeighbor)
+    {
+        float3 center = float3(size, size, size) * 0.5;
+        float3 voxelPos = id;
+        float3 radialDir = normalize(voxelPos - center);
+
+        float3 normal = float3(0, 0, 0);
+        [unroll]
+        for (int i = 0; i < 3; i++)
+        {
+            int3 pos = id;
+            pos[i]++;
+            int3 neg = id;
+            neg[i]--;
+            if (all(pos < size) && all(neg >= 0))
+            {
+                float p = isoValues[GetIsoIndex(pos, size)];
+                float n = isoValues[GetIsoIndex(neg, size)];
+                normal[i] = (p - n) * 0.5;
+            }
+        }
+        normal = normalize(normal);
+        float facing = dot(normal, radialDir);
+
+        if (facing > 0.5)
+            typeValue = 1; // grass surface
+        else
+            typeValue = 2; // cliff
+    }
+
     outTypeValues[NoiseIndex] = typeValue;
 }

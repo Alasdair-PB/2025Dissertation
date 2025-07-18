@@ -27,6 +27,17 @@ class FPlanetNoiseGenerator : public FGlobalShader
 		SHADER_PARAMETER(uint32, seed)
 		SHADER_PARAMETER(float, baseDepthScale)
 		SHADER_PARAMETER(float, planetScaleRatio)
+		SHADER_PARAMETER(float, isoLevel)
+		SHADER_PARAMETER(float, fbmAmplitude)
+		SHADER_PARAMETER(float, fbmFrequency)
+		SHADER_PARAMETER(float, voronoiScale)
+		SHADER_PARAMETER(float, voronoiJitter)
+		SHADER_PARAMETER(float, voronoiWeight)
+		SHADER_PARAMETER(float, voronoiThreshold)
+
+		SHADER_PARAMETER(float, fbmWeight)
+		SHADER_PARAMETER(float, surfaceWeight)
+		SHADER_PARAMETER(int, surfaceLayers)
 		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float>, outIsoValues)
 	END_SHADER_PARAMETER_STRUCT()
 
@@ -83,6 +94,16 @@ void AddSphereGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchP
 	PassParams->baseDepthScale = Params.Input.baseDepthScale;
 	PassParams->planetScaleRatio = Params.Input.planetScaleRatio;
 	PassParams->outIsoValues = OutIsoUAV;
+	PassParams->isoLevel = Params.Input.isoLevel;
+	PassParams->fbmAmplitude = Params.Input.fbmAmplitude;
+	PassParams->fbmFrequency = Params.Input.fbmFrequency;
+	PassParams->voronoiScale = Params.Input.voronoiScale;
+	PassParams->voronoiJitter = Params.Input.voronoiJitter;
+	PassParams->voronoiWeight = Params.Input.voronoiWeight;
+	PassParams->fbmWeight = Params.Input.fbmWeight;
+	PassParams->surfaceWeight = Params.Input.surfaceWeight;
+	PassParams->surfaceLayers = Params.Input.surfaceLayers;
+	PassParams->voronoiThreshold = Params.Input.voronoiThreshold;
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FPlanetNoiseGenerator> ComputeShader(ShaderMap);
@@ -104,7 +125,6 @@ void AddBiomeGeneratorPass(FRDGBuilder& GraphBuilder, FPlanetGeneratorDispatchPa
 	PassParams->planetScaleRatio = Params.Input.planetScaleRatio;
 	PassParams->isoValues = InIsoSRV;
 	PassParams->outTypeValues = OutTypeUAV;
-
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FPlanetBiomeGenerator> ComputeShader(ShaderMap);
 	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(PassParams->size, PassParams->size, PassParams->size), FComputeShaderUtils::kGolden2DGroupSize);
@@ -183,7 +203,6 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 				RunnerFunc(RunnerFunc); });
 		}
 		else {} // We silently exit here as we don't want to crash the game if the shader is not found or has an error.
-
 	}
 	GraphBuilder.Execute();
 }

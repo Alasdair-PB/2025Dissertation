@@ -30,6 +30,7 @@ public:
 	bool CanBeRendered() const { return bCompatiblePlatform; }
 
 	UMaterialInterface* Material;
+	TArray<FVoxelProxyUpdateDataNode> GetVisibleNodes() { return selectedNodes; }
 
 protected:
 	mutable TArray<FMeshBatch> CustomPassMeshBatches;

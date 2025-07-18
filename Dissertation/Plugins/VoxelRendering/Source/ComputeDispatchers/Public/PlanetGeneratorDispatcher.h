@@ -22,9 +22,19 @@ struct FPlanetGeneratorInput
 	GENERATED_BODY()
 	UPROPERTY(BlueprintReadOnly) int size = 0;
 	UPROPERTY(BlueprintReadOnly) int seed = 0;
+	UPROPERTY(BlueprintReadOnly) int surfaceLayers = 0;
+
 	UPROPERTY(BlueprintReadOnly) float baseDepthScale = 0;
 	UPROPERTY(BlueprintReadOnly) float isoLevel = 0;
 	UPROPERTY(BlueprintReadOnly) float planetScaleRatio = 0;
+	UPROPERTY(BlueprintReadOnly) float fbmAmplitude = 0;
+	UPROPERTY(BlueprintReadOnly) float fbmFrequency = 0;
+	UPROPERTY(BlueprintReadOnly) float voronoiScale = 0;
+	UPROPERTY(BlueprintReadOnly) float voronoiJitter = 0;
+	UPROPERTY(BlueprintReadOnly) float voronoiWeight = 0;
+	UPROPERTY(BlueprintReadOnly) float fbmWeight = 0;
+	UPROPERTY(BlueprintReadOnly) float surfaceWeight = 0;
+	UPROPERTY(BlueprintReadOnly) float voronoiThreshold = 0;
 };
 
 struct COMPUTEDISPATCHERS_API FPlanetGeneratorDispatchParams

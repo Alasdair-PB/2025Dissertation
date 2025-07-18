@@ -6,8 +6,9 @@
 #include "MaterialDomain.h"
 #include "VoxelWorldSubsystem.h"
 #include "RenderData.h"
+#include "PhysicsEngine/BodySetup.h"
 
-UVoxelMeshComponent::UVoxelMeshComponent()
+UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr)
 {
     PrimaryComponentTick.bCanEverTick = true;
     bUseAsOccluder = false;
@@ -40,9 +41,6 @@ void UVoxelMeshComponent::PostLoad() {
     Super::PostLoad();
 }
 
-UBodySetup* UVoxelMeshComponent::GetBodySetup() {
-    return UMeshComponent::GetBodySetup();
-}
 void UVoxelMeshComponent::SetMaterial(int32 ElementIndex, UMaterialInterface* InMaterial) {
     UMeshComponent::SetMaterial(ElementIndex, InMaterial);
 }
@@ -51,7 +49,7 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     if (!tree) return;
-    TraverseAndDraw(tree->GetRoot());
+    //TraverseAndDraw(tree->GetRoot());
     InvokeVoxelRenderPasses();
 }
 void UVoxelMeshComponent::InitVoxelMesh(
@@ -79,6 +77,37 @@ FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld)
 
 float UVoxelMeshComponent::SampleSDF(FVector3f p) {
     return (p.Length()) - 1.0f;
+}
+
+UBodySetup* UVoxelMeshComponent::GetBodySetup() {
+    return voxelBodySetup;
+}
+
+void UVoxelMeshComponent::UpdateCollisionInfo() {
+
+    if (!voxelBodySetup) {
+        voxelBodySetup = NewObject<UBodySetup>(this);
+        voxelBodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+        voxelBodySetup->bMeshCollideAll = true;
+    }
+    voxelBodySetup->AggGeom.ConvexElems.Empty(); // Caused crash one time- visible nodes may be to blame
+
+    for (FVoxelProxyUpdateDataNode updateData : sceneProxy->GetVisibleNodes()) {
+        FKConvexElem convex;
+        FVoxelVertexBuffer* vertexBuffer = updateData.vertexFactory->GetVertexBuffer();
+        FBufferRHIRef bufferObj = vertexBuffer->VertexBufferRHI;
+        int32 capacity = vertexBuffer->GetVertexCount();
+        TArray<FVector> vertexInfo;
+        vertexInfo.SetNum(capacity);
+        FMemory::Memcpy(vertexInfo.GetData(), bufferObj, capacity * sizeof(FVector));
+        convex.VertexData = vertexInfo;
+        convex.UpdateElemBox();
+        voxelBodySetup->AggGeom.ConvexElems.Add(convex);
+    }
+
+    voxelBodySetup->InvalidatePhysicsData();
+    voxelBodySetup->CreatePhysicsMeshes();
+    RecreatePhysicsState();
 }
 
 // Move to LOD Manager in the future
@@ -131,12 +160,16 @@ void UVoxelMeshComponent::InvokeVoxelRenderPasses() {
     if (!sceneProxy) return;
     if (!sceneProxy->IsInitialized()) return;
 
-    SetRenderDataLOD();
     if (eraser) {
         FTransform eraserTransform = eraser->GetActorTransform();
         tree->ApplyDeformationAtPosition(eraserTransform.GetLocation(), 30.0f, 0.5f);
-        tree->CheckIsoValuesDirty();
+
+        if (tree->AreIsoValuesDirty()) {
+            //UpdateCollisionInfo();
+            tree->UpdateIsoValuesDirty();
+        }
     }
+    SetRenderDataLOD();
 }
 
 void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData) {

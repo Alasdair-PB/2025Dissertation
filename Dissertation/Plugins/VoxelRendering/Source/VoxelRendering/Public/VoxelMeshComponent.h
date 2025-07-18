@@ -41,14 +41,15 @@ protected:
     virtual void BeginPlay() override;
     virtual void BeginDestroy() override;
     virtual void OnRegister() override;
-
     void GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node);
     void InvokeVoxelRenderPasses();
     void SetRenderDataLOD();
+    void UpdateCollisionInfo();
     void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData);
     void TraverseAndDraw(OctreeNode* node);
     float SampleSDF(FVector3f p);
 
     FVoxelSceneProxy* sceneProxy;
     Octree* tree;
+    UBodySetup* voxelBodySetup;
 };

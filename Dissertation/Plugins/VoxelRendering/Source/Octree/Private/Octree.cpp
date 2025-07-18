@@ -79,7 +79,7 @@ FBoxSphereBounds Octree::CalcVoxelBounds(const FTransform& LocalToWorld) {
     return GetBoxSphereBoundsBounds();
 }
 
-void Octree::CheckIsoValuesDirty() {
+void Octree::UpdateIsoValuesDirty() {
     if (!bIsoValuesDirty) return;
 
     if (deltaIsoBuffer.IsValid()) {
@@ -93,7 +93,6 @@ void Octree::CheckIsoValuesDirty() {
                 FMemory::Memcpy(LockedData, isoPtr, bufferSize * sizeof(float));
                 RHICmdList.UnlockBuffer(deltaIsoBuffer->buffer);
             });
-
     }
     bIsoValuesDirty = false;
 }
@@ -144,8 +143,9 @@ void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float 
 
                 additive ? modifiedIsoValue += weightedInfluence : modifiedIsoValue -= weightedInfluence;
                 modifiedIsoValue = FMath::Clamp(modifiedIsoValue, 0.0f, 1.0f);
-                deltaIsoArray[flatIndex] = modifiedIsoValue;
 
+                deltaIsoArray[flatIndex] = modifiedIsoValue;
+                //deltaTypeArray[flatIndex] = 3;
                 if (innitIsoValue != modifiedIsoValue) bIsoValuesDirty = true;
             }
         }

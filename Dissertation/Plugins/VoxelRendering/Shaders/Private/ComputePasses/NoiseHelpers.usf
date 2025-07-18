@@ -1,0 +1,123 @@
+#pragma once
+
+float3 Fade(float3 t)
+{
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+float Grad(int hash, float3 p)
+{
+    int h = hash & 15;
+    float3 grad = float3(
+        (h & 1) == 0 ? p.x : -p.x,
+        (h & 2) == 0 ? p.y : -p.y,
+        (h & 4) == 0 ? p.z : -p.z
+    );
+    return grad.x + grad.y + grad.z;
+}
+
+int Hash(int x, int y, int z)
+{
+    float n = sin(dot(float3(x, y, z), float3(17.0, 59.4, 15.0))) * 43758.5453;
+    return (int) (frac(n) * 256.0);
+}
+
+// Basic Perlin implementation
+float VoxelNoise(float3 p)
+{
+    float3 pi = floor(p);
+    float3 pf = frac(p);
+    float3 f = Fade(pf);
+
+    int x = (int) pi.x;
+    int y = (int) pi.y;
+    int z = (int) pi.z;
+
+    float n000 = Grad(Hash(x + 0, y + 0, z + 0), pf - float3(0, 0, 0));
+    float n100 = Grad(Hash(x + 1, y + 0, z + 0), pf - float3(1, 0, 0));
+    float n010 = Grad(Hash(x + 0, y + 1, z + 0), pf - float3(0, 1, 0));
+    float n110 = Grad(Hash(x + 1, y + 1, z + 0), pf - float3(1, 1, 0));
+    float n001 = Grad(Hash(x + 0, y + 0, z + 1), pf - float3(0, 0, 1));
+    float n101 = Grad(Hash(x + 1, y + 0, z + 1), pf - float3(1, 0, 1));
+    float n011 = Grad(Hash(x + 0, y + 1, z + 1), pf - float3(0, 1, 1));
+    float n111 = Grad(Hash(x + 1, y + 1, z + 1), pf - float3(1, 1, 1));
+
+    float nx00 = lerp(n000, n100, f.x);
+    float nx10 = lerp(n010, n110, f.x);
+    float nx01 = lerp(n001, n101, f.x);
+    float nx11 = lerp(n011, n111, f.x);
+    float nxy0 = lerp(nx00, nx10, f.y);
+    float nxy1 = lerp(nx01, nx11, f.y);
+
+    return lerp(nxy0, nxy1, f.z);
+}
+
+float FractalBrownianMotion(float3 position, int octaves, float frequency, float amplitude)
+{
+    float value = 0.0;
+
+    for (int i = 0; i < octaves; i++)
+    {
+        value += amplitude * VoxelNoise(position * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
+float3 Hash3(int3 p)
+{
+    float3 p3 = frac(sin(float3(p)) * float3(127.1, 311.7, 74.7));
+    return frac(float3(
+        dot(p3, float3(1.0, 57.0, 113.0)),
+        dot(p3, float3(17.0, 59.0, 47.0)),
+        dot(p3, float3(89.0, 23.0, 71.0))
+    ));
+}
+
+float VoxelVoronoiNoise(
+    float3 pos,
+    float scale,
+    float jitter, // [0..1]
+    int numNeighbours // 1 or 2
+)
+{
+    pos *= scale;
+    int3 base = (int3) floor(pos);
+    float minDist1 = 1e10;
+    float minDist2 = 1e10;
+    
+    jitter = clamp(jitter, 0.0, 1.0);
+
+    for (int x = -1; x <= 1; x++)
+        for (int y = -1; y <= 1; y++)
+            for (int z = -1; z <= 1; z++)
+            {
+                int3 cell = base + int3(x, y, z);
+                float3 cellCenter = float3(cell) + 0.5;
+                float3 randomOffset = (Hash3(cell) - 0.5) * jitter;
+                float3 feature = cellCenter + randomOffset;
+                float3 offset = feature - pos;
+                float d = dot(offset, offset);
+
+                if (d < minDist1)
+                {
+                    minDist2 = minDist1;
+                    minDist1 = d;
+                }
+                else if (d < minDist2)
+                    minDist2 = d;
+            }
+
+    float dist = 0.0;
+    if (numNeighbours <= 1)
+        dist = sqrt(minDist1);
+    else
+    {
+        dist = sqrt(minDist2) - sqrt(minDist1);
+        dist = max(dist, 0.0);
+    }
+
+    dist = saturate(dist / 1.732);
+    return dist;
+}

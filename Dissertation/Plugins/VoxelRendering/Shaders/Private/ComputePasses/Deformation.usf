@@ -10,9 +10,9 @@ Buffer<float> isoValues;
 Buffer<float> isoDeltaValues;
 RWBuffer<float> isoCombinedValues;
 
-Buffer<float> typeValues;
-Buffer<float> typeDeltaValues;
-RWBuffer<float> typeCombinedValues;
+Buffer<int> typeValues;
+Buffer<int> typeDeltaValues;
+RWBuffer<int> typeCombinedValues;
 
 int voxelsPerAxis;
 int highResVoxelsPerAxis;
@@ -85,26 +85,24 @@ void Deformation(int3 id : SV_DispatchThreadID)
         return;
     
     int isoPerAxisMaxRes = highResVoxelsPerAxis + 1;
-
+    float voxelWorldSize = baseDepthScale / (highResVoxelsPerAxis);
     float ratio = baseDepthScale / 2.0;
     float3 minimumCornerVoxelBodyPos = octreePosition - float3(ratio, ratio, ratio);
-    
+    float stride = (highResVoxelsPerAxis / voxelsPerAxis);
+
     float scale = baseDepthScale / (1 << leafDepth);
     float centerDis = scale / 2;
     float3 leafMinWorld = leafPosition - float3(centerDis, centerDis, centerDis);
     
-    float voxelWorldSize = baseDepthScale / (highResVoxelsPerAxis);
     float3 offsetWorld = leafMinWorld - minimumCornerVoxelBodyPos;
     float3 offsetVoxelsF = offsetWorld / voxelWorldSize;
+    float leafStride = stride / (1 << leafDepth);
+    int3 startIndex = (int3) offsetVoxelsF + (id * leafStride);
     
-    float stride = (highResVoxelsPerAxis / voxelsPerAxis);
-    stride /= (1 << leafDepth); 
-    
-    int3 startIndex = (int3) offsetVoxelsF + (id * stride);
-
     // May need to do something for neighbours with lower resolution
+    // if neighbour is lower resolution calculate & id is at border then if neighbour average is x then render as x
     
-    if (!(stride < 1))
+    if (!(leafStride < 1))
     {
         int flat = GetIsoIndex(startIndex, isoPerAxisMaxRes);
         float density = clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
@@ -120,8 +118,8 @@ void Deformation(int3 id : SV_DispatchThreadID)
     float sum = 0.0;  
     
     uint2 packedCounts = uint2(0, 0);
-    stride /= 2;
-    int halfStride = stride;
+    leafStride /= 2;
+    int halfStride = leafStride;
     
     [loop]
     for (int dz = startIndex.z - halfStride; dz < (startIndex.z + halfStride + 1); dz++)

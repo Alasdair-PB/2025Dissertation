@@ -26,6 +26,8 @@ public:
     float GetScale() const { return scale; }
     float GetIsoLevel() const { return isoLevel; }
 
+    bool AreIsoValuesDirty() const { return bIsoValuesDirty; }
+
     // LocalPosition
     FVector3f GetOctreePosition() const {
         if (root) return root->GetBounds().Center();
@@ -33,7 +35,7 @@ public:
     }
     int GetIsoValueFromIndex(FIntVector coord, int axisSize);
     void ApplyDeformationAtPosition(FVector position, float radius, float influence, bool additive = true);
-    void CheckIsoValuesDirty();
+    void UpdateIsoValuesDirty();
 
 protected:    
     FBoxSphereBounds GetBoxSphereBoundsBounds();

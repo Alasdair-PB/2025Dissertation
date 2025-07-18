@@ -4,6 +4,7 @@
 // ************************ Required Structs for base feature support ************************
 Buffer<float> VoxelVF;
 Buffer<float> VoxelNormalVF;
+const static float uvScale = 0.01;
 
 struct FVertexFactoryInput
 {
@@ -12,7 +13,6 @@ struct FVertexFactoryInput
     uint Type : ATTRIBUTE2;
     uint VertexId : SV_VertexID;
     
-
     VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 };
 
@@ -227,7 +227,7 @@ FMaterialVertexParameters GetMaterialVertexParameters(FVertexFactoryInput Input,
     Result.PositionPrimitiveSpace = Result.PositionInstanceSpace; 
     Result.TangentToWorld = mul(TangentToLocal, GetLocalToWorld3x3());
     Result.PreSkinnedPosition = WorldPosition;
-    Result.PreSkinnedNormal = Intermediates.Normal; //TangentToLocal[2];
+    Result.PreSkinnedNormal = Intermediates.Normal;
 
     if (bIsPreviousFrame)
     {
@@ -255,7 +255,6 @@ FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVS
     Result.Particle.Color = half4(1, 1, 1, 1);
     Result.TwoSidedSign = 0;
     Result.VertexColor = Interpolants.Color;
-    Result.VertexColor.a = saturate((lerp(1, 1 - distance(Interpolants.TexCoords, 0.5), Interpolants.Color.a) - 0.5) * 10000) * Interpolants.Alpha;
     Result.PrimitiveId = GetPrimitiveId(Interpolants);
 
     #if NUM_TEX_COORD_INTERPOLATORS
@@ -301,7 +300,7 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
     
     Interpolants.Color = Intermediates.Color;
     Interpolants.Alpha = Intermediates.Alpha;
-    Interpolants.TexCoords = NormalBasedPlanarMapping(Input, float2(1.0, 1.0));
+    Interpolants.TexCoords = NormalBasedPlanarMapping(Input, float2(uvScale, uvScale));
     return Interpolants;
 }
 

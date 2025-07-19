@@ -149,8 +149,6 @@ bool Octree::RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end)
     bool bInsideOrOn = bounds.IsInside(start) || bounds.IsInside(end);
 
     if (!bIntersects && !bInsideOrOn) return false;
-    UE_LOG(LogTemp, Warning, TEXT("Debug: trying to mine"));
-
     float isoScale = scale / isoValuesPerAxisMaxRes;
     FVector minCorner = nodeCenter - extent + worldPosition;
     FVector voxelPosition = (start - minCorner) / isoScale;

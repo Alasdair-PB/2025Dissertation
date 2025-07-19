@@ -24,6 +24,15 @@ public:
 	AActor* targetPlayer;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")
+	int depth = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")
+	int voxelsPerAxis = 5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")
+	float scale = 400.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")
 	float planetScaleRatio = 0.8;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")

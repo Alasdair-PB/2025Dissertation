@@ -23,20 +23,20 @@ void UVoxelGeneratorComponent::InitIsoDispatch() {
     DispatchIsoBuffer(size, depth, scale, voxelsPerAxis);
 }
 
-void UVoxelGeneratorComponent::InitVoxelMesh(int size, int depth, float scale, int voxelsPerAxis)
+void UVoxelGeneratorComponent::InitVoxelMesh(int inSize, int inDepth, float inScale, int inVoxelsPerAxis)
 {
     UWorld* world = GetWorld();
-    AVoxelBody::CreateVoxelMeshActor(world, scale, size, depth, voxelsPerAxis, isoValueBuffer, typeValueBuffer, targetEraser, targetPlayer);
+    AVoxelBody::CreateVoxelMeshActor(world, inScale, inSize, inDepth, inVoxelsPerAxis, isoValueBuffer, typeValueBuffer, targetEraser, targetPlayer);
 }
 
-void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth, float scale, int voxelsPerAxis) {
-    int isoSize = size + 1;
+void UVoxelGeneratorComponent::DispatchIsoBuffer(int inSize, int inDepth, float inScale, int inVoxelsPerAxis) {
+    int isoSize = inSize + 1;
     int totalBufferSize = isoSize * isoSize * isoSize;
     isoValueBuffer.Reserve(totalBufferSize);
     typeValueBuffer.Reserve(totalBufferSize);
 
     FPlanetGeneratorDispatchParams Params(isoSize, isoSize, isoSize);
-    Params.Input.baseDepthScale = scale;
+    Params.Input.baseDepthScale = inScale;
     Params.Input.size = isoSize;
     Params.Input.isoLevel = isoLevel;
     Params.Input.planetScaleRatio = planetScaleRatio;
@@ -52,13 +52,13 @@ void UVoxelGeneratorComponent::DispatchIsoBuffer(int size, int depth, float scal
     Params.Input.voronoiThreshold = voronoiThreshold;
 
     FPlanetGeneratorInterface::Dispatch(Params,
-        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), size, depth, scale, voxelsPerAxis](FPlanetGeneratorOutput OutputVal) {
+        [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), inSize, inDepth, inScale, inVoxelsPerAxis](FPlanetGeneratorOutput OutputVal) {
             if (!WeakThis.IsValid()) return;
             if (IsEngineExitRequested()) return;
 
             WeakThis->isoValueBuffer = OutputVal.outIsoValues;
             WeakThis->typeValueBuffer = OutputVal.outTypeValues;
-            WeakThis->InitVoxelMesh(size, depth, scale, voxelsPerAxis);
+            WeakThis->InitVoxelMesh(inSize, inDepth, inScale, inVoxelsPerAxis);
         });
 }
 

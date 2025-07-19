@@ -27,7 +27,7 @@ UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr)
 void UVoxelMeshComponent::CheckVoxelMining() {
     if (!playerController)
         playerController = GetWorld()->GetFirstPlayerController();
-    if (!playerController->IsInputKeyDown(EKeys::LeftMouseButton)) return;
+    if (!playerController->IsInputKeyDown(EKeys::LeftMouseButton) || playerController->IsInputKeyDown(EKeys::LeftShift)) return;
 
     FVector worldLoc, worldDir;
     if (playerController->DeprojectMousePositionToWorld(worldLoc, worldDir))

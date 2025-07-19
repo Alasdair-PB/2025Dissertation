@@ -36,6 +36,7 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UMaterialInterface> Material;
 protected:
+    APlayerController* playerController;
     AActor* eraser;
     AActor* player;
     virtual void BeginPlay() override;
@@ -43,8 +44,8 @@ protected:
     virtual void OnRegister() override;
     void GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node);
     void InvokeVoxelRenderPasses();
+    void CheckVoxelMining();
     void SetRenderDataLOD();
-    void UpdateCollisionInfo();
     void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData);
     void TraverseAndDraw(OctreeNode* node);
     float SampleSDF(FVector3f p);

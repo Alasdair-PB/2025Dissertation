@@ -193,6 +193,7 @@ void FPlanetGeneratorInterface::DispatchRenderThread(FRHICommandListImmediate& R
 
 					AsyncTask(ENamedThreads::GameThread, [AsyncCallback, OutVal]() {AsyncCallback(OutVal); });
 					delete isoReadback;
+					delete typeReadback;
 				}
 				else {
 					AsyncTask(ENamedThreads::ActualRenderingThread, [RunnerFunc]() {

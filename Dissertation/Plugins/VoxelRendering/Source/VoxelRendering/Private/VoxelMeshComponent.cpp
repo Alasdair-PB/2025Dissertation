@@ -24,6 +24,26 @@ UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr)
     }
 }
 
+void UVoxelMeshComponent::CheckVoxelMining() {
+    if (!playerController)
+        playerController = GetWorld()->GetFirstPlayerController();
+    if (!playerController->IsInputKeyDown(EKeys::LeftMouseButton)) return;
+
+    FVector worldLoc, worldDir;
+    if (playerController->DeprojectMousePositionToWorld(worldLoc, worldDir))
+    {
+        FHitResult hit;
+        FVector start = worldLoc;
+        FVector end = start + worldDir * 1000;
+
+        if (tree->RaycastToVoxelBody(hit, start, end))
+        {
+            FVector position = hit.Location;
+            tree->ApplyDeformationAtPosition(position, 30.0f, 1.0f);
+        }
+    }
+}
+
 void UVoxelMeshComponent::OnRegister()
 {
     Super::OnRegister();
@@ -72,7 +92,6 @@ FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld)
 {
     if (tree) return tree->CalcVoxelBounds(LocalToWorld);
     return FBoxSphereBounds(FBox(FVector(-200), FVector(200)));
-    //return UMeshComponent::CalcBounds(LocalToWorld);
 }
 
 float UVoxelMeshComponent::SampleSDF(FVector3f p) {
@@ -83,34 +102,6 @@ UBodySetup* UVoxelMeshComponent::GetBodySetup() {
     return voxelBodySetup;
 }
 
-void UVoxelMeshComponent::UpdateCollisionInfo() {
-
-    if (!voxelBodySetup) {
-        voxelBodySetup = NewObject<UBodySetup>(this);
-        voxelBodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
-        voxelBodySetup->bMeshCollideAll = true;
-    }
-    voxelBodySetup->AggGeom.ConvexElems.Empty(); // Caused crash one time- visible nodes may be to blame
-
-    for (FVoxelProxyUpdateDataNode updateData : sceneProxy->GetVisibleNodes()) {
-        FKConvexElem convex;
-        FVoxelVertexBuffer* vertexBuffer = updateData.vertexFactory->GetVertexBuffer();
-        FBufferRHIRef bufferObj = vertexBuffer->VertexBufferRHI;
-        int32 capacity = vertexBuffer->GetVertexCount();
-        TArray<FVector> vertexInfo;
-        vertexInfo.SetNum(capacity);
-        FMemory::Memcpy(vertexInfo.GetData(), bufferObj, capacity * sizeof(FVector));
-        convex.VertexData = vertexInfo;
-        convex.UpdateElemBox();
-        voxelBodySetup->AggGeom.ConvexElems.Add(convex);
-    }
-
-    voxelBodySetup->InvalidatePhysicsData();
-    voxelBodySetup->CreatePhysicsMeshes();
-    RecreatePhysicsState();
-}
-
-// Move to LOD Manager in the future
 void UVoxelMeshComponent::SetRenderDataLOD() 
 {
     TArray<OctreeNode*> visibleNodes;
@@ -137,7 +128,11 @@ void UVoxelMeshComponent::SetRenderDataLOD()
 void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
     if (!node) return;
 
-    FTransform playerTransform = player->GetActorTransform();
+    if (!playerController)
+        playerController = GetWorld()->GetFirstPlayerController();
+
+    APawn* playerPawn = playerController->GetPawn();
+    FTransform playerTransform = playerPawn->GetActorTransform();// player->GetActorTransform();
     FVector playerPos = playerTransform.GetLocation();
 
     if (node->IsLeaf()) 
@@ -160,15 +155,12 @@ void UVoxelMeshComponent::InvokeVoxelRenderPasses() {
     if (!sceneProxy) return;
     if (!sceneProxy->IsInitialized()) return;
 
+    CheckVoxelMining();
     if (eraser) {
         FTransform eraserTransform = eraser->GetActorTransform();
         tree->ApplyDeformationAtPosition(eraserTransform.GetLocation(), 30.0f, 0.5f);
-
-        if (tree->AreIsoValuesDirty()) {
-            //UpdateCollisionInfo();
-            tree->UpdateIsoValuesDirty();
-        }
     }
+    if (tree->AreIsoValuesDirty()) tree->UpdateIsoValuesDirty();
     SetRenderDataLOD();
 }
 

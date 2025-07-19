@@ -2,6 +2,7 @@
 #include "CoreMinimal.h"
 #include "OctreeNode.h"
 #include "AABB.h"
+#include "VoxelOctreeUtils.h"
 #include "VoxelRenderBuffers.h"
 
 class OCTREE_API Octree {
@@ -27,8 +28,8 @@ public:
     float GetIsoLevel() const { return isoLevel; }
 
     bool AreIsoValuesDirty() const { return bIsoValuesDirty; }
+    bool RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end);
 
-    // LocalPosition
     FVector3f GetOctreePosition() const {
         if (root) return root->GetBounds().Center();
         else return (FVector3f());
@@ -48,9 +49,14 @@ protected:
     TSharedPtr<FIsoDynamicBuffer> deltaIsoBuffer;
     TSharedPtr<FTypeDynamicBuffer> deltaTypeBuffer;
     TArray<float> deltaIsoArray;
+    TArray<float> initIsoArray;
     TArray<int> deltaTypeArray;
     bool bIsoValuesDirty;
 
+    float GetIsoSafe(const FIntVector position);
+    void GetIsoPlaneInDirection(FVector direction, FVector position,
+        float& isoA, float& isoB, float& isoC, float& isoD,
+        FVector& posA, FVector& posB, FVector& posC, FVector& posD);
 private:
     float scale;
     float isoLevel;

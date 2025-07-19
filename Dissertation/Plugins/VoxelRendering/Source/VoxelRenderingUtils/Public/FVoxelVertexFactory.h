@@ -59,7 +59,7 @@ public:
 
 	FUnorderedAccessViewRHIRef GetVertexTypeUAV() const { return typeBuffer.UAV; }
 
-	uint32 GetVertexBufferBytesPerElement() const { return sizeof(FVoxelVertexInfo); }
+	uint32 GetVertexBufferBytesPerElement() const { return sizeof(FVector); }
 	uint32 GetIndexBufferBytesPerElement() const { return sizeof(uint32); }
 
 	uint32 GetVertexBufferElementsCount() const { return vertexBuffer.GetVertexCount(); }

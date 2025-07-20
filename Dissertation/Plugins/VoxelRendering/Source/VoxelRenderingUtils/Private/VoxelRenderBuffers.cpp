@@ -41,9 +41,9 @@ void FIsoUniformBuffer::InitRHI(FRHICommandListBase& RHICmdList)
     buffer = RHICmdList.CreateBuffer(sizeof(float) * capacity, UsageFlags, 0, ERHIAccess::SRVMask, CreateInfo);
     bufferSRV = RHICmdList.CreateShaderResourceView(buffer, sizeof(float), PF_R32_FLOAT);
 
-    FIsoFetchShaderParameters uniformParameters;
-    uniformParameters.isoFetch_Buffer = bufferSRV;
-    uniformBuffer = TUniformBufferRef<FIsoFetchShaderParameters>::CreateUniformBufferImmediate(uniformParameters, UniformBuffer_MultiFrame);
+    //FIsoFetchShaderParameters uniformParameters;
+    //uniformParameters.isoFetch_Buffer = bufferSRV;
+    //uniformBuffer = TUniformBufferRef<FIsoFetchShaderParameters>::CreateUniformBufferImmediate(uniformParameters, UniformBuffer_MultiFrame);
 }
 
 void FIsoUniformBuffer::Initialize(const TArray<float>& isoBuffer, int32 NumPoints)
@@ -86,9 +86,9 @@ void FTypeUniformBuffer::InitRHI(FRHICommandListBase& RHICmdList)
     buffer = RHICmdList.CreateBuffer(sizeof(uint32) * capacity, UsageFlags, 0, ERHIAccess::SRVMask, CreateInfo);
     bufferSRV = RHICmdList.CreateShaderResourceView(buffer, sizeof(uint32), PF_R32_UINT);
 
-    FTypeFetchShaderParameters uniformParameters;
-    uniformParameters.typeFetch_Buffer = bufferSRV;
-    uniformBuffer = TUniformBufferRef<FTypeFetchShaderParameters>::CreateUniformBufferImmediate(uniformParameters, UniformBuffer_MultiFrame);
+   // FTypeFetchShaderParameters uniformParameters;
+    //uniformParameters.typeFetch_Buffer = bufferSRV;
+    //uniformBuffer = TUniformBufferRef<FTypeFetchShaderParameters>::CreateUniformBufferImmediate(uniformParameters, UniformBuffer_MultiFrame);
 }
 
 void FTypeUniformBuffer::Initialize(const TArray<uint32>& typeBuffer, int32 NumPoints)

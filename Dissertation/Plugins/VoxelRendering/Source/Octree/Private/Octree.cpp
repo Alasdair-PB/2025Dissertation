@@ -1,13 +1,12 @@
 #include "Octree.h"
 #include "OctreeModule.h"
 
-Octree::Octree(float inIsoLevel, float inScale, int inVoxelsPerAxis, int inDepth, int inBufferSizePerAxis, const TArray<float>& isoBuffer, const TArray<uint32>& typeBuffer, FVector inPosition) :
-    maxDepth(inDepth), voxelsPerAxis(inVoxelsPerAxis), scale(inScale), voxelsPerAxisMaxRes(inBufferSizePerAxis), isoLevel(inIsoLevel), worldPosition(inPosition), bIsoValuesDirty(false) {
-
+Octree::Octree(AActor* inParent, float inIsoLevel, float inScale, int inVoxelsPerAxis, int inDepth, int inBufferSizePerAxis, const TArray<float>& isoBuffer, const TArray<uint32>& typeBuffer) :
+    parent(inParent), maxDepth(inDepth), bIsoValuesDirty(false), bTypeValuesDirty(false), scale(inScale), isoLevel(inIsoLevel),voxelsPerAxisMaxRes(inBufferSizePerAxis), voxelsPerAxis(inVoxelsPerAxis) { 
     float scaleHalfed = inScale / 2;
     AABB bounds = { FVector3f(-scaleHalfed), FVector3f(scaleHalfed) };
 
-    root = new OctreeNode(bounds, isoCount, 0, inDepth);
+    root = new OctreeNode(inParent, bounds, isoCount, 0, inDepth);
     int bufferSize = (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1);
 
     isoUniformBuffer = MakeShareable(new FIsoUniformBuffer(bufferSize));
@@ -76,7 +75,8 @@ void Octree::Release() {
 FBoxSphereBounds Octree::GetBoxSphereBoundsBounds() {
     // Replace with actual bounds
     // Recalculate bounds after octree change
-    return FBoxSphereBounds(FBox(FVector(-200), FVector(200)));
+    float halfSize = scale / 2;
+    return FBoxSphereBounds(FBox(FVector(-halfSize), FVector(halfSize)));
 }
 
 FBoxSphereBounds Octree::CalcVoxelBounds(const FTransform& LocalToWorld) {
@@ -132,12 +132,21 @@ void Octree::GetIsoPlaneInDirection(FVector direction, FVector position,
 
 bool Octree::RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end)
 {
+    FTransform parentTransform = parent->GetTransform();
+    start = parentTransform.InverseTransformPosition(start);
+    end = parentTransform.InverseTransformPosition(end);
+
+    UE_LOG(LogTemp, Warning, TEXT("Parent Transform:\n  Location: %s\n  Rotation: %s\n  Scale: %s"),
+        *parentTransform.GetLocation().ToString(),
+        *parentTransform.GetRotation().Rotator().ToString(),
+        *parentTransform.GetScale3D().ToString());
+
     float ratio = scale / 2.0;
     FVector nodeCenter = FVector(GetOctreePosition().X, GetOctreePosition().Y, GetOctreePosition().Z);
     FVector extent = FVector(ratio, ratio, ratio);
 
     FBox bounds = FBox();
-    bounds = bounds.BuildAABB(nodeCenter + worldPosition, extent*2);
+    bounds = bounds.BuildAABB(nodeCenter, extent*2);
 
     FVector direction = (end - start).GetSafeNormal();
     FVector oneOverDirection(
@@ -150,7 +159,7 @@ bool Octree::RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end)
 
     if (!bIntersects && !bInsideOrOn) return false;
     float isoScale = scale / isoValuesPerAxisMaxRes;
-    FVector minCorner = nodeCenter - extent + worldPosition;
+    FVector minCorner = nodeCenter - extent;
     FVector voxelPosition = (start - minCorner) / isoScale;
     FVector endPosition = (end - minCorner) / isoScale;
 
@@ -171,7 +180,7 @@ bool Octree::RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end)
             continue;
         }
         else if (isoA < isoLevel && isoB < isoLevel && isoC < isoLevel && isoD < isoLevel) {
-            hit.Location = (voxelPosition * isoScale) + minCorner;
+            hit.Location = parentTransform.TransformPosition((voxelPosition * isoScale) + minCorner);
             return true;
         }
 
@@ -222,13 +231,36 @@ bool Octree::RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end)
             FVector outTriNormal = -direction;
             bool bTriRayIntersects = FMath::SegmentTriangleIntersection(startTriRay, endTriRay, vertices[0], vertices[1], vertices[2], outIntersectPoint, outTriNormal);
             if (bTriRayIntersects) {
-                hit.Location = (voxelPosition * isoScale) + minCorner;
+                hit.Location = parentTransform.TransformPosition((voxelPosition * isoScale) + minCorner);
                 return true;
             }
         }
         voxelPosition += direction;
     }
     return false;
+}
+
+void Octree::UpdateValuesDirty() {
+    UpdateTypeValuesDirty();
+    UpdateIsoValuesDirty();
+}
+
+void Octree::UpdateTypeValuesDirty() {
+    if (!bTypeValuesDirty) return;
+
+    if (deltaTypeBuffer.IsValid()) {
+        uint32* typePtr = deltaTypeArray.GetData();
+        int bufferSize = deltaTypeBuffer->GetCapacity();
+
+        ENQUEUE_RENDER_COMMAND(CopyTypeDelta)(
+            [deltaTypeBuffer = deltaTypeBuffer, typePtr, bufferSize, bTypeValuesDirty = bTypeValuesDirty](FRHICommandListImmediate& RHICmdList)
+            {
+                void* LockedData = RHICmdList.LockBuffer(deltaTypeBuffer->buffer, 0, bufferSize * sizeof(float), RLM_WriteOnly);
+                FMemory::Memcpy(LockedData, typePtr, bufferSize * sizeof(float));
+                RHICmdList.UnlockBuffer(deltaTypeBuffer->buffer);
+            });
+    }
+    bTypeValuesDirty = false;
 }
 
 void Octree::UpdateIsoValuesDirty() {
@@ -256,15 +288,17 @@ int Octree::GetIsoValueFromIndex(FIntVector coord, int axisSize) {
     return FMath::Max(0, FMath::Min(index, maxIsoCount + 1));
 }
 
-void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float influence, bool additive) {
+void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float influence, uint32 paintType, bool additive) {
+    FTransform parentTransform = parent->GetTransform();
+    inPosition = parentTransform.InverseTransformPosition(inPosition);
 
     float ratio = scale / 2.0;
     FVector nodeCenter = FVector(GetOctreePosition().X, GetOctreePosition().Y, GetOctreePosition().Z);
     FVector extent = FVector(ratio, ratio, ratio);
-    FVector minCorner = nodeCenter - extent + worldPosition;
+    FVector minCorner = nodeCenter - extent;
 
     FBox bounds = FBox();
-    bounds = bounds.BuildAABB(nodeCenter + worldPosition, extent);
+    bounds = bounds.BuildAABB(nodeCenter, extent);
 
     if (!bounds.IsInsideOrOnXY(inPosition))
         return;
@@ -295,12 +329,21 @@ void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float 
                 float t = FMath::Clamp(1.0f - (distance / isoRadius), 0.0f, 1.0f);
                 float weightedInfluence = influence * t * t;
 
-                additive ? modifiedIsoValue += weightedInfluence : modifiedIsoValue -= weightedInfluence;
-                modifiedIsoValue = FMath::Clamp(modifiedIsoValue, 0.0f, 1.0f);
+                additive ? modifiedIsoValue -= weightedInfluence : modifiedIsoValue += weightedInfluence;
+                modifiedIsoValue = FMath::Clamp(modifiedIsoValue, -1.0f, 1.0f);
 
-                deltaIsoArray[flatIndex] = modifiedIsoValue;
-                //deltaTypeArray[flatIndex] = 3;
-                if (innitIsoValue != modifiedIsoValue) bIsoValuesDirty = true;
+                uint32 innitType = deltaTypeArray[flatIndex];
+                uint32 modifiedType = additive ? paintType : innitType;
+
+                if (innitType != modifiedType) {
+                    bTypeValuesDirty = true;
+                    deltaTypeArray[flatIndex] = modifiedType;
+                }
+
+                if (innitIsoValue != modifiedIsoValue) { 
+                    deltaIsoArray[flatIndex] = modifiedIsoValue;
+                    bIsoValuesDirty = true; 
+                }
             }
         }
     }

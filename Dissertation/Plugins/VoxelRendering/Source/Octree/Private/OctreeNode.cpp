@@ -1,7 +1,8 @@
 #include "OctreeNode.h"
 #include "OctreeModule.h"
 
-OctreeNode::OctreeNode(const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth) : depth(inDepth), isLeaf(true), bounds(inBounds) {
+OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth) : 
+    depth(inDepth), isLeaf(true), bounds(inBounds), treeActor(inTreeActor) {
     vertexFactory = MakeShareable(new FVoxelVertexFactory(bufferSize));
     avgIsoBuffer = MakeShareable(new FIsoDynamicBuffer(bufferSize));
     avgTypeBuffer = MakeShareable(new FTypeDynamicBuffer(bufferSize));
@@ -71,6 +72,6 @@ void OctreeNode::Subdivide(int inDepth, int maxDepth, int bufferSize) {
         FVector3f halfSize = e;
 
         AABB childAABB = { childCenter - halfSize, childCenter + halfSize };
-        children[i] = new OctreeNode(childAABB, bufferSize, nextDepth, maxDepth);
+        children[i] = new OctreeNode(treeActor, childAABB, bufferSize, nextDepth, maxDepth);
     }
 }

@@ -27,7 +27,11 @@ UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr)
 void UVoxelMeshComponent::CheckVoxelMining() {
     if (!playerController)
         playerController = GetWorld()->GetFirstPlayerController();
-    if (!playerController->IsInputKeyDown(EKeys::LeftMouseButton) || playerController->IsInputKeyDown(EKeys::LeftShift)) return;
+
+    bool leftMouseDown = playerController->IsInputKeyDown(EKeys::LeftMouseButton);
+    bool keyDown = leftMouseDown || playerController->IsInputKeyDown(EKeys::RightMouseButton);
+
+    if (!keyDown || playerController->IsInputKeyDown(EKeys::LeftShift)) return;
 
     FVector worldLoc, worldDir;
     if (playerController->DeprojectMousePositionToWorld(worldLoc, worldDir))
@@ -39,7 +43,9 @@ void UVoxelMeshComponent::CheckVoxelMining() {
         if (tree->RaycastToVoxelBody(hit, start, end))
         {
             FVector position = hit.Location;
-            tree->ApplyDeformationAtPosition(position, 30.0f, 1.0f);
+            leftMouseDown ? 
+            tree->ApplyDeformationAtPosition(position, 30.0f, 1.0f) :
+            tree->ApplyDeformationAtPosition(position, 30.0f, 1.0f, 1, true);
         }
     }
 }
@@ -71,7 +77,19 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
     if (!tree) return;
     //TraverseAndDraw(tree->GetRoot());
     InvokeVoxelRenderPasses();
+    RotateAroundAxis(FVector(0.2f, 1.0f, 0.2f), 0.5f);
 }
+
+void UVoxelMeshComponent::RotateAroundAxis(FVector axis, float degreeTick)
+{
+    axis = axis.GetSafeNormal();
+    FQuat quatRotation = FQuat(axis, FMath::DegreesToRadians(degreeTick));
+    FQuat currentRotation = GetComponentQuat();
+    FQuat newRotation = quatRotation * currentRotation;
+    newRotation.Normalize();
+    GetOwner()->SetActorRotation(newRotation);
+}
+
 void UVoxelMeshComponent::InitVoxelMesh(
     float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, 
     TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer,
@@ -79,7 +97,9 @@ void UVoxelMeshComponent::InitVoxelMesh(
 {    
     eraser = inEraser;
     player = inPlayer;
-    tree = new Octree(isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer, GetComponentLocation());
+
+    AActor* owner = GetOwner();
+    tree = new Octree(owner, isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
 }
 
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
@@ -134,13 +154,13 @@ void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode
     APawn* playerPawn = playerController->GetPawn();
     FTransform playerTransform = playerPawn->GetActorTransform();// player->GetActorTransform();
     FVector playerPos = playerTransform.GetLocation();
+    playerPos = GetComponentTransform().InverseTransformPosition(playerPos);
 
     if (node->IsLeaf()) 
         nodes.Add(node);
     else {
-        AABB bounds = node->GetBounds();
         float visibleDistance = 1000.0f / (1 << node->GetDepth());
-        FVector boundsCenter = FVector(bounds.Center().X, bounds.Center().Y, bounds.Center().Z);
+        FVector boundsCenter = node->GetWorldNodePosition();
         float distance = (playerPos - boundsCenter).Length();
 
         if (distance < visibleDistance) {
@@ -158,9 +178,9 @@ void UVoxelMeshComponent::InvokeVoxelRenderPasses() {
     CheckVoxelMining();
     if (eraser) {
         FTransform eraserTransform = eraser->GetActorTransform();
-        tree->ApplyDeformationAtPosition(eraserTransform.GetLocation(), 30.0f, 0.5f);
+        tree->ApplyDeformationAtPosition(eraserTransform.GetLocation(), 50.0f, 0.5f);
     }
-    if (tree->AreIsoValuesDirty()) tree->UpdateIsoValuesDirty();
+    if (tree->AreValuesDirty()) tree->UpdateValuesDirty();
     SetRenderDataLOD();
 }
 

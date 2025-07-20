@@ -45,6 +45,7 @@ protected:
     void GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node);
     void InvokeVoxelRenderPasses();
     void CheckVoxelMining();
+    void RotateAroundAxis(FVector axis, float degreeTick);
     void SetRenderDataLOD();
     void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData);
     void TraverseAndDraw(OctreeNode* node);

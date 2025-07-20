@@ -8,8 +8,8 @@
 class OCTREE_API Octree {
 public:
 
-    Octree(float isoLevel, float scale, int inVoxelsPerAxis, int inDepth, int inBufferSizePerAxis, 
-        const TArray<float>& isoBuffer, const TArray<uint32>& typeBuffer, FVector inPosition);
+    Octree(AActor* parent, float isoLevel, float scale, int inVoxelsPerAxis, int inDepth, int inBufferSizePerAxis,
+        const TArray<float>& isoBuffer, const TArray<uint32>& typeBuffer);
     ~Octree();
 
     void Release();
@@ -27,22 +27,25 @@ public:
     float GetScale() const { return scale; }
     float GetIsoLevel() const { return isoLevel; }
 
-    bool AreIsoValuesDirty() const { return bIsoValuesDirty; }
+    bool AreValuesDirty() const { return bIsoValuesDirty || bTypeValuesDirty; }
     bool RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end);
 
     FVector3f GetOctreePosition() const {
         if (root) return root->GetBounds().Center();
         else return (FVector3f());
     }
+
     int GetIsoValueFromIndex(FIntVector coord, int axisSize);
-    void ApplyDeformationAtPosition(FVector position, float radius, float influence, bool additive = true);
+    void ApplyDeformationAtPosition(FVector position, float radius, float influence, uint32 type = 0, bool additive = false);
     void UpdateIsoValuesDirty();
+    void UpdateValuesDirty();
+    void UpdateTypeValuesDirty();
 
 protected:    
     FBoxSphereBounds GetBoxSphereBoundsBounds();
     OctreeNode* root;
+    AActor* parent;
     int maxDepth;
-    FVector worldPosition;
     TSharedPtr<FTypeUniformBuffer> typeUniformBuffer;
     TSharedPtr<FIsoUniformBuffer> isoUniformBuffer;
 
@@ -50,8 +53,9 @@ protected:
     TSharedPtr<FTypeDynamicBuffer> deltaTypeBuffer;
     TArray<float> deltaIsoArray;
     TArray<float> initIsoArray;
-    TArray<int> deltaTypeArray;
+    TArray<uint32> deltaTypeArray;
     bool bIsoValuesDirty;
+    bool bTypeValuesDirty;
 
     float GetIsoSafe(const FIntVector position);
     void GetIsoPlaneInDirection(FVector direction, FVector position,

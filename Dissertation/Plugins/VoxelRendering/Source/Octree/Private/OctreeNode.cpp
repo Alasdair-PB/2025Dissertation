@@ -1,18 +1,28 @@
 #include "OctreeNode.h"
 #include "OctreeModule.h"
 
-OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferSize, int inDepth, int maxDepth) : 
-    depth(inDepth), isLeaf(true), bounds(inBounds), treeActor(inTreeActor) {
+OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferSize, uint32 inVoxelsPerAxis, int inDepth, int maxDepth) :
+    depth(inDepth), voxelsPerAxis(inVoxelsPerAxis), treeActor(inTreeActor), isLeaf(true), bounds(inBounds), transitionCellBufferSize((2 * voxelsPerAxis + 1)* (2 * voxelsPerAxis + 1)),
+    regularCell(RegularCell(bufferSize)) {
+
     vertexFactory = MakeShareable(new FVoxelVertexFactory(bufferSize));
-    avgIsoBuffer = MakeShareable(new FIsoDynamicBuffer(bufferSize));
-    avgTypeBuffer = MakeShareable(new FTypeDynamicBuffer(bufferSize));
+    regularCell = RegularCell(bufferSize);
+
+    uint32 isoValuesPerAxis = inVoxelsPerAxis + 1;
+    uint32 transitionCellBufferSize = (2 * voxelsPerAxis + 1) * (2 * voxelsPerAxis + 1);
+
+    for (int i = 0; i < 3; i++) {
+        transitonCells[i] = TransitionCell(transitionCellBufferSize);
+    }
 
     ENQUEUE_RENDER_COMMAND(InitVoxelResources)(
-        [this, bufferSize](FRHICommandListImmediate& RHICmdList)
+        [this, bufferSize, transitionCellBufferSize](FRHICommandListImmediate& RHICmdList)
         {
             vertexFactory->Initialize(bufferSize * 15);
-            avgIsoBuffer->Initialize(bufferSize);
-            avgTypeBuffer->Initialize(bufferSize);
+            regularCell.Initialize(bufferSize);
+
+            for (TransitionCell cell : transitonCells)
+                cell.Initialize(transitionCellBufferSize);
         });
 
     for (int i = 0; i < 8; ++i)
@@ -25,9 +35,13 @@ OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferS
  OctreeNode::~OctreeNode() {
     Release();
     FlushRenderingCommands();
-    avgIsoBuffer.Reset();
-    avgTypeBuffer.Reset();
+
     vertexFactory.Reset();
+    regularCell.ResetResources();
+
+    for (TransitionCell cell : transitonCells)
+        cell.ResetResources();
+
     for (int i = 0; i < 8; ++i) {
         delete children[i];
         children[i] = nullptr;
@@ -35,27 +49,14 @@ OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferS
 }
 
 void OctreeNode::Release() {
-
-    if (avgIsoBuffer.IsValid()) {
-        ENQUEUE_RENDER_COMMAND(ReleaseIsoBufferCmd)(
-            [avgIsoBuffer = avgIsoBuffer](FRHICommandListImmediate& RHICmdList) {
-                avgIsoBuffer->ReleaseResource();
-            });
-    }
-
-    if (avgTypeBuffer.IsValid()) {
-        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
-            [avgTypeBuffer = avgTypeBuffer](FRHICommandListImmediate& RHICmdList) {
-                avgTypeBuffer->ReleaseResource();
-            });
-    }
-
-    if (vertexFactory.IsValid()) {
-        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
-            [vertexFactory = vertexFactory](FRHICommandListImmediate& RHICmdList) {
+    ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
+        [this](FRHICommandListImmediate& RHICmdList) {
+            if (vertexFactory.IsValid())
                 vertexFactory->ReleaseResource();
-            });
-    }
+            regularCell.ReleaseResources();
+            for (TransitionCell cell : transitonCells)
+                cell.ReleaseResources();
+        });
 }
 
 void OctreeNode::Subdivide(int inDepth, int maxDepth, int bufferSize) {
@@ -72,6 +73,6 @@ void OctreeNode::Subdivide(int inDepth, int maxDepth, int bufferSize) {
         FVector3f halfSize = e;
 
         AABB childAABB = { childCenter - halfSize, childCenter + halfSize };
-        children[i] = new OctreeNode(treeActor, childAABB, bufferSize, nextDepth, maxDepth);
+        children[i] = new OctreeNode(treeActor, childAABB, bufferSize, voxelsPerAxis, nextDepth, maxDepth);
     }
 }

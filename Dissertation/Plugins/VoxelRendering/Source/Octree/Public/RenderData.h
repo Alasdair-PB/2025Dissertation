@@ -58,10 +58,11 @@ public:
 	TSharedPtr<FIsoUniformBuffer> isoBuffer;
 	TSharedPtr<FTypeUniformBuffer> typeBuffer;
 	TArray<FVoxelComputeUpdateNodeData> nodeData;
+	TSharedPtr<FMarchingCubesLookUpResource> marchLookUpResource;
 
 	FVoxelComputeUpdateData() :FVoxelComputeUpdateData(nullptr) {}
-	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0),
-		highResVoxelsPerAxis(0), voxelsPerAxis(0), octreePosition(FVector3f()) {}
+	FVoxelComputeUpdateData(Octree* inOctree) : octree(inOctree), scale(0), isoLevel(0), octreePosition(FVector3f()), 
+		voxelsPerAxis(0), highResVoxelsPerAxis(0) {}
 
 	bool BuildDataCache() {
 
@@ -71,6 +72,7 @@ public:
 		check(octree->GetTypeBuffer());
 		check(octree->GetDeltaIsoBuffer());
 		check(octree->GetDeltaTypeBuffer());
+		check(octree->GetMarchLookUpResourceBuffer());
 
 		isoBuffer = octree->GetIsoBuffer();
 		typeBuffer = octree->GetTypeBuffer();
@@ -78,6 +80,7 @@ public:
 		deltaTypeBuffer = octree->GetDeltaTypeBuffer();
 		octreePosition = octree->GetOctreePosition();
 		voxelsPerAxis = octree->GetVoxelsPerAxs();
+		marchLookUpResource = octree->GetMarchLookUpResourceBuffer();
 		scale = octree->GetScale();
 		isoLevel = octree->GetIsoLevel();
 		highResVoxelsPerAxis = octree->GetVoxelsPerAxsMaxRes();

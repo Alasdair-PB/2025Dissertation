@@ -20,6 +20,7 @@ public:
     TSharedPtr<FTypeUniformBuffer> GetTypeBuffer() { return typeUniformBuffer; }
     TSharedPtr<FTypeDynamicBuffer> GetDeltaTypeBuffer() { return deltaTypeBuffer; }
     TSharedPtr<FIsoDynamicBuffer> GetDeltaIsoBuffer() { return deltaIsoBuffer; }
+    TSharedPtr<FMarchingCubesLookUpResource> GetMarchLookUpResourceBuffer() { return marchingCubeLookUpTable; }
 
     int GetVoxelsPerAxs() const { return voxelsPerAxis; }
     int GetVoxelsPerAxsMaxRes() const { return voxelsPerAxisMaxRes; }
@@ -48,6 +49,7 @@ protected:
     int maxDepth;
     TSharedPtr<FTypeUniformBuffer> typeUniformBuffer;
     TSharedPtr<FIsoUniformBuffer> isoUniformBuffer;
+    TSharedPtr<FMarchingCubesLookUpResource> marchingCubeLookUpTable;
 
     TSharedPtr<FIsoDynamicBuffer> deltaIsoBuffer;
     TSharedPtr<FTypeDynamicBuffer> deltaTypeBuffer;

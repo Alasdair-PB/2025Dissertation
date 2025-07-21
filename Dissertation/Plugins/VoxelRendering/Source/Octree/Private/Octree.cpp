@@ -6,13 +6,14 @@ Octree::Octree(AActor* inParent, float inIsoLevel, float inScale, int inVoxelsPe
     float scaleHalfed = inScale / 2;
     AABB bounds = { FVector3f(-scaleHalfed), FVector3f(scaleHalfed) };
 
-    root = new OctreeNode(inParent, bounds, isoCount, 0, inDepth);
+    root = new OctreeNode(inParent, bounds, isoCount, voxelsPerAxis, 0, inDepth);
     int bufferSize = (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1);
 
     isoUniformBuffer = MakeShareable(new FIsoUniformBuffer(bufferSize));
     deltaIsoBuffer = MakeShareable(new FIsoDynamicBuffer(bufferSize));
     typeUniformBuffer = MakeShareable(new FTypeUniformBuffer(bufferSize));
     deltaTypeBuffer = MakeShareable(new FTypeDynamicBuffer(bufferSize));
+    marchingCubeLookUpTable = MakeShareable(new FMarchingCubesLookUpResource());
 
     deltaIsoArray.Init(0.0f, bufferSize);
     deltaTypeArray.Init(0, bufferSize);
@@ -27,6 +28,7 @@ Octree::Octree(AActor* inParent, float inIsoLevel, float inScale, int inVoxelsPe
             deltaIsoBuffer->Initialize(bufferSize);
             typeUniformBuffer->Initialize(typeBuffer, bufferSize);
             deltaTypeBuffer->Initialize(bufferSize);
+            marchingCubeLookUpTable->Initialize();
         });
 }
 
@@ -37,6 +39,7 @@ Octree::~Octree() {
     typeUniformBuffer.Reset();
     deltaIsoBuffer.Reset();
     deltaTypeBuffer.Reset();
+    marchingCubeLookUpTable.Reset();
     deltaIsoArray.Reset();
     deltaTypeArray.Reset();
     initIsoArray.Reset();
@@ -68,6 +71,12 @@ void Octree::Release() {
         ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
             [deltaTypeBuffer = deltaTypeBuffer](FRHICommandListImmediate& RHICmdList) {
                 deltaTypeBuffer->ReleaseResource();
+            });
+    }
+    if (marchingCubeLookUpTable.IsValid()) {
+        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
+            [marchingCubeLookUpTable = marchingCubeLookUpTable](FRHICommandListImmediate& RHICmdList) {
+                marchingCubeLookUpTable->ReleaseResource();
             });
     }
 }

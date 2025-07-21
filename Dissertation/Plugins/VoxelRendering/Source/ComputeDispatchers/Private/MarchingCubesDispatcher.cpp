@@ -34,7 +34,7 @@ class FMarchingCubes : public FGlobalShader
 		SHADER_PARAMETER_SRV(Buffer<float>, isoValues)
 		SHADER_PARAMETER_SRV(Buffer<uint32>, typeValues)
 
-		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<int>, marchLookUp)
+		SHADER_PARAMETER_SRV(Buffer<uint32>, marchLookUp)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, outInfo)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, outNormalInfo)
 		SHADER_PARAMETER_UAV(RWBuffer<uint32>, outTypeInfo)
@@ -69,7 +69,7 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeDat
 	PassParams->leafDepth = nodeData.leafDepth;
 	PassParams->nodeIndex = 0; // Shader supports single vertex buffer for mesh, however as each LOD has its own vertex factory we can ignore this.
 	PassParams->isoValues = nodeData.isoBuffer->bufferSRV; 
-	PassParams->marchLookUp = InLookUpSRV;
+	PassParams->marchLookUp = Params.Input.updateData.marchLookUpResource->marchLookUpBufferSRV;
 	PassParams->outInfo = nodeData.vertexFactory->GetVertexUAV();
 	PassParams->outNormalInfo = nodeData.vertexFactory->GetVertexNormalsUAV();
 	PassParams->voxelsPerAxis = voxelsPerAxis;

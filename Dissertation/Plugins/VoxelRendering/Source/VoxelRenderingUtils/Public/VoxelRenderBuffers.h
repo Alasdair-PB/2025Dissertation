@@ -26,6 +26,25 @@ protected:
     uint32 capacity;
 };
 
+class VOXELRENDERINGUTILS_API FMarchingCubesLookUpResource : public FRenderResource
+{
+public:
+    FMarchingCubesLookUpResource() {}
+
+    void Initialize();
+    void InitRHI(FRHICommandListBase& RHICmdList) override;
+    void ReleaseRHI() override;
+
+    FBufferRHIRef marchLookUpBuffer;
+    FBufferRHIRef transVoxelLookUpBuffer;
+    FBufferRHIRef transVoxelVertexLookUpBuffer;
+
+    FShaderResourceViewRHIRef marchLookUpBufferSRV;
+    FShaderResourceViewRHIRef  transVoxelLookUpBufferSRV;
+    FShaderResourceViewRHIRef transVoxelVertexLookUpBufferSRV;
+
+};
+
 class VOXELRENDERINGUTILS_API FIsoUniformBuffer : public IIsoRenderResource
 {
 public:

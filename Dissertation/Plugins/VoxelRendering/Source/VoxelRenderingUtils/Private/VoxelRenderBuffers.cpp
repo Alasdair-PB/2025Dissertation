@@ -1,5 +1,6 @@
 #include "VoxelRenderBuffers.h"
 #include "VoxelRenderingUtils.h"
+#include "VoxelOctreeUtils.h"
 
 IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FIsoFetchShaderParameters, "isoFetch_Buffer");
 IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FTypeFetchShaderParameters, "typeFetch_Buffer");
@@ -27,6 +28,57 @@ void IIsoRenderResource::ReleaseRHI()
     check(IsInRenderingThread());
     if (buffer) buffer.SafeRelease();
     bufferSRV.SafeRelease();
+}
+
+/**
+ * Float Buffer
+ */
+
+void FMarchingCubesLookUpResource::InitRHI(FRHICommandListBase& RHICmdList)
+{
+    FRHIResourceCreateInfo CreateInfo(TEXT("FIsoUniformRenderBuffer"));
+    EBufferUsageFlags UsageFlags = BUF_ShaderResource | BUF_Static;
+
+    transVoxelLookUpBuffer = RHICmdList.CreateBuffer(sizeof(uint32) * transVoxelLookUpSize, UsageFlags, 0, ERHIAccess::SRVMask, CreateInfo);
+    transVoxelLookUpBufferSRV = RHICmdList.CreateShaderResourceView(transVoxelLookUpBuffer, sizeof(uint32), PF_R32_UINT);
+
+    transVoxelVertexLookUpBuffer = RHICmdList.CreateBuffer(sizeof(uint32) * transVoxelVertexLookUpSize, UsageFlags, 0, ERHIAccess::SRVMask, CreateInfo);
+    transVoxelVertexLookUpBufferSRV = RHICmdList.CreateShaderResourceView(transVoxelVertexLookUpBuffer, sizeof(uint32), PF_R32_UINT);
+
+    marchLookUpBuffer = RHICmdList.CreateBuffer(sizeof(uint32) * marchLookUpSize, UsageFlags, 0, ERHIAccess::SRVMask, CreateInfo);
+    marchLookUpBufferSRV = RHICmdList.CreateShaderResourceView(marchLookUpBuffer, sizeof(uint32), PF_R32_UINT);
+}
+
+void FMarchingCubesLookUpResource::Initialize()
+{
+    FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
+    if (!IsInitialized())
+        InitResource(RHICmdList);
+
+    uint8* structuredMCBuffer = (uint8*)RHICmdList.LockBuffer(marchLookUpBuffer, 0, marchLookUpSize * sizeof(uint32), RLM_WriteOnly);
+    FMemory::Memcpy(structuredMCBuffer, marchLookUp, marchLookUpSize * sizeof(uint32));
+    RHICmdList.UnlockBuffer(marchLookUpBuffer);
+
+    uint8* structuredTVBuffer = (uint8*)RHICmdList.LockBuffer(transVoxelLookUpBuffer, 0, transVoxelLookUpSize * sizeof(uint32), RLM_WriteOnly);
+    FMemory::Memcpy(structuredTVBuffer, transVoxelLookUpBuffer, transVoxelLookUpSize * sizeof(uint32));
+    RHICmdList.UnlockBuffer(transVoxelLookUpBuffer);
+
+    uint8* structuredTVVBuffer = (uint8*)RHICmdList.LockBuffer(transVoxelVertexLookUpBuffer, 0, transVoxelVertexLookUpSize * sizeof(uint32), RLM_WriteOnly);
+    FMemory::Memcpy(structuredTVVBuffer, transVoxelVertexLookUpBuffer, transVoxelVertexLookUpSize * sizeof(uint32));
+    RHICmdList.UnlockBuffer(transVoxelVertexLookUpBuffer);
+}
+
+void FMarchingCubesLookUpResource::ReleaseRHI()
+{
+    check(IsInRenderingThread());
+    if (marchLookUpBufferSRV) marchLookUpBufferSRV.SafeRelease();
+    if (marchLookUpBuffer) marchLookUpBuffer.SafeRelease();
+
+    if (transVoxelLookUpBufferSRV) transVoxelLookUpBufferSRV.SafeRelease();
+    if (transVoxelLookUpBuffer) transVoxelLookUpBuffer.SafeRelease();
+
+    if (transVoxelVertexLookUpBufferSRV) transVoxelVertexLookUpBufferSRV.SafeRelease();
+    if (transVoxelVertexLookUpBuffer) transVoxelVertexLookUpBuffer.SafeRelease();
 }
 
 /**

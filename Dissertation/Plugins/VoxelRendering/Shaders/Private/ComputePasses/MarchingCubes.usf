@@ -8,8 +8,7 @@ int nodeIndex;
 
 Buffer<float> isoValues;
 Buffer<int> typeValues;
-
-StructuredBuffer<int> marchLookUp;
+Buffer<int> marchLookUp;
 
 RWBuffer<float> outInfo;
 RWBuffer<float> outNormalInfo;

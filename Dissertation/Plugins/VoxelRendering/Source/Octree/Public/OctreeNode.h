@@ -59,6 +59,8 @@ public:
     void Release();
     bool IsLeaf() { return isLeaf; }
 
+    void SetVisible(bool visibility);
+
     TSharedPtr<FVoxelVertexFactory> GetVertexFactory(){ return vertexFactory; }
     TSharedPtr<FIsoDynamicBuffer> GetIsoBuffer() { return regularCell.avgIsoBuffer; }
     TSharedPtr<FTypeDynamicBuffer> GetTypeBuffer() { return regularCell.avgTypeBuffer; }
@@ -78,8 +80,6 @@ protected:
     bool isLeaf;
     bool isVisible;
     AABB bounds;
-
-    uint32 transitionCellBufferSize;
 
     TSharedPtr<FVoxelVertexFactory> vertexFactory;
     RegularCell regularCell;

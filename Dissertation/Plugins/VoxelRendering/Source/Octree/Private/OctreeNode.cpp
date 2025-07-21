@@ -2,23 +2,23 @@
 #include "OctreeModule.h"
 
 OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferSize, uint32 inVoxelsPerAxis, int inDepth, int maxDepth) :
-    depth(inDepth), voxelsPerAxis(inVoxelsPerAxis), treeActor(inTreeActor), isLeaf(true), bounds(inBounds), transitionCellBufferSize((2 * voxelsPerAxis + 1)* (2 * voxelsPerAxis + 1)),
+    depth(inDepth), voxelsPerAxis(inVoxelsPerAxis), treeActor(inTreeActor), isLeaf(true), isVisible(false), bounds(inBounds),
     regularCell(RegularCell(bufferSize)) {
 
     vertexFactory = MakeShareable(new FVoxelVertexFactory(bufferSize));
     regularCell = RegularCell(bufferSize);
 
-    uint32 isoValuesPerAxis = inVoxelsPerAxis + 1;
+    uint32 vertexBufferSize = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis * 15;
     uint32 transitionCellBufferSize = (2 * voxelsPerAxis + 1) * (2 * voxelsPerAxis + 1);
+    // vertexBufferSize += transition cell vertex count
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
         transitonCells[i] = TransitionCell(transitionCellBufferSize);
-    }
-
+    
     ENQUEUE_RENDER_COMMAND(InitVoxelResources)(
-        [this, bufferSize, transitionCellBufferSize](FRHICommandListImmediate& RHICmdList)
+        [this, bufferSize, transitionCellBufferSize, vertexBufferSize](FRHICommandListImmediate& RHICmdList)
         {
-            vertexFactory->Initialize(bufferSize * 15);
+            vertexFactory->Initialize(vertexBufferSize);
             regularCell.Initialize(bufferSize);
 
             for (TransitionCell cell : transitonCells)
@@ -46,6 +46,10 @@ OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferS
         delete children[i];
         children[i] = nullptr;
     }
+}
+
+ void OctreeNode::SetVisible(bool visibility) {
+
 }
 
 void OctreeNode::Release() {

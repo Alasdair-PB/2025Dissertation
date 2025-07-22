@@ -49,7 +49,13 @@ protected:
     void SetRenderDataLOD();
     void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData);
     void TraverseAndDraw(OctreeNode* node);
+    void SetNodeVisible(TArray<OctreeNode*>& nodes, OctreeNode* node);
     float SampleSDF(FVector3f p);
+
+    void SetChildrenVisible(TArray<OctreeNode*>& pushStack, OctreeNode* node, int currentDepth, int targetDepth);
+    bool BalanceNode(TArray<OctreeNode*>& removalStack, TArray<OctreeNode*>& pushStack, TArray<OctreeNode*>& visibleNodes, OctreeNode* node);
+    void BalanceVisibleNodes(TArray<OctreeNode*>&visibleNodes);
+
 
     FVoxelSceneProxy* sceneProxy;
     Octree* tree;

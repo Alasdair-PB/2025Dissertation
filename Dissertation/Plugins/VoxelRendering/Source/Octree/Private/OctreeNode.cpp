@@ -1,10 +1,15 @@
 #include "OctreeNode.h"
 #include "OctreeModule.h"
 
-OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferSize, uint32 inVoxelsPerAxis, int inDepth, int maxDepth) :
-    depth(inDepth), voxelsPerAxis(inVoxelsPerAxis), treeActor(inTreeActor), isLeaf(true), isVisible(false), bounds(inBounds),
-    regularCell(RegularCell(bufferSize)) {
+OctreeNode::OctreeNode() :
+    neighbours{ nullptr, nullptr, nullptr, nullptr, nullptr,nullptr }, depth(0), voxelsPerAxis(0), treeActor(nullptr),
+    parent(nullptr), isLeaf(true), isVisible(false), isRoot(false), bounds(AABB()),
+    regularCell(RegularCell(0)) {}
 
+OctreeNode::OctreeNode(AActor* inTreeActor, OctreeNode* inParent, const AABB& inBounds, uint32 bufferSize, uint32 inVoxelsPerAxis, int inDepth, int maxDepth, bool bInIsRoot) :
+    neighbours{ nullptr, nullptr, nullptr, nullptr, nullptr,nullptr }, depth(inDepth), voxelsPerAxis(inVoxelsPerAxis), treeActor(inTreeActor),
+    parent(inParent), isLeaf(true), isVisible(false), isRoot(bInIsRoot), bounds(inBounds), regularCell(RegularCell(bufferSize))
+{
     vertexFactory = MakeShareable(new FVoxelVertexFactory(bufferSize));
     regularCell = RegularCell(bufferSize);
 
@@ -46,11 +51,70 @@ OctreeNode::OctreeNode(AActor* inTreeActor, const AABB& inBounds, uint32 bufferS
         delete children[i];
         children[i] = nullptr;
     }
-}
+ }
 
- void OctreeNode::SetVisible(bool visibility) {
+ void OctreeNode::AssignChildNeighboursAsRoot() {
+     for (int i = 0; i < 8; ++i) {
+         OctreeNode* child = children[i];
+         OctreeNode* childNeighbours[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+         FVector3f offset((i & 1 ? 1 : -1), (i & 2 ? 1 : -1), (i & 4 ? 1 : -1));
 
-}
+         if (offset.X == 1) childNeighbours[0] = children[i ^ 1]; // sibling +X neighbor
+         else childNeighbours[0] = nullptr;
+
+         if (offset.X == -1) childNeighbours[1] = children[i ^ 1]; // sibling -X neighbor
+         else childNeighbours[1] = nullptr;
+
+         if (offset.Y == 1) childNeighbours[2] = children[i ^ 2]; // sibling +Y neighbor
+         else childNeighbours[2] = nullptr;
+
+         if (offset.Y == -1) childNeighbours[3] = children[i ^ 2]; // sibling -Y neighbor
+         else childNeighbours[3] = nullptr;
+
+         if (offset.Z == 1) childNeighbours[4] = children[i ^ 4]; // sibling +Z neighbor
+         else childNeighbours[4] = nullptr;
+
+         if (offset.Z == -1) childNeighbours[5] = children[i ^ 4]; // sibling -Z neighbor
+         else childNeighbours[5] = nullptr;
+
+         child->AssignChildNeighbours(childNeighbours);
+     }
+ }
+
+ void OctreeNode::AssignChildNeighbours(OctreeNode* inNeighbours[6]) {
+     for (int i = 0; i < 8; ++i) {
+         OctreeNode* child = children[i];
+         OctreeNode* childNeighbours[6] = {};
+         FVector3f offset((i & 1 ? 1 : -1), (i & 2 ? 1 : -1), (i & 4 ? 1 : -1));
+
+        // +X neighbor
+         if (offset.X == 1) childNeighbours[0] = children[i ^ 1];
+         else if (inNeighbours[0] && inNeighbours[0]->IsLeaf() == false) 
+             childNeighbours[0] = inNeighbours[0]->children[i ^ 1];
+        // -X neighbor
+         if (offset.X == -1) childNeighbours[1] = children[i ^ 1];
+         else if (inNeighbours[1] && inNeighbours[1]->IsLeaf() == false)
+             childNeighbours[1] = inNeighbours[1]->children[i ^ 1];
+        // +Y neighbor
+         if (offset.Y == 1) childNeighbours[2] = children[i ^ 2];
+         else if (inNeighbours[2] && inNeighbours[2]->IsLeaf() == false)
+             childNeighbours[2] = inNeighbours[2]->children[i ^ 2];
+        // -Y neighbor
+         if (offset.Y == -1) childNeighbours[3] = children[i ^ 2];
+         else if (inNeighbours[3] && inNeighbours[3]->IsLeaf() == false)
+             childNeighbours[3] = inNeighbours[3]->children[i ^ 2];
+        // +Z neighbor
+         if (offset.Z == 1) childNeighbours[4] = children[i ^ 4];
+         else if (inNeighbours[4] && inNeighbours[4]->IsLeaf() == false)
+             childNeighbours[4] = inNeighbours[4]->children[i ^ 4];
+        // -Z neighbor
+         if (offset.Z == -1) childNeighbours[5] = children[i ^ 4];
+         else if (inNeighbours[5] && inNeighbours[5]->IsLeaf() == false) 
+             childNeighbours[5] = inNeighbours[5]->children[i ^ 4];
+
+         child->AssignChildNeighbours(childNeighbours);
+     }
+ }
 
 void OctreeNode::Release() {
     ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
@@ -77,6 +141,6 @@ void OctreeNode::Subdivide(int inDepth, int maxDepth, int bufferSize) {
         FVector3f halfSize = e;
 
         AABB childAABB = { childCenter - halfSize, childCenter + halfSize };
-        children[i] = new OctreeNode(treeActor, childAABB, bufferSize, voxelsPerAxis, nextDepth, maxDepth);
+        children[i] = new OctreeNode(treeActor, this, childAABB, bufferSize, voxelsPerAxis, nextDepth, maxDepth);
     }
 }

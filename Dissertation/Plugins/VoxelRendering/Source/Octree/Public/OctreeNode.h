@@ -40,9 +40,10 @@ public:
 
 class TransitionCell : public VoxelCell {
 public:
-    TransitionCell() : VoxelCell() {}
-    TransitionCell(uint32 bufferSize) : VoxelCell(bufferSize) {}
-    int direction;
+    TransitionCell() : VoxelCell(), direction(0), enabled(false) {}
+    TransitionCell(uint32 bufferSize) : VoxelCell(bufferSize), direction(0), enabled(false){}
+    int direction; //0-5
+    bool enabled;
 };
 
 class RegularCell : public VoxelCell {
@@ -53,37 +54,76 @@ public:
 
 class OctreeNode {
 public:
-    OctreeNode(AActor* treeActor, const AABB& inBounds, uint32 bufferSize, uint32 inVoxelsPerAxis, int depth, int maxDepth);
+    OctreeNode();
+    OctreeNode(AActor* treeActor, OctreeNode* inParent, const AABB& inBounds, uint32 bufferSize, uint32 inVoxelsPerAxis, int depth, int maxDepth, bool bInIsRoot = false);
     ~OctreeNode();
 
     void Release();
-    bool IsLeaf() { return isLeaf; }
-
-    void SetVisible(bool visibility);
+    bool IsLeaf() const { return isLeaf; }
+    bool IsRoot() const { return isRoot; }
+    bool IsVisible() const { return isVisible; }
+    void SetVisible(bool visibility) { isVisible = visibility; }
 
     TSharedPtr<FVoxelVertexFactory> GetVertexFactory(){ return vertexFactory; }
     TSharedPtr<FIsoDynamicBuffer> GetIsoBuffer() { return regularCell.avgIsoBuffer; }
     TSharedPtr<FTypeDynamicBuffer> GetTypeBuffer() { return regularCell.avgTypeBuffer; }
+    OctreeNode* GetNodeParent() const { return parent; }
 
     FVector GetNodePosition() const { return FVector(bounds.Center().X, bounds.Center().Y, bounds.Center().Z);  }
+    FVector GetNodeSize() const { return FVector(bounds.Size().X, bounds.Size().Y, bounds.Size().Z); }
     FVector GetWorldNodePosition() const { return  GetNodePosition() + treeActor->GetTransform().GetLocation(); }
-
+    void AssignChildNeighboursAsRoot();
     AABB GetBounds() const { return bounds; }
-    OctreeNode* children[8];
     int GetDepth() const { return depth; }
 
+    void SetTransvoxelDirection(int index, bool state) { 
+        if (index < 6 && index >= 0) {
+            transVoxelDirections[index] = state;
+        } 
+    }
+
+    void AssignTransVoxelDirections() {
+        int transVoxelIndex = 0;
+        for (int i = 0; i < 6; i++) {
+            bool enabled = false;
+            if (transVoxelDirections[i]) {
+                if (transVoxelIndex < 3) {
+                    transitonCells[transVoxelIndex].direction = i;
+                    enabled = true;
+                }
+                else 
+                    UE_LOG(LogTemp, Warning, TEXT("Debug: Attempted to assign more than three transvoxel direction- why?"));
+                transVoxelIndex++;
+            }
+            transitonCells[transVoxelIndex].enabled = enabled;
+        }
+    }
+
+    OctreeNode* children[8];
+    OctreeNode* neighbours[6];
+    bool transVoxelDirections[6] {false, false, false, false, false, false};
+
+    void ResetTransvoxelDirections() {
+        for (int i = 0; i < 6; ++i) {
+            transVoxelDirections[i] = false;
+        }
+    }
+
 protected:
-    int maxVertexIndex;
     int depth;
     uint32 voxelsPerAxis;
     AActor* treeActor;
+    OctreeNode* parent;
+
     bool isLeaf;
     bool isVisible;
+    bool isRoot;
     AABB bounds;
 
     TSharedPtr<FVoxelVertexFactory> vertexFactory;
     RegularCell regularCell;
     TransitionCell transitonCells[3];
 
+    void AssignChildNeighbours(OctreeNode* inNeighbours[6]);
     void Subdivide(int inDepth, int maxDepth, int bufferSize);
 };

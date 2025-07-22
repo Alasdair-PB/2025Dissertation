@@ -13,6 +13,10 @@ struct AABB {
         return (max - min) * 0.5f;
     }
 
+    FVector3f Size() const {
+        return max - min;
+    }
+
     bool Contains(const FVector3f& point) const {
         return (point.X >= min.X && point.X <= max.X) &&
             (point.Y >= min.Y && point.Y <= max.Y) &&

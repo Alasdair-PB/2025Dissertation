@@ -125,13 +125,16 @@ UBodySetup* UVoxelMeshComponent::GetBodySetup() {
 void UVoxelMeshComponent::SetRenderDataLOD() 
 {
     TArray<OctreeNode*> visibleNodes;
+
     GetVisibleNodes(visibleNodes, tree->GetRoot());
+    BalanceVisibleNodes(visibleNodes);
 
     TArray<FVoxelComputeUpdateNodeData> computeUpdateDataNodes;
     TArray<FVoxelProxyUpdateDataNode> proxyNodes;
 
     for (OctreeNode* node : visibleNodes)
     {
+        node->AssignTransVoxelDirections();
         uint8 nodeDepth = node->GetDepth();
         FVoxelProxyUpdateDataNode proxyNode(nodeDepth, node);
         FVoxelComputeUpdateNodeData computeUpdateDataNode(node);
@@ -145,8 +148,121 @@ void UVoxelMeshComponent::SetRenderDataLOD()
     InvokeVoxelRenderer(computeUpdateDataNodes);
 }
 
+void UVoxelMeshComponent::SetNodeVisible(TArray<OctreeNode*>& nodes, OctreeNode* node) {
+    node->SetVisible(true);
+    nodes.Add(node);
+}
+
+void UVoxelMeshComponent::SetChildrenVisible(TArray<OctreeNode*>& pushStack, OctreeNode* node, int currentDepth, int targetDepth) {
+    if (!node) return;
+
+    if (currentDepth >= targetDepth || node->IsLeaf()) {
+        pushStack.Add(node);
+        return;
+    }
+
+    for (int l = 0; l < 8; l++)
+        SetChildrenVisible(pushStack, node->children[l], (currentDepth + 1), targetDepth);
+}
+
+bool AreAdjacent(OctreeNode* a, OctreeNode* b, const FVector& direction) {
+    const float epsilon = 0.0001f;
+
+    const AABB& boundsA = a->GetBounds();
+    const AABB& boundsB = b->GetBounds();
+
+    for (int axis = 0; axis < 3; ++axis) {
+        if (FMath::Abs(direction[axis]) > 0.5f) {
+            float faceA = direction[axis] > 0 ? boundsA.max[axis] : boundsA.min[axis];
+            float faceB = direction[axis] > 0 ? boundsB.min[axis] : boundsB.max[axis];
+
+            if (FMath::Abs(faceA - faceB) > epsilon)
+                return false;
+        }
+        else {
+            if (boundsA.max[axis] <= boundsB.min[axis] + epsilon || boundsA.min[axis] >= boundsB.max[axis] - epsilon)
+                return false;
+        }
+    }
+    return true;
+}
+
+OctreeNode* GetNodesAdjacent(OctreeNode* node, TArray<OctreeNode*> visibleNodes, FVector offset) {
+    FVector nodeScale = node->GetNodeSize();
+    for (OctreeNode* checkNode : visibleNodes) {
+        if (checkNode == node) continue;
+
+        if (AreAdjacent(checkNode, node, offset)) {
+            return checkNode;
+            break;
+        }
+    }
+    return nullptr;
+}
+
+bool UVoxelMeshComponent::BalanceNode(TArray<OctreeNode*>& removalStack, TArray<OctreeNode*>& pushStack, TArray<OctreeNode*>& visibleNodes, OctreeNode* node) {
+    if (node->IsLeaf()) return false;
+    node->ResetTransvoxelDirections();
+    FVector nodeSize = node->GetNodeSize();
+    static const TArray<FVector> neighborOffsets = {
+        FVector(-1,  0,  0),
+        FVector(1,  0,  0),
+        FVector(0, -1,  0),
+        FVector(0,  1,  0),
+        FVector(0,  0, -1),
+        FVector(0,  0,  1)
+    };
+
+    int nodeDepth = node->GetDepth();
+
+    for (int i = 0; i < 6; i++) {
+        FVector offset = neighborOffsets[i];
+        OctreeNode* neighbor = GetNodesAdjacent(node, visibleNodes, offset);
+        if (!neighbor) continue;
+
+        int nodeDifference = neighbor->GetDepth() - node->GetDepth();
+        if (nodeDifference < 2) {
+            if (nodeDifference == 1)
+                node->SetTransvoxelDirection(i, true);
+            continue;
+        }
+        SetChildrenVisible(pushStack, node, 0, nodeDifference - 1);
+        removalStack.Add(node);
+        return true;
+    }
+    return false;
+}
+
+void UVoxelMeshComponent::BalanceVisibleNodes(TArray<OctreeNode*>& visibleNodes) {
+    TArray<OctreeNode*> removalStack;
+    TArray<OctreeNode*> pushStack;
+    bool reBalance = false;
+
+    for (OctreeNode* node : visibleNodes) {
+        reBalance = BalanceNode(removalStack, pushStack, visibleNodes, node);
+        if (reBalance)
+            break;
+    }
+
+    visibleNodes.RemoveAll([&](OctreeNode* n) {
+        return removalStack.Contains(n);
+    });
+
+    for (OctreeNode* node : pushStack) {
+        if (!visibleNodes.Contains(node))
+            visibleNodes.Add(node);
+    }
+
+    if (reBalance)
+        BalanceVisibleNodes(visibleNodes);
+}
+
+// Now Set direction of transvoxel nodes
+
 void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
     if (!node) return;
+
+    node->SetVisible(false);
 
     if (!playerController)
         playerController = GetWorld()->GetFirstPlayerController();
@@ -157,7 +273,7 @@ void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode
     playerPos = GetComponentTransform().InverseTransformPosition(playerPos);
 
     if (node->IsLeaf()) 
-        nodes.Add(node);
+        SetNodeVisible(nodes, node);
     else {
         float visibleDistance = 1000.0f / (1 << node->GetDepth());
         FVector boundsCenter = node->GetWorldNodePosition();
@@ -167,7 +283,7 @@ void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode
             for (int i = 0; i < 8; i++)
                 GetVisibleNodes(nodes, node->children[i]);
         }
-        else nodes.Add(node);
+        else SetNodeVisible(nodes, node);
     }
 }
 

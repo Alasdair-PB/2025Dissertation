@@ -6,7 +6,9 @@ Octree::Octree(AActor* inParent, float inIsoLevel, float inScale, int inVoxelsPe
     float scaleHalfed = inScale / 2;
     AABB bounds = { FVector3f(-scaleHalfed), FVector3f(scaleHalfed) };
 
-    root = new OctreeNode(inParent, bounds, isoCount, voxelsPerAxis, 0, inDepth);
+    root = new OctreeNode(inParent, nullptr, bounds, isoCount, voxelsPerAxis, 0, inDepth, true);
+    root->AssignChildNeighboursAsRoot();
+
     int bufferSize = (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1);
 
     isoUniformBuffer = MakeShareable(new FIsoUniformBuffer(bufferSize));
@@ -49,36 +51,19 @@ Octree::~Octree() {
 }
 
 void Octree::Release() {
-    if (isoUniformBuffer.IsValid()) {
-        ENQUEUE_RENDER_COMMAND(ReleaseIsoBufferCmd)(
-            [isoUniformBuffer = isoUniformBuffer](FRHICommandListImmediate& RHICmdList) {
+    ENQUEUE_RENDER_COMMAND(ReleaseIsoBufferCmd)(
+        [this](FRHICommandListImmediate& RHICmdList) {
+            if (isoUniformBuffer.IsValid())
                 isoUniformBuffer->ReleaseResource();
-            });
-    }
-    if (deltaIsoBuffer.IsValid()) {
-        ENQUEUE_RENDER_COMMAND(ReleaseIsoBufferCmd)(
-            [deltaIsoBuffer = deltaIsoBuffer](FRHICommandListImmediate& RHICmdList) {
+            if (deltaIsoBuffer.IsValid())
                 deltaIsoBuffer->ReleaseResource();
-            });
-    }
-    if (typeUniformBuffer.IsValid()) {
-        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
-            [typeUniformBuffer = typeUniformBuffer](FRHICommandListImmediate& RHICmdList) {
+            if (typeUniformBuffer.IsValid())
                 typeUniformBuffer->ReleaseResource();
-            });
-    }
-    if (deltaTypeBuffer.IsValid()) {
-        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
-            [deltaTypeBuffer = deltaTypeBuffer](FRHICommandListImmediate& RHICmdList) {
+            if (deltaTypeBuffer.IsValid())
                 deltaTypeBuffer->ReleaseResource();
-            });
-    }
-    if (marchingCubeLookUpTable.IsValid()) {
-        ENQUEUE_RENDER_COMMAND(ReleaseTypeBufferCmd)(
-            [marchingCubeLookUpTable = marchingCubeLookUpTable](FRHICommandListImmediate& RHICmdList) {
+            if (marchingCubeLookUpTable.IsValid())
                 marchingCubeLookUpTable->ReleaseResource();
-            });
-    }
+        });
 }
 
 FBoxSphereBounds Octree::GetBoxSphereBoundsBounds() {
@@ -139,16 +124,12 @@ void Octree::GetIsoPlaneInDirection(FVector direction, FVector position,
     isoD = GetIsoSafe(cornerD);
 }
 
+// Should be done by leaf
 bool Octree::RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end)
 {
     FTransform parentTransform = parent->GetTransform();
     start = parentTransform.InverseTransformPosition(start);
     end = parentTransform.InverseTransformPosition(end);
-
-    UE_LOG(LogTemp, Warning, TEXT("Parent Transform:\n  Location: %s\n  Rotation: %s\n  Scale: %s"),
-        *parentTransform.GetLocation().ToString(),
-        *parentTransform.GetRotation().Rotator().ToString(),
-        *parentTransform.GetScale3D().ToString());
 
     float ratio = scale / 2.0;
     FVector nodeCenter = FVector(GetOctreePosition().X, GetOctreePosition().Y, GetOctreePosition().Z);

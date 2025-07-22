@@ -7,6 +7,7 @@
 #include "Materials/MaterialRelevance.h"
 
 class FVoxelVertexFactory;
+class OctreeNode;
 
 class VoxelCell {
 public:
@@ -40,10 +41,13 @@ public:
 
 class TransitionCell : public VoxelCell {
 public:
-    TransitionCell() : VoxelCell(), direction(0), enabled(false) {}
-    TransitionCell(uint32 bufferSize) : VoxelCell(bufferSize), direction(0), enabled(false){}
+    TransitionCell() : VoxelCell(), direction(0), enabled(false), adjacentNodeIndex(0) {}
+    TransitionCell(uint32 bufferSize) : VoxelCell(bufferSize), direction(0), enabled(false), adjacentNodeIndex(0) {}
     int direction; //0-5
     bool enabled;
+
+    int adjacentNodeIndex;
+    OctreeNode* adjacentNodes[4]{nullptr, nullptr, nullptr, nullptr};
 };
 
 class RegularCell : public VoxelCell {
@@ -76,10 +80,42 @@ public:
     AABB GetBounds() const { return bounds; }
     int GetDepth() const { return depth; }
 
+    TransitionCell* GetTransitionCell(int index) { 
+        if (index < 3 && index >= 0)
+            return &transitonCells[index];
+        else return nullptr;
+    }
+
     void SetTransvoxelDirection(int index, bool state) { 
-        if (index < 6 && index >= 0) {
+        if (index < 6 && index >= 0)
             transVoxelDirections[index] = state;
-        } 
+    }
+
+    void ResetTransVoxelData() {
+        for (int i = 0; i < 3; i++) {
+            transitonCells[i].enabled = false;
+            transitonCells[i].adjacentNodeIndex = 0;
+            for (int j = 0; j < 4; j++)
+                transitonCells[i].adjacentNodes[j] = nullptr;
+        }
+    }
+
+    void AssignTransVoxelData(int direction, OctreeNode* node) {
+        if (direction > 5 && direction < 0) return;
+        for (int i = 0; i < 3; i++) {
+            if (!(transitonCells[i].enabled)) {
+                transitonCells[i].enabled = true;
+                transitonCells[i].direction = direction;
+                transitonCells[i].adjacentNodeIndex = 0;
+                transitonCells[i].adjacentNodes[0] = node;
+            }
+            else if (transitonCells[i].direction == direction && transitonCells[i].enabled) {
+                transitonCells[i].adjacentNodeIndex += 1;
+                int newAdjIndex = transitonCells[i].adjacentNodeIndex;
+                if (newAdjIndex < 4 && newAdjIndex >= 0)
+                    transitonCells[i].adjacentNodes[newAdjIndex] = node;
+            }
+        }
     }
 
     void AssignTransVoxelDirections() {

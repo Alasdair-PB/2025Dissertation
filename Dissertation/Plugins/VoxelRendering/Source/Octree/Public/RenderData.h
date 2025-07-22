@@ -41,6 +41,45 @@ public:
 	}
 };
 
+struct FVoxelTransVoxelNodeData {
+private:
+	TransitionCell* transitionCell;
+	OctreeNode* owningNode;
+public:
+	FVoxelComputeUpdateNodeData highResolutionData[4];
+	FVoxelComputeUpdateNodeData lowResolutionData;
+
+	int direction;
+	TSharedPtr<FIsoDynamicBuffer> isoBuffer;
+	TSharedPtr<FTypeDynamicBuffer> typeBuffer;
+
+	FVoxelTransVoxelNodeData() : FVoxelTransVoxelNodeData(nullptr, nullptr) {}
+	FVoxelTransVoxelNodeData(TransitionCell* inTransitionCell, OctreeNode* inOwner)
+		: transitionCell(inTransitionCell), owningNode(inOwner), direction(0) {}
+
+	bool BuildDataCache() {
+		bool bReturnFlag = true;
+		for (int i = 0; i < 4; i++) {
+			if (transitionCell->adjacentNodes[i]) {
+				OctreeNode* dataNodeTree = transitionCell->adjacentNodes[i];
+				highResolutionData[i] = FVoxelComputeUpdateNodeData(dataNodeTree);
+				highResolutionData[i].BuildDataCache();
+			}
+			else bReturnFlag = false;
+		}
+		if (owningNode) {
+			lowResolutionData = FVoxelComputeUpdateNodeData(owningNode);
+			lowResolutionData.BuildDataCache();
+		} 
+		else bReturnFlag = false;
+
+		direction = transitionCell->direction;
+		isoBuffer = transitionCell->avgIsoBuffer;
+		typeBuffer = transitionCell->avgTypeBuffer;
+		return bReturnFlag;
+	}
+};
+
 
 struct FVoxelComputeUpdateData {
 
@@ -58,6 +97,7 @@ public:
 	TSharedPtr<FIsoUniformBuffer> isoBuffer;
 	TSharedPtr<FTypeUniformBuffer> typeBuffer;
 	TArray<FVoxelComputeUpdateNodeData> nodeData;
+	TArray<FVoxelTransVoxelNodeData> transVoxelNodeData;
 	TSharedPtr<FMarchingCubesLookUpResource> marchLookUpResource;
 
 	FVoxelComputeUpdateData() :FVoxelComputeUpdateData(nullptr) {}

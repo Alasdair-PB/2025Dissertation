@@ -47,7 +47,7 @@ protected:
     void CheckVoxelMining();
     void RotateAroundAxis(FVector axis, float degreeTick);
     void SetRenderDataLOD();
-    void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData);
+    void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData, TArray<FVoxelTransVoxelNodeData>& transVoxelUpdateData);
     void TraverseAndDraw(OctreeNode* node);
     void SetNodeVisible(TArray<OctreeNode*>& nodes, OctreeNode* node);
     float SampleSDF(FVector3f p);

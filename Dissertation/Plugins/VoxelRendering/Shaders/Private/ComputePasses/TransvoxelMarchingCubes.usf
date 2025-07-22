@@ -9,6 +9,16 @@ int nodeIndex;
 Buffer<float> isoValues; // 13 isoValues 
 Buffer<int> typeValues; // 13 typesValues
 
+Buffer<float> isoAdjValuesA; // 13 isoValues 
+Buffer<float> isoAdjValuesB; // 13 isoValues 
+Buffer<float> isoAdjValuesC; // 13 isoValues 
+Buffer<float> isoAdjValuesD; // 13 isoValues 
+
+Buffer<int> typeAdjValuesA; // 13 typesValues
+Buffer<int> typeAdjValuesB; // 13 typesValues
+Buffer<int> typeAdjValuesC; // 13 typesValues
+Buffer<int> typeAdjValuesD; // 13 typesValues
+
 Buffer<int> transitionLookup;
 Buffer<int> flatTransitionVertexData;
 
@@ -19,7 +29,6 @@ RWBuffer<int> outTypeInfo;
 int voxelsPerAxis;
 float baseDepthScale;
 float isoLevel;
-
 int direction; // 0-6
 
 static const int transitionCornerIndexAFromEdge[13] = { 3, 2, 2, 1, 4, 8, 1, 8, 8, 3, 2, 1, 8 };

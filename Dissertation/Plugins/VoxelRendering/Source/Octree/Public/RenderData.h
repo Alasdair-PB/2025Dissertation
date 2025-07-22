@@ -48,10 +48,7 @@ private:
 public:
 	FVoxelComputeUpdateNodeData highResolutionData[4];
 	FVoxelComputeUpdateNodeData lowResolutionData;
-
 	int direction;
-	TSharedPtr<FIsoDynamicBuffer> isoBuffer;
-	TSharedPtr<FTypeDynamicBuffer> typeBuffer;
 
 	FVoxelTransVoxelNodeData() : FVoxelTransVoxelNodeData(nullptr, nullptr) {}
 	FVoxelTransVoxelNodeData(TransitionCell* inTransitionCell, OctreeNode* inOwner)
@@ -74,8 +71,6 @@ public:
 		else bReturnFlag = false;
 
 		direction = transitionCell->direction;
-		isoBuffer = transitionCell->avgIsoBuffer;
-		typeBuffer = transitionCell->avgTypeBuffer;
 		return bReturnFlag;
 	}
 };

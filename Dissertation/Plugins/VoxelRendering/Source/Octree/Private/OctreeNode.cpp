@@ -18,16 +18,13 @@ OctreeNode::OctreeNode(AActor* inTreeActor, OctreeNode* inParent, const AABB& in
     // vertexBufferSize += transition cell vertex count
 
     for (int i = 0; i < 3; i++)
-        transitonCells[i] = TransitionCell(transitionCellBufferSize);
+        transitonCells[i] = TransitionCell();
     
     ENQUEUE_RENDER_COMMAND(InitVoxelResources)(
         [this, bufferSize, transitionCellBufferSize, vertexBufferSize](FRHICommandListImmediate& RHICmdList)
         {
             vertexFactory->Initialize(vertexBufferSize);
             regularCell.Initialize(bufferSize);
-
-            for (TransitionCell cell : transitonCells)
-                cell.Initialize(transitionCellBufferSize);
         });
 
     for (int i = 0; i < 8; ++i)
@@ -43,9 +40,6 @@ OctreeNode::OctreeNode(AActor* inTreeActor, OctreeNode* inParent, const AABB& in
 
     vertexFactory.Reset();
     regularCell.ResetResources();
-
-    for (TransitionCell cell : transitonCells)
-        cell.ResetResources();
 
     for (int i = 0; i < 8; ++i) {
         delete children[i];

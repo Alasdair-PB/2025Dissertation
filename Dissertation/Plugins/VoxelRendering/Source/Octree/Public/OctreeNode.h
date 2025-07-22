@@ -39,14 +39,13 @@ public:
     }
 };
 
-class TransitionCell : public VoxelCell {
+class TransitionCell  {
 public:
-    TransitionCell() : VoxelCell(), direction(0), enabled(false), adjacentNodeIndex(0) {}
-    TransitionCell(uint32 bufferSize) : VoxelCell(bufferSize), direction(0), enabled(false), adjacentNodeIndex(0) {}
+    TransitionCell() : direction(0), enabled(false), adjacentNodeIndex(0) {}
     int direction; //0-5
+    int adjacentNodeIndex;
     bool enabled;
 
-    int adjacentNodeIndex;
     OctreeNode* adjacentNodes[4]{nullptr, nullptr, nullptr, nullptr};
 };
 

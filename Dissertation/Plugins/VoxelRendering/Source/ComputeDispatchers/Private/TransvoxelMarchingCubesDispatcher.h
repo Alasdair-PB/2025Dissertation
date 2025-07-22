@@ -17,23 +17,35 @@ class FTransvoxelMC : public FGlobalShader
 	SHADER_USE_PARAMETER_STRUCT(FTransvoxelMC, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
+		SHADER_PARAMETER(FVector3f, leafPosition)
 		SHADER_PARAMETER(uint32, leafDepth)
 		SHADER_PARAMETER(uint32, nodeIndex)
 
 		SHADER_PARAMETER_SRV(Buffer<float>, isoValues)
-		SHADER_PARAMETER_SRV(Buffer<float>, isoDeltaValues)
-		SHADER_PARAMETER_UAV(RWBuffer<float>, isoCombinedValues)
-
 		SHADER_PARAMETER_SRV(Buffer<uint32>, typeValues)
-		SHADER_PARAMETER_SRV(Buffer<uint32>, typeDeltaValues)
-		SHADER_PARAMETER_UAV(RWBuffer<uint32>, typeCombinedValues)
+
+		SHADER_PARAMETER_SRV(Buffer<float>, isoAdjValuesA)
+		SHADER_PARAMETER_SRV(Buffer<float>, isoAdjValuesB)
+		SHADER_PARAMETER_SRV(Buffer<float>, isoAdjValuesC)
+		SHADER_PARAMETER_SRV(Buffer<float>, isoAdjValuesD)
+
+		SHADER_PARAMETER_SRV(Buffer<uint32>, typeAdjValuesA)
+		SHADER_PARAMETER_SRV(Buffer<uint32>, typeAdjValuesB)
+		SHADER_PARAMETER_SRV(Buffer<uint32>, typeAdjValuesC)
+		SHADER_PARAMETER_SRV(Buffer<uint32>, typeAdjValuesD)
+
+		SHADER_PARAMETER_SRV(Buffer<uint32>, transitionLookup)
+		SHADER_PARAMETER_SRV(Buffer<uint32>, flatTransitionVertexData)
+
+		SHADER_PARAMETER_UAV(RWBuffer<float>, outInfo)
+		SHADER_PARAMETER_UAV(RWBuffer<float>, outNormalInfo)
+		SHADER_PARAMETER_UAV(RWBuffer<uint32>, outTypeInfo)
 
 		SHADER_PARAMETER(uint32, voxelsPerAxis)
-		SHADER_PARAMETER(uint32, highResVoxelsPerAxis)
-
-		SHADER_PARAMETER(FVector3f, leafPosition)
-		SHADER_PARAMETER(FVector3f, octreePosition)
 		SHADER_PARAMETER(float, baseDepthScale)
+		SHADER_PARAMETER(float, isoLevel)
+		SHADER_PARAMETER(uint32, direction)
+
 	END_SHADER_PARAMETER_STRUCT()
 
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
@@ -52,29 +64,42 @@ class FTransvoxelMC : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FDeformation, "/ComputeDispatchersShaders/TransvoxelMarchingCubesDispatcher.usf", "TransvoxelMarchingCubesDispatcher", SF_Compute);
 
-void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FVoxelComputeUpdateData& updateData) {
+void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FVoxelTransVoxelNodeData& transVoxelNodeData, FVoxelComputeUpdateData& updateData) {
 
 	FShaderResourceViewRHIRef baseIsoValues = updateData.isoBuffer.Get()->bufferSRV;
 	FTransvoxelMC::FParameters* PassParams = GraphBuilder.AllocParameters<FTransvoxelMC::FParameters>();
 	int voxelsPerAxis = updateData.voxelsPerAxis;
 
+	check(nodeData.isoBuffer->bufferSRV);
 	PassParams->leafPosition = nodeData.boundsCenter;
-	PassParams->octreePosition = updateData.octreePosition;
-	PassParams->baseDepthScale = updateData.scale;
 	PassParams->leafDepth = nodeData.leafDepth;
-	PassParams->nodeIndex = 0;
+	PassParams->nodeIndex = 0; // Shader supports single vertex buffer for mesh, however as each LOD has its own vertex factory we can ignore this.
 
-	PassParams->isoValues = updateData.isoBuffer->bufferSRV;
-	PassParams->isoDeltaValues = updateData.deltaIsoBuffer->bufferSRV;
-	PassParams->isoCombinedValues = nodeData.isoBuffer->bufferUAV;
+	PassParams->isoValues = transVoxelNodeData.lowResolutionData.isoBuffer->bufferSRV;
+	PassParams->typeValues = transVoxelNodeData.lowResolutionData.typeBuffer->bufferSRV;
 
-	PassParams->typeValues = updateData.typeBuffer->bufferSRV;
-	PassParams->typeDeltaValues = updateData.deltaTypeBuffer->bufferSRV;
-	PassParams->typeCombinedValues = nodeData.typeBuffer->bufferUAV;
+	PassParams->isoAdjValuesA = transVoxelNodeData.highResolutionData[0].isoBuffer->bufferSRV;
+	PassParams->isoAdjValuesB = transVoxelNodeData.highResolutionData[1].isoBuffer->bufferSRV;
+	PassParams->isoAdjValuesC = transVoxelNodeData.highResolutionData[2].isoBuffer->bufferSRV;
+	PassParams->isoAdjValuesD = transVoxelNodeData.highResolutionData[3].isoBuffer->bufferSRV;
 
+	PassParams->typeAdjValuesA = transVoxelNodeData.highResolutionData[0].typeBuffer->bufferSRV;
+	PassParams->typeAdjValuesB = transVoxelNodeData.highResolutionData[1].typeBuffer->bufferSRV;
+	PassParams->typeAdjValuesC = transVoxelNodeData.highResolutionData[2].typeBuffer->bufferSRV;
+	PassParams->typeAdjValuesD = transVoxelNodeData.highResolutionData[3].typeBuffer->bufferSRV;
+
+	PassParams->transitionLookup = updateData.marchLookUpResource->transVoxelLookUpBufferSRV;
+	PassParams->flatTransitionVertexData = updateData.marchLookUpResource->transVoxelVertexLookUpBufferSRV;
+
+	PassParams->outInfo = nodeData.vertexFactory->GetVertexUAV();
+	PassParams->outNormalInfo = nodeData.vertexFactory->GetVertexNormalsUAV();
 	PassParams->voxelsPerAxis = voxelsPerAxis;
-	PassParams->highResVoxelsPerAxis = updateData.highResVoxelsPerAxis;
+	PassParams->baseDepthScale = updateData.scale;
+	PassParams->isoLevel = updateData.isoLevel;
 
+	PassParams->direction = transVoxelNodeData.direction;
+
+	PassParams->outTypeInfo = nodeData.vertexFactory->GetVertexTypeUAV();
 	int isoValuesPerAxis = voxelsPerAxis + 1;
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FTransvoxelMC> ComputeShader(ShaderMap);

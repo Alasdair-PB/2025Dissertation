@@ -150,10 +150,7 @@ void UVoxelMeshComponent::SetRenderDataLOD()
             cell = node->GetTransitionCell(i);
             if (cell && cell->enabled) {
                 if (cell->adjacentNodeIndex != 3)
-                {
                     UE_LOG(LogTemp, Warning, TEXT("Debug: cell has non-3 index: %d"), cell->adjacentNodeIndex);
-                }
-                UE_LOG(LogTemp, Warning, TEXT("Debug: cell added "));
 
                 FVoxelTransVoxelNodeData nodeData(cell, node);
                 computeTransvoxelData.Add(nodeData);

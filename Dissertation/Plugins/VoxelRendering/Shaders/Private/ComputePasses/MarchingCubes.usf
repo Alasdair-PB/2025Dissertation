@@ -114,7 +114,7 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         //outTypeInfo[base] = 0.0;
     }
     
-    float scale = baseDepthScale / (pow(2, leafDepth));
+    float scale = baseDepthScale / (1 << leafDepth);
     float centerDis = scale / 2;
     float isoScale = (scale / (voxelsPerAxis));
     float3 minimumCornerWorldPos = leafPosition - float3(centerDis, centerDis, centerDis);

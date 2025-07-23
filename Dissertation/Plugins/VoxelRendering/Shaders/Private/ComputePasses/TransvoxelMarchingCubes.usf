@@ -143,14 +143,17 @@ float GetDensityHighRes(int3 coord, int transVoxelPosition)
 float GetDensityFromOffset(int transVoxelPos, int3 coordXYZ, int3 offset)
 {
     float density = 0.0;
+    bool isEqual = false;
     if (transVoxelPos >= 8)
     {
-        density = direction == offset ? GetDensityHighRes(coordXYZ + offset, transVoxelPos) : GetDensity(coordXYZ + offset);
+        isEqual = (direction.x == offset.x) && (direction.y == offset.y) && (direction.z == offset.z);
     }
     else
     {
-        density = -direction == offset ? GetDensityHighRes(coordXYZ + offset, transVoxelPos) : GetDensity(coordXYZ + offset);
+        isEqual = (direction.x == -offset.x) && (direction.y == -offset.y) && (direction.z == -offset.z);
     }
+    density = isEqual ? GetDensityHighRes(coordXYZ + offset, transVoxelPos) : GetDensity(coordXYZ + offset);
+
     return density;
 }
 

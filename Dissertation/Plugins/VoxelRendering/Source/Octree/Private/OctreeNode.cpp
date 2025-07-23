@@ -13,9 +13,10 @@ OctreeNode::OctreeNode(AActor* inTreeActor, OctreeNode* inParent, const AABB& in
     vertexFactory = MakeShareable(new FVoxelVertexFactory(bufferSize));
     regularCell = RegularCell(bufferSize);
 
-    uint32 vertexBufferSize = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis * 15;
+    uint32 vertexBufferSize = (voxelsPerAxis * voxelsPerAxis * voxelsPerAxis) * 15;
     uint32 transitionCellBufferSize = (2 * voxelsPerAxis + 1) * (2 * voxelsPerAxis + 1);
-    // vertexBufferSize += transition cell vertex count
+    uint32 vertexTransitionCellVertexCount = 3 * (voxelsPerAxis * voxelsPerAxis) * 36;
+    vertexBufferSize += vertexTransitionCellVertexCount;
 
     for (int i = 0; i < 3; i++)
         transitonCells[i] = TransitionCell();
@@ -116,8 +117,6 @@ void OctreeNode::Release() {
             if (vertexFactory.IsValid())
                 vertexFactory->ReleaseResource();
             regularCell.ReleaseResources();
-            for (TransitionCell cell : transitonCells)
-                cell.ReleaseResources();
         });
 }
 

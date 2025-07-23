@@ -16,6 +16,7 @@
 #include "VoxelBufferUtils.h"
 #include "TextureGenerator.h"
 #include "VoxelOctreeUtils.h"
+#include "TransvoxelMarchingCubesDispatcher.h"
 #include "DeformationDispatcher.h"
 
 DECLARE_STATS_GROUP(TEXT("MarchingCubes"), STATGROUP_MarchingCubes, STATCAT_Advanced);
@@ -60,7 +61,7 @@ class FMarchingCubes : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
 
-void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FMarchingCubesDispatchParams& Params, FRDGBufferSRVRef InLookUpSRV) {
+void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FMarchingCubesDispatchParams& Params) {
 	FMarchingCubes::FParameters* PassParams = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 	int voxelsPerAxis = Params.Input.updateData.voxelsPerAxis;
 
@@ -104,17 +105,21 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 		TShaderMapRef<FDeformation> DefComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), PermutationVectorDef);
 		bool bIsDefShaderValid = DefComputeShader.IsValid();
 
-		if (bIsShaderValid && bIsDefShaderValid) {
+		typename FTransvoxelMC::FPermutationDomain PermutationVectorTVMC;
+		TShaderMapRef<FTransvoxelMC> TVMCComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel), PermutationVectorTVMC);
+		bool bIsTVMCShaderValid = TVMCComputeShader.IsValid();
+
+
+		if (bIsShaderValid && bIsDefShaderValid && bIsTVMCShaderValid) {
 			// Deformation
 			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.updateData.nodeData)
 				AddDeformationPass(GraphBuilder, nodeData, Params.Input.updateData);
 
-			// Marching Cubes
-			FRDGBufferRef isoValuesBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("IsoValues_SB"), sizeof(int), 2460, marchLookUp, 2460 * sizeof(int));
-			FRDGBufferSRVRef InLookUpSRV = GraphBuilder.CreateSRV(isoValuesBuffer);
-
 			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.updateData.nodeData)
-				AddOctreeMarchingPass(GraphBuilder, nodeData, Params, InLookUpSRV);
+				AddOctreeMarchingPass(GraphBuilder, nodeData, Params);
+
+			for (FVoxelTransVoxelNodeData nodeData : Params.Input.updateData.transVoxelNodeData)
+				AddTransvoxelMarchingCubesPass(GraphBuilder, nodeData, Params.Input.updateData);
 
 			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->
 				void {

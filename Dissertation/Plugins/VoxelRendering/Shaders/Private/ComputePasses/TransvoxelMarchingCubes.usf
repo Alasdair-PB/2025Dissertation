@@ -6,18 +6,18 @@ float3 leafPosition;
 int leafDepth;
 int nodeIndex;
 
-Buffer<float> isoValues; // 13 isoValues 
-Buffer<int> typeValues; // 13 typesValues
+Buffer<float> isoValues; // 8 isoValues 
+Buffer<int> typeValues; // 8 typesValues
 
-Buffer<float> isoAdjValuesA; // 13 isoValues 
-Buffer<float> isoAdjValuesB; // 13 isoValues 
-Buffer<float> isoAdjValuesC; // 13 isoValues 
-Buffer<float> isoAdjValuesD; // 13 isoValues 
+Buffer<float> isoAdjValuesA; // 8 isoValues 
+Buffer<float> isoAdjValuesB; // 8 isoValues 
+Buffer<float> isoAdjValuesC; // 8 isoValues 
+Buffer<float> isoAdjValuesD; // 8 isoValues 
 
-Buffer<int> typeAdjValuesA; // 13 typesValues
-Buffer<int> typeAdjValuesB; // 13 typesValues
-Buffer<int> typeAdjValuesC; // 13 typesValues
-Buffer<int> typeAdjValuesD; // 13 typesValues
+Buffer<int> typeAdjValuesA; // 8 typesValues
+Buffer<int> typeAdjValuesB; // 8 typesValues
+Buffer<int> typeAdjValuesC; // 8 typesValues
+Buffer<int> typeAdjValuesD; // 8 typesValues
 
 Buffer<int> transitionLookup;
 Buffer<int> flatTransitionVertexData;
@@ -29,65 +29,115 @@ RWBuffer<int> outTypeInfo;
 int voxelsPerAxis;
 float baseDepthScale;
 float isoLevel;
-int direction; // 0-6
+int3 direction;
+int transitionCellIndex;
 
 static const int transitionCornerIndexAFromEdge[13] = { 3, 2, 2, 1, 4, 8, 1, 8, 8, 3, 2, 1, 8 };
 static const int transitionCornerIndexBFromEdge[13] = { 0, 1, 0, 2, 0, 2, 0, 1, 0, 7, 7, 7, 7 };
 static const int transitionLengths[512] = { 0, 6, 3, 0, 6, 12, 9, 9, 3, 0, 6, 0, 0, 15, 12, 12, 6, 12, 9, 0, 12, 18, 0, 15, 9, 15, 12, 18, 9, 0, 0, 0, 3, 9, 6, 0, 0, 15, 12, 12, 6, 12, 9, 0, 0, 18, 0, 15, 0, 0, 0, 0, 15, 0, 18, 18, 12, 18, 15, 0, 12, 18, 0, 15, 6, 12, 0, 15, 12, 18, 15, 0, 9, 15, 12, 18, 0, 0, 18, 18, 12, 18, 15, 0, 18, 18, 21, 0, 0, 21, 0, 24, 15, 0, 0, 0, 9, 0, 12, 18, 15, 21, 18, 0, 12, 0, 15, 21, 18, 24, 21, 0, 9, 15, 12, 18, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 3, 9, 6, 12, 9, 0, 12, 0, 6, 12, 9, 0, 0, 18, 15, 0, 0, 15, 12, 18, 15, 21, 0, 0, 12, 18, 15, 21, 12, 0, 0, 0, 6, 12, 9, 15, 12, 0, 15, 0, 9, 15, 12, 18, 0, 21, 18, 18, 0, 18, 0, 0, 18, 24, 21, 21, 0, 21, 18, 24, 15, 0, 18, 18, 0, 9, 0, 12, 0, 15, 18, 0, 0, 12, 0, 15, 0, 18, 0, 15, 15, 0, 18, 18, 0, 0, 24, 0, 18, 0, 21, 0, 18, 0, 21, 0, 12, 0, 0, 0, 18, 0, 21, 0, 15, 0, 18, 18, 0, 21, 24, 18, 12, 0, 15, 15, 18, 0, 0, 0, 0, 0, 18, 18, 15, 0, 18, 0, 6, 12, 9, 0, 12, 18, 15, 15, 9, 0, 12, 0, 0, 21, 12, 0, 12, 18, 15, 0, 18, 24, 0, 21, 15, 21, 18, 24, 15, 0, 12, 0, 9, 15, 12, 0, 0, 21, 18, 0, 12, 18, 15, 21, 0, 24, 15, 0, 0, 0, 0, 0, 21, 0, 0, 12, 12, 18, 0, 0, 0, 0, 0, 9, 12, 18, 0, 21, 18, 24, 21, 0, 15, 21, 18, 24, 0, 0, 18, 0, 18, 24, 21, 0, 24, 36, 27, 21, 0, 27, 0, 18, 21, 21, 18, 12, 15, 0, 18, 0, 21, 27, 24, 0, 18, 0, 0, 0, 24, 18, 21, 9, 15, 21, 0, 12, 0, 21, 0, 0, 12, 18, 15, 0, 0, 12, 0, 0, 9, 15, 12, 12, 15, 0, 18, 12, 12, 18, 15, 15, 0, 0, 0, 0, 0, 21, 18, 18, 21, 27, 0, 18, 18, 24, 0, 21, 0, 0, 15, 0, 12, 18, 15, 0, 18, 0, 0, 15, 15, 0, 0, 0, 21, 0, 0, 0, 0, 24, 21, 0, 24, 18, 0, 0, 15, 21, 0, 18, 0, 9, 0, 0, 0, 15, 0, 0, 0, 21, 24, 0, 0, 0, 21, 0, 0, 12, 0, 9, 21, 0, 24, 0, 0, 21, 18, 12, 0, 0, 0, 9, 12, 0, 0, 0, 12, 12, 15, 0, 18, 18, 21, 0, 0, 15, 0, 0, 0, 0, 18, 0, 0, 0, 0, 9, 0, 12, 9, 0, 0, 0, 0, 0, 9, 0, 0, 0 };
 static const int transitionOffsets[512] = { 0, 0, 6, 0, 9, 15, 27, 36, 45, 0, 48, 0, 0, 54, 69, 81, 93, 99, 111, 0, 120, 132, 0, 150, 165, 174, 189, 201, 219, 0, 0, 0, 228, 231, 240, 0, 0, 246, 261, 273, 285, 291, 303, 0, 0, 312, 0, 330, 0, 0, 0, 0, 345, 0, 360, 378, 396, 408, 426, 0, 441, 453, 0, 471, 486, 492, 0, 504, 519, 531, 549, 0, 564, 573, 588, 600, 0, 0, 618, 636, 654, 666, 684, 0, 699, 717, 735, 0, 0, 756, 0, 777, 801, 0, 0, 0, 816, 0, 825, 837, 855, 870, 891, 0, 909, 0, 921, 936, 957, 975, 999, 0, 1020, 1029, 1044, 1056, 0, 0, 0, 0, 0, 0, 0, 1074, 0, 0, 0, 0, 1095, 1098, 1107, 1113, 1125, 0, 1134, 0, 1146, 1152, 1164, 0, 0, 1173, 1191, 0, 0, 1206, 1221, 1233, 1251, 1266, 0, 0, 1287, 1299, 1317, 1332, 1353, 0, 0, 0, 1365, 1371, 1383, 1392, 1407, 0, 1419, 0, 1434, 1443, 1458, 1470, 0, 1488, 1509, 1527, 0, 1545, 0, 0, 1563, 1581, 1605, 1626, 0, 1647, 1668, 1686, 1710, 0, 1725, 1743, 0, 1761, 0, 1770, 0, 1782, 1797, 0, 0, 1815, 0, 1827, 0, 1842, 0, 1860, 1875, 0, 1890, 1908, 0, 0, 1926, 0, 1950, 0, 1968, 0, 1989, 0, 2007, 0, 2028, 0, 0, 0, 2040, 0, 2058, 0, 2079, 0, 2094, 2112, 0, 2130, 2151, 2175, 2193, 0, 2205, 2220, 2235, 0, 0, 0, 0, 0, 2253, 2271, 2289, 0, 2304, 0, 2322, 2328, 2340, 0, 2349, 2361, 2379, 2394, 2409, 0, 2418, 0, 0, 2430, 2451, 0, 2463, 2475, 2493, 0, 2508, 2526, 0, 2550, 2571, 2586, 2607, 2625, 2649, 0, 2664, 0, 2676, 2685, 2700, 0, 0, 2712, 2733, 0, 2751, 2763, 2781, 2796, 0, 2817, 2841, 0, 0, 0, 0, 0, 2856, 0, 0, 2877, 2889, 2901, 0, 0, 0, 0, 0, 2919, 2928, 2940, 0, 2958, 2979, 2997, 3021, 0, 3042, 3057, 3078, 3096, 0, 0, 3120, 0, 3138, 3156, 3180, 0, 3201, 3225, 3261, 3288, 0, 3309, 0, 3336, 3354, 3375, 3396, 3414, 3426, 0, 3441, 0, 3459, 3480, 3507, 0, 3531, 0, 0, 0, 3549, 3573, 3591, 3612, 3621, 3636, 0, 3657, 0, 3669, 0, 0, 3690, 3702, 3720, 0, 0, 3735, 0, 0, 3747, 3756, 3771, 3783, 3795, 0, 3810, 3828, 3840, 3852, 3870, 3885, 0, 0, 0, 0, 0, 3900, 3921, 3939, 3957, 3978, 0, 4005, 4023, 4041, 0, 4065, 0, 0, 4086, 0, 4101, 4113, 4131, 0, 4146, 0, 0, 4164, 4179, 0, 0, 0, 4194, 0, 0, 0, 0, 4215, 4239, 0, 4260, 4284, 0, 0, 4302, 4317, 0, 4338, 0, 4356, 0, 0, 0, 4365, 0, 0, 0, 4380, 4401, 0, 0, 0, 4425, 0, 0, 4446, 0, 4458, 4467, 0, 4488, 0, 0, 4512, 4533, 4551, 0, 0, 0, 4563, 4572, 0, 0, 0, 4584, 4596, 4608, 0, 4623, 4641, 4659, 0, 0, 4680, 0, 0, 0, 0, 4695, 0, 0, 0, 0, 4713, 0, 4722, 4734, 0, 0, 0, 0, 0, 4743, 0, 0, 0 };
-
+static const int geometryCount[512] = {0, 66, 49, 0, 66, 100, 83, 83, 49, 0, 98, 0, 0, 117, 100, 100, 66, 132, 115, 0, 100, 134, 0, 117, 83, 149, 132, 166, 83, 0, 0, 0, 49, 115, 98, 0, 0, 149, 132, 132, 98, 164, 147, 0, 0, 166, 0, 149, 0, 0, 0, 0, 117, 0, 134, 134, 100, 166, 149, 0, 100, 134, 0, 117, 66, 100, 0, 117, 132, 134, 149, 0, 115, 149, 164, 166, 0, 0, 166, 134, 100, 134, 149, 0, 134, 134, 151, 0, 0, 151, 0, 168, 117, 0, 0, 0, 83, 0, 132, 134, 149, 151, 166, 0, 132, 0, 181, 183, 166, 168, 183, 0, 83, 117, 132, 134, 0, 0, 0, 0, 0, 0, 0, 151, 0, 0, 0, 0, 49, 83, 98, 100, 115, 0, 132, 0, 98, 132, 147, 0, 0, 134, 149, 0, 0, 149, 164, 166, 149, 151, 0, 0, 132, 166, 181, 183, 132, 0, 0, 0, 98, 132, 147, 149, 164, 0, 181, 0, 147, 181, 196, 198, 0, 183, 198, 166, 0, 166, 0, 0, 166, 168, 183, 151, 0, 183, 198, 200, 149, 0, 166, 134, 0, 83, 0, 100, 0, 117, 166, 0, 0, 132, 0, 149, 0, 134, 0, 117, 117, 0, 166, 134, 0, 0, 168, 0, 134, 0, 183, 0, 134, 0, 151, 0, 100, 0, 0, 0, 166, 0, 183, 0, 149, 0, 198, 166, 0, 151, 200, 134, 100, 0, 149, 117, 134, 0, 0, 0, 0, 0, 166, 134, 117, 0, 134, 0, 66, 132, 83, 0, 132, 166, 117, 117, 83, 0, 100, 0, 0, 151, 100, 0, 132, 198, 149, 0, 166, 200, 0, 151, 117, 183, 134, 168, 117, 0, 100, 0, 83, 149, 100, 0, 0, 183, 134, 0, 100, 166, 117, 151, 0, 168, 117, 0, 0, 0, 0, 0, 151, 0, 0, 132, 100, 166, 0, 0, 0, 0, 0, 83, 132, 166, 0, 151, 198, 200, 183, 0, 149, 183, 166, 168, 0, 0, 166, 0, 166, 200, 183, 0, 200, 204, 185, 151, 0, 185, 0, 166, 151, 151, 134, 100, 117, 0, 134, 0, 183, 185, 168, 0, 134, 0, 0, 0, 168, 166, 151, 115, 117, 151, 0, 132, 0, 151, 0, 0, 100, 134, 117, 0, 0, 100, 0, 0, 83, 117, 100, 100, 149, 0, 134, 100, 100, 134, 117, 117, 0, 0, 0, 0, 0, 183, 166, 166, 183, 185, 0, 134, 134, 168, 0, 151, 0, 0, 117, 0, 100, 134, 117, 0, 166, 0, 0, 117, 117, 0, 0, 0, 151, 0, 0, 0, 0, 168, 151, 0, 168, 166, 0, 0, 117, 151, 0, 134, 0, 115, 0, 0, 0, 117, 0, 0, 0, 151, 168, 0, 0, 0, 151, 0, 0, 132, 0, 83, 151, 0, 168, 0, 0, 151, 166, 100, 0, 0, 0, 115, 132, 0, 0, 0, 100, 100, 117, 0, 166, 134, 151, 0, 0, 117, 0, 0, 0, 0, 134, 0, 0, 0, 0, 83, 0, 100, 115, 0, 0, 0, 0, 0, 83, 0, 0, 0
+};
 int GetIsoIndex(int3 coord)
 {
     int maxIsoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
     int index = coord.x + coord.y * (voxelsPerAxis + 1) + coord.z * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
-    return max(0, min(index, maxIsoCount + 1));
+    return max(0, min(index, maxIsoCount - 1));
 }
 
-float GetDensity(int3 coord)
+int3 GetDirectionalIsoIndex(int2 coord, int3 inDirection)
 {
-    bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
-    if (isEdge) return isoLevel;
-    return isoValues[(GetIsoIndex(coord))];
+    int3 absDir = abs(inDirection);
+    int mainAxis = (absDir.x == 1) ? 0 : (absDir.y == 1) ? 1 : 2;
+    int u = (mainAxis + 1) % 3;
+    int v = (mainAxis + 2) % 3;
+
+    int3 pos = int3(0, 0, 0);
+    pos[u] = coord.x;
+    pos[v] = coord.y;
+    pos[mainAxis] = inDirection[mainAxis];
+    return pos;
 }
 
+int GetTransvoxelDensity(int2 voxelCoord, int transVoxelCoord)
+{
+    if (transVoxelCoord >= 8)
+    {
+        int i = transVoxelCoord - 8;
+        int2 lowResCoord = int2(i % 2, i / 2) * voxelCoord;
+        int3 pos = GetDirectionalIsoIndex(lowResCoord, direction);
+        
+        bool isEdge = any(pos < 0) || any(pos > voxelsPerAxis + 1);
+        if (isEdge)
+            return isoLevel;
+
+        return isoValues[GetIsoIndex(pos)];
+    }
+    else
+    {
+        int2 highResCoord = int2(transVoxelCoord % 3, transVoxelCoord / 3) * voxelCoord;
+        int3 pos = GetDirectionalIsoIndex(highResCoord, -direction);
+
+        bool isEdge = any(pos < 0) || any(pos > voxelsPerAxis + 1);
+        if (isEdge)
+            return isoLevel;
+
+        int flatIndex = GetIsoIndex(pos);
+
+        if (highResCoord.x < 1 && highResCoord.y < 1)
+            return isoAdjValuesA[flatIndex];
+        else if (highResCoord.x > 1 && highResCoord.y < 1)
+            return isoAdjValuesB[flatIndex];
+        else if (highResCoord.x < 1 && highResCoord.y > 1)
+            return isoAdjValuesC[flatIndex];
+        else
+            return isoAdjValuesD[flatIndex];
+    }
+}
+
+// Needs refactor
 int GetType(int3 coord)
 {
+    // This is a transvoxel coordinate in 3d- workings below are not accurate
     bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
-    if (isEdge) return 0;
+    if (isEdge)
+        return 0;
     return typeValues[(GetIsoIndex(coord))];
 }
 
-float3 CalculateNormal(int3 coord)
+// Normals have not been refactored for transvoxel data yet
+float3 CalculateNormal(int2 coord, int transVoxelPos)
 {
-    int3 offsetX = int3(1, 0, 0);
-    int3 offsetY = int3(0, 1, 0);
-    int3 offsetZ = int3(0, 0, 1);
+    int2 offsetX = int2(1, 0);
+    int2 offsetY = int2(0, 1);
+    int2 offsetZ = int2(0, 0);
 
-    float dx = GetDensity(coord + offsetX) - GetDensity(coord - offsetX);
-    float dy = GetDensity(coord + offsetY) - GetDensity(coord - offsetY);
-    float dz = GetDensity(coord + offsetZ) - GetDensity(coord - offsetZ);
+    float dx = GetTransvoxelDensity(coord + offsetX, transVoxelPos) - GetTransvoxelDensity(coord - offsetX, transVoxelPos);
+    float dy = GetTransvoxelDensity(coord + offsetY, transVoxelPos) - GetTransvoxelDensity(coord - offsetY, transVoxelPos);
+    float dz = GetTransvoxelDensity(coord + offsetZ, transVoxelPos) - GetTransvoxelDensity(coord - offsetZ, transVoxelPos);
     float3 delta = float3(dx, dy, dz);
     return all(delta == 0) ? float3(0.0f, 0.0f, 0.0f) : normalize(float3(dx, dy, dz));
 }
 
-void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worldPos, float isoScale)
+void CreateVertex(int3 cornerPosA, int3 cornerPosB, int transVoxelCoordA, int transVoxelCoordB, int vertexIndex, float3 worldPos, float isoScale, int2 transVoxelPos)
 {
-    float3 posA = worldPos + (cornerPosA * isoScale);
-    float3 posB = worldPos + (cornerPosB * isoScale);
+    float3 posA = worldPos + (cornerPosA * isoScale * 0.5f); // * 0.5 as not full cell?
+    float3 posB = worldPos + (cornerPosB * isoScale * 0.5f);
 
-    float densityA = GetDensity(cornerPosA);
-    float densityB = GetDensity(cornerPosB);
+    float densityA = GetTransvoxelDensity(transVoxelPos, transVoxelCoordA);
+    float densityB = GetTransvoxelDensity(transVoxelPos, transVoxelCoordB);
     
     float denom = densityB - densityA;
     float t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
     float3 position = posA + (t * (posB - posA));
     
-    float3 normalA = CalculateNormal(cornerPosA);
-    float3 normalB = CalculateNormal(cornerPosB);
+    float3 normalA = CalculateNormal(transVoxelPos, transVoxelCoordA);
+    float3 normalB = CalculateNormal(transVoxelPos, transVoxelCoordB);
     float3 normalRes = normalA + (t * (normalB - normalA));
 
-    int typeA = GetType(cornerPosA);
-    int typeB = GetType(cornerPosB);
+    int typeA = GetType(cornerPosA); // This is wrong rn
+    int typeB = GetType(cornerPosB); // This is wrong rn
+    
     float fType = lerp((float) typeA, (float) typeB, t);
     int typeFinal = round(fType);
     
@@ -103,19 +153,22 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     outTypeInfo[vertexIndex] = typeFinal;
 }
 
+
+// x, y, 0
+// Use id as int2 as z value is 0. 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
-void MarchingCubes(int3 id : SV_DispatchThreadID)
+void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
 {
-    if (any(id >= voxelsPerAxis)) return;
+    if (any(id >= voxelsPerAxis))
+        return;
     
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
-    int globalVoxelIndex = nodeIndex * voxelsPerLeaf;
-    int localVoxelIndex = ((id.z * (voxelsPerAxis * voxelsPerAxis)) + (id.y * voxelsPerAxis) + id.x);
-    int triangleStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
-    int vertexStartIndex = (globalVoxelIndex * 15) + (localVoxelIndex * 15);
+    int transitionCellIndex = (id.y * voxelsPerAxis) + id.x;
+    int maxedCount = (voxelsPerAxis * voxelsPerAxis * voxelsPerAxis) * 15;
+    int vertexStartIndex = maxedCount + (transitionCellIndex * 36);
     
     [unroll]
-    for (int i = 0; i < 15; i++)
+    for (int i = 0; i < 36; i++)
     {
         int base = vertexStartIndex + i;
         outVertexInfo[base * 3 + 0] = 0.0;
@@ -125,55 +178,83 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         outNormalInfo[base * 3 + 0] = 0.0;
         outNormalInfo[base * 3 + 1] = 0.0;
         outNormalInfo[base * 3 + 2] = 0.0;
+        
+        outTypeInfo[base * 3 + 0] = 0;
+        outTypeInfo[base * 3 + 1] = 0;
+        outTypeInfo[base * 3 + 2] = 0;
     }
     
     float scale = baseDepthScale / (pow(2, leafDepth));
     float centerDis = scale / 2;
     float isoScale = (scale / (voxelsPerAxis));
     float3 minimumCornerWorldPos = leafPosition - float3(centerDis, centerDis, centerDis);
-
-    int3 cornerCoords[8];
-    cornerCoords[0] = id + int3(0, 0, 0);
-    cornerCoords[1] = id + int3(1, 0, 0);
-    cornerCoords[2] = id + int3(1, 0, 1);
-    cornerCoords[3] = id + int3(0, 0, 1);
-    cornerCoords[4] = id + int3(0, 1, 0);
-    cornerCoords[5] = id + int3(1, 1, 0);
-    cornerCoords[6] = id + int3(1, 1, 1);
-    cornerCoords[7] = id + int3(0, 1, 1);
     
-    int config = 0;
-    for (int h = 0; h < 8; ++h)
+    int3 _trCellValues[13];
+    int2 transVoxelCoord = int2(id.x, id.y);
+    for (int j = 0; j < 13; j++)
     {
-        if (GetDensity(cornerCoords[h]) < isoLevel)
-            config |= (1 << h);
+        _trCellValues[j] = GetTransvoxelDensity(transVoxelCoord, j);
     }
     
-    /*
-    int numIndices = lengths[config];
-    int offset = offsets[config];
+    int caseCode = ((_trCellValues[0] < 0 ? 1 : 0)
+                              | (_trCellValues[1] < 0 ? 2 : 0)
+                              | (_trCellValues[2] < 0 ? 4 : 0)
+                              | (_trCellValues[5] < 0 ? 8 : 0)
+                              | (_trCellValues[8] < 0 ? 16 : 0)
+                              | (_trCellValues[7] < 0 ? 32 : 0)
+                              | (_trCellValues[6] < 0 ? 64 : 0)
+                              | (_trCellValues[3] < 0 ? 128 : 0)
+                              | (_trCellValues[4] < 0 ? 256 : 0));
     
-    for (int k = 0; k < numIndices; k += 3)
+    if (caseCode == 0 || caseCode == 511)
+        return;
+    
+    int triangleCount = geometryCount[caseCode] >> 4;
+    int cellIndiceCount = geometryCount[caseCode] & 0x0F;
+    int offset = transitionOffsets[caseCode];
+    int length = transitionLengths[caseCode];
+    
+    int3 voxelPos = GetDirectionalIsoIndex(transVoxelCoord, direction);
+    int cornerCoords[13];
+    cornerCoords[0] = int3(0, 0, 0) * direction + voxelPos;
+    cornerCoords[1] = int3(2, 0, 0) * direction + voxelPos;
+    cornerCoords[2] = int3(0, 1, 0) * direction + voxelPos;
+    cornerCoords[3] = int3(1, 1, 0) * direction + voxelPos;
+    cornerCoords[4] = int3(2, 1, 0) * direction + voxelPos;
+    cornerCoords[5] = int3(0, 2, 0) * direction + voxelPos;
+    cornerCoords[6] = int3(1, 2, 0) * direction + voxelPos;
+    cornerCoords[7] = int3(2, 2, 0) * direction + voxelPos;
+    cornerCoords[8] = int3(0, 0, 2) * direction + voxelPos;
+    cornerCoords[9] = int3(2, 0, 2) * direction + voxelPos;
+    cornerCoords[10] = int3(0, 2, 2) * direction + voxelPos;
+    cornerCoords[11] = int3(2, 0, 0) * direction + voxelPos;
+    cornerCoords[12] = int3(2, 2, 2) * direction + voxelPos;
+
+    for (int a = 0; a < triangleCount; a += 3)
     {
-        int v0 = marchLookUp[offset + k];
-        int v1 = marchLookUp[offset + 1 + k];
-        int v2 = marchLookUp[offset + 2 + k];
+        int v0 = transitionLookup[offset + a * 3];
+        int v1 = transitionLookup[offset + a * 3];
+        int v2 = transitionLookup[offset + a * 3];
 
-        int a0 = cornerIndexAFromEdge[v0];
-        int b0 = cornerIndexBFromEdge[v0];
+        int a0 = transitionCornerIndexAFromEdge[v0];
+        int b0 = transitionCornerIndexBFromEdge[v0];
 
-        int a1 = cornerIndexAFromEdge[v1];
-        int b1 = cornerIndexBFromEdge[v1];
+        int a1 = transitionCornerIndexAFromEdge[v1];
+        int b1 = transitionCornerIndexBFromEdge[v1];
 
-        int a2 = cornerIndexAFromEdge[v2];
-        int b2 = cornerIndexBFromEdge[v2];
+        int a2 = transitionCornerIndexAFromEdge[v2];
+        int b2 = transitionCornerIndexBFromEdge[v2];
         
-        int indexA = (vertexStartIndex + k);
-        int indexB = (vertexStartIndex + k + 1);
-        int indexC = (vertexStartIndex + k + 2);
+        int indexA = (vertexStartIndex + a);
+        int indexB = (vertexStartIndex + a + 1);
+        int indexC = (vertexStartIndex + a + 2);
 
-        CreateVertex(cornerCoords[a0], cornerCoords[b0], indexA, minimumCornerWorldPos, isoScale);
-        CreateVertex(cornerCoords[a1], cornerCoords[b1], indexB, minimumCornerWorldPos, isoScale);
-        CreateVertex(cornerCoords[a2], cornerCoords[b2], indexC, minimumCornerWorldPos, isoScale);*/
+        float densityA = _trCellValues[a0];
+        float densityB = _trCellValues[b0];
+        
+        CreateVertex(cornerCoords[a0], cornerCoords[b0], a0, b0, indexA, minimumCornerWorldPos, isoScale, transVoxelCoord);
+        CreateVertex(cornerCoords[a1], cornerCoords[b1], a1, b1, indexB, minimumCornerWorldPos, isoScale, transVoxelCoord);
+        CreateVertex(cornerCoords[a2], cornerCoords[b2], a2, b2, indexC, minimumCornerWorldPos, isoScale, transVoxelCoord);
+
     }
 }

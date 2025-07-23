@@ -49,6 +49,15 @@ public:
     OctreeNode* adjacentNodes[4]{nullptr, nullptr, nullptr, nullptr};
 };
 
+static const TArray<FIntVector> neighborOffsets = {
+    FIntVector(-1,  0,  0),
+    FIntVector(1,  0,  0),
+    FIntVector(0, -1,  0),
+    FIntVector(0,  1,  0),
+    FIntVector(0,  0, -1),
+    FIntVector(0,  0,  1)
+};
+
 class RegularCell : public VoxelCell {
 public:
     RegularCell() : VoxelCell() {}

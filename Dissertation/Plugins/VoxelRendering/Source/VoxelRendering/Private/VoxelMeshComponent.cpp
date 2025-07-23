@@ -152,7 +152,7 @@ void UVoxelMeshComponent::SetRenderDataLOD()
                 if (cell->adjacentNodeIndex != 3)
                     UE_LOG(LogTemp, Warning, TEXT("Debug: cell has non-3 index: %d"), cell->adjacentNodeIndex);
 
-                FVoxelTransVoxelNodeData nodeData(cell, node);
+                FVoxelTransVoxelNodeData nodeData(cell, node, i);
                 computeTransvoxelData.Add(nodeData);
             }
         }
@@ -178,7 +178,7 @@ void UVoxelMeshComponent::SetChildrenVisible(TArray<OctreeNode*>& pushStack, Oct
         SetChildrenVisible(pushStack, node->children[l], (currentDepth + 1), targetDepth);
 }
 
-bool AreAdjacent(OctreeNode* a, OctreeNode* b, const FVector& direction) {
+bool AreAdjacent(OctreeNode* a, OctreeNode* b, const FIntVector& direction) {
     const float epsilon = 0.001f;
 
     const AABB& boundsA = a->GetBounds();
@@ -200,7 +200,7 @@ bool AreAdjacent(OctreeNode* a, OctreeNode* b, const FVector& direction) {
     return true;
 }
 
-void GetNodesAdjacent(TArray<OctreeNode*>& adjNodes, OctreeNode* node, TArray<OctreeNode*> visibleNodes, FVector offset) {
+void GetNodesAdjacent(TArray<OctreeNode*>& adjNodes, OctreeNode* node, TArray<OctreeNode*> visibleNodes, FIntVector offset) {
     FVector nodeScale = node->GetNodeSize();
     for (OctreeNode* checkNode : visibleNodes) {
         if (checkNode == node) continue;
@@ -214,19 +214,11 @@ bool UVoxelMeshComponent::BalanceNode(TArray<OctreeNode*>& removalStack, TArray<
     if (node->IsLeaf()) return false;
     node->ResetTransVoxelData();
     FVector nodeSize = node->GetNodeSize();
-    static const TArray<FVector> neighborOffsets = {
-        FVector(-1,  0,  0),
-        FVector(1,  0,  0),
-        FVector(0, -1,  0),
-        FVector(0,  1,  0),
-        FVector(0,  0, -1),
-        FVector(0,  0,  1)
-    };
 
     int nodeDepth = node->GetDepth();
 
     for (int i = 0; i < 6; i++) {
-        FVector offset = neighborOffsets[i];
+        FIntVector offset = neighborOffsets[i];
         TArray<OctreeNode*> neighbors; 
         GetNodesAdjacent(neighbors, node, visibleNodes, offset);
 
@@ -245,7 +237,6 @@ bool UVoxelMeshComponent::BalanceNode(TArray<OctreeNode*>& removalStack, TArray<
             if (nodeDifference == 1)
                 node->AssignTransVoxelData(i, adjNode);
         }
-        
         if (deepestAdjacentDepth < 2) continue;
 
         SetChildrenVisible(pushStack, node, 0, deepestAdjacentDepth - 1);

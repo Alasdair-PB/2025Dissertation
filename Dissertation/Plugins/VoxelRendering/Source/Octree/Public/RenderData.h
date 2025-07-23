@@ -48,11 +48,12 @@ private:
 public:
 	FVoxelComputeUpdateNodeData highResolutionData[4];
 	FVoxelComputeUpdateNodeData lowResolutionData;
-	int direction;
+	FIntVector direction;
+	int transitionCellIndex;
 
 	FVoxelTransVoxelNodeData() : FVoxelTransVoxelNodeData(nullptr, nullptr) {}
-	FVoxelTransVoxelNodeData(TransitionCell* inTransitionCell, OctreeNode* inOwner)
-		: transitionCell(inTransitionCell), owningNode(inOwner), direction(0) {}
+	FVoxelTransVoxelNodeData(TransitionCell* inTransitionCell, OctreeNode* inOwner, int inTransitionCellIndex)
+		: transitionCell(inTransitionCell), owningNode(inOwner), direction(FVector()), transitionCellIndex(inTransitionCellIndex){}
 
 	bool BuildDataCache() {
 		bool bReturnFlag = true;
@@ -70,7 +71,7 @@ public:
 		} 
 		else bReturnFlag = false;
 
-		direction = transitionCell->direction;
+		direction = neighborOffsets[transitionCell->direction];
 		return bReturnFlag;
 	}
 };

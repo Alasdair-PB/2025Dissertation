@@ -41,7 +41,7 @@ public:
 
 class TransitionCell  {
 public:
-    TransitionCell() : direction(0), enabled(false), adjacentNodeIndex(0) {}
+    TransitionCell() : direction(0), adjacentNodeIndex(0), enabled(false) {}
     int direction; //0-5
     int adjacentNodeIndex;
     bool enabled;

@@ -51,7 +51,7 @@ public:
 	FIntVector direction;
 	int transitionCellIndex;
 
-	FVoxelTransVoxelNodeData() : FVoxelTransVoxelNodeData(nullptr, nullptr) {}
+	FVoxelTransVoxelNodeData() : FVoxelTransVoxelNodeData(nullptr, nullptr, 0) {}
 	FVoxelTransVoxelNodeData(TransitionCell* inTransitionCell, OctreeNode* inOwner, int inTransitionCellIndex)
 		: transitionCell(inTransitionCell), owningNode(inOwner), direction(FVector()), transitionCellIndex(inTransitionCellIndex){}
 

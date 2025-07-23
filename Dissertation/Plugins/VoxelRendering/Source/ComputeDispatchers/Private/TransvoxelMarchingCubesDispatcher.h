@@ -8,8 +8,8 @@
 #define NUM_THREADS_TransvoxelMC_Y 8
 #define NUM_THREADS_TransvoxelMC_Z 8
 
-DECLARE_STATS_GROUP(TEXT("TransvoxelMC"), STATGROUP_Deformation, STATCAT_Advanced);
-DECLARE_CYCLE_STAT(TEXT("TransvoxelMC Execute"), STAT_Deformation_Execute, STATGROUP_Deformation);
+DECLARE_STATS_GROUP(TEXT("TransvoxelMC"), STATGROUP_TransVoxel, STATCAT_Advanced);
+DECLARE_CYCLE_STAT(TEXT("TransvoxelMC Execute"), STAT_TransVoxel_Execute, STATGROUP_TransVoxel);
 
 class FTransvoxelMC : public FGlobalShader
 {
@@ -63,9 +63,9 @@ class FTransvoxelMC : public FGlobalShader
 	}
 };
 
-IMPLEMENT_GLOBAL_SHADER(FTransvoxelMC, "/ComputeDispatchersShaders/TransvoxelMarchingCubesDispatcher.usf", "TransvoxelMarchingCubes", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FTransvoxelMC, "/ComputeDispatchersShaders/TransvoxelMarchingCubes.usf", "TransvoxelMarchingCubes", SF_Compute);
 
-void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, FVoxelTransVoxelNodeData& transVoxelNodeData, FVoxelComputeUpdateData& updateData, uint32 index) {
+void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, FVoxelTransVoxelNodeData& transVoxelNodeData, FVoxelComputeUpdateData& updateData) {
 
 	FShaderResourceViewRHIRef baseIsoValues = updateData.isoBuffer.Get()->bufferSRV;
 	FTransvoxelMC::FParameters* PassParams = GraphBuilder.AllocParameters<FTransvoxelMC::FParameters>();

@@ -8,8 +8,8 @@
 #define NUM_THREADS_TransvoxelDeformation_Y 8
 #define NUM_THREADS_TransvoxelDeformation_Z 8
 
-DECLARE_STATS_GROUP(TEXT("TransvoxelDeformation"), STATGROUP_Deformation, STATCAT_Advanced);
-DECLARE_CYCLE_STAT(TEXT("TransvoxelDeformation Execute"), STAT_Deformation_Execute, STATGROUP_Deformation);
+DECLARE_STATS_GROUP(TEXT("TransvoxelDeformation"), STATGROUP_TVDeformation, STATCAT_Advanced);
+DECLARE_CYCLE_STAT(TEXT("TransvoxelDeformation Execute"), STATGROUP_TVDeformation, STATGROUP_TVDeformation);
 
 class FTransvoxelDeformation : public FGlobalShader
 {

@@ -145,19 +145,12 @@ float GetDensityHighRes(int3 coord, int transVoxelPosition)
     if (transVoxelPosition >= 8)
         return isoValues[(flatIndex)];
 
+    // Does not use x;
     int xMod = transVoxelPosition % 3;
     uint yMod = transVoxelPosition / 3;
-
-    float returnVal = 0.0;
-    if (xMod < 1 && yMod < 1)
-        returnVal =(isoAdjValuesA[flatIndex]);
-    else if (xMod > 1 && yMod < 1)
-        returnVal = (isoAdjValuesB[flatIndex]);
-    else if (xMod < 1 && yMod > 1)
-        returnVal = (isoAdjValuesC[flatIndex]);
-    else
-        returnVal = (isoAdjValuesD[flatIndex]);
-    return returnVal;
+    
+    int2 highResCoord = int2(xMod, yMod);
+    return highResCoord.y > 1.0 ? GetDensityHighY(flatIndex, highResCoord.x) : GetDensityLowY(flatIndex, highResCoord.x);
 }
 
 float GetDensityFromOffset(int transVoxelPos, int3 coordXYZ, int3 offset)
@@ -220,8 +213,8 @@ float3 InterpolateVertex(uint edgeCode, int3 cornerCoords[13], float cornerValue
     int a = (edgeCode >> 4) & 0x0F;
     int b = edgeCode & 0x0F;
 
-    float3 pa = worldPos + cornerCoords[a] * isoScale * 0.0;
-    float3 pb = worldPos + cornerCoords[b] * isoScale * 0.0;
+    float3 pa = worldPos + cornerCoords[a] * isoScale * 0.5;
+    float3 pb = worldPos + cornerCoords[b] * isoScale * 0.5;
 
     float da = cornerValues[a];
     float db = cornerValues[b];
@@ -301,24 +294,23 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         outVertexInfo[base * 3 + 2] = 0.0;
 
         outNormalInfo[base * 3 + 0] = 0.0;
-        outNormalInfo[base * 3 + 1] = 0.0;
+        outNormalInfo[base * 3 + 1] = 1.0;
         outNormalInfo[base * 3 + 2] = 0.0;
         
         outTypeInfo[base + j] = 0;
     }
-    
-    int triangleCount = int(geometryCount[caseCode] / 16);
-    
+      
+    // caseCode - 0-511
     uint offset = transitionOffsets[caseCode];
     uint length = transitionLengths[caseCode];
 
-    for (uint i = 0; i < length; i += 3)
+    for (uint i = 0; i < length; i += 3) // Up to 0-24
     {
-        uint v0 = transitionLookup[offset + i + 0];
-        uint v1 = transitionLookup[offset + i + 1];
+        uint v0 = transitionLookup[offset + i + 0]; //transitionLookup: size = 4752
+        uint v1 = transitionLookup[offset + i + 1]; //4743 < biggest offset + (24)
         uint v2 = transitionLookup[offset + i + 2];
         
-        uint e0 = flatTransitionVertexData[v0];
+        uint e0 = flatTransitionVertexData[v0]; // flatTransitionVertexData: size = 6144
         uint e1 = flatTransitionVertexData[v1];
         uint e2 = flatTransitionVertexData[v2];
         

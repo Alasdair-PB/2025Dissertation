@@ -107,7 +107,7 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, FVoxelTransVoxelN
 	int isoValuesPerAxis = voxelsPerAxis + 1;
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FTransvoxelMC> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((isoValuesPerAxis)), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((isoValuesPerAxis, isoValuesPerAxis, 0)), FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("TransvoxelMC Pass"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {

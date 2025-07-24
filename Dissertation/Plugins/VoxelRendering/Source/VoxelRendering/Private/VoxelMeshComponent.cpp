@@ -153,6 +153,7 @@ void UVoxelMeshComponent::SetRenderDataLOD()
                     UE_LOG(LogTemp, Warning, TEXT("Debug: cell has non-3 index: %d"), cell->adjacentNodeIndex);
 
                 FVoxelTransVoxelNodeData nodeData(cell, node, i);
+                nodeData.BuildDataCache();
                 computeTransvoxelData.Add(nodeData);
             }
         }

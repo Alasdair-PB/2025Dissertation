@@ -37,7 +37,7 @@ class FTransvoxelMC : public FGlobalShader
 		SHADER_PARAMETER_SRV(Buffer<uint32>, transitionLookup)
 		SHADER_PARAMETER_SRV(Buffer<uint32>, flatTransitionVertexData)
 
-		SHADER_PARAMETER_UAV(RWBuffer<float>, outInfo)
+		SHADER_PARAMETER_UAV(RWBuffer<float>, outVertexInfo)
 		SHADER_PARAMETER_UAV(RWBuffer<float>, outNormalInfo)
 		SHADER_PARAMETER_UAV(RWBuffer<uint32>, outTypeInfo)
 
@@ -66,12 +66,10 @@ class FTransvoxelMC : public FGlobalShader
 IMPLEMENT_GLOBAL_SHADER(FTransvoxelMC, "/ComputeDispatchersShaders/TransvoxelMarchingCubes.usf", "TransvoxelMarchingCubes", SF_Compute);
 
 void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, FVoxelTransVoxelNodeData& transVoxelNodeData, FVoxelComputeUpdateData& updateData) {
-
-	FShaderResourceViewRHIRef baseIsoValues = updateData.isoBuffer.Get()->bufferSRV;
+	
 	FTransvoxelMC::FParameters* PassParams = GraphBuilder.AllocParameters<FTransvoxelMC::FParameters>();
-	int voxelsPerAxis = updateData.voxelsPerAxis;
-
 	FVoxelComputeUpdateNodeData& nodeData = transVoxelNodeData.lowResolutionData;
+	int voxelsPerAxis = updateData.voxelsPerAxis;
 
 	check(nodeData.isoBuffer->bufferSRV);
 	PassParams->leafPosition = nodeData.boundsCenter;
@@ -94,20 +92,21 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, FVoxelTransVoxelN
 	PassParams->transitionLookup = updateData.marchLookUpResource->transVoxelLookUpBufferSRV;
 	PassParams->flatTransitionVertexData = updateData.marchLookUpResource->transVoxelVertexLookUpBufferSRV;
 
-	PassParams->outInfo = nodeData.vertexFactory->GetVertexUAV();
+	check(nodeData.vertexFactory->GetVertexUAV());
+	PassParams->outVertexInfo = nodeData.vertexFactory->GetVertexUAV();
 	PassParams->outNormalInfo = nodeData.vertexFactory->GetVertexNormalsUAV();
+	PassParams->outTypeInfo = nodeData.vertexFactory->GetVertexTypeUAV();
+
 	PassParams->voxelsPerAxis = voxelsPerAxis;
 	PassParams->baseDepthScale = updateData.scale;
 	PassParams->isoLevel = updateData.isoLevel;
-
 	PassParams->direction = transVoxelNodeData.direction;
 	PassParams->transitionCellIndex = transVoxelNodeData.transitionCellIndex;
 
-	PassParams->outTypeInfo = nodeData.vertexFactory->GetVertexTypeUAV();
 	int isoValuesPerAxis = voxelsPerAxis + 1;
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FTransvoxelMC> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((isoValuesPerAxis, isoValuesPerAxis, 0)), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((isoValuesPerAxis, isoValuesPerAxis, 1)), FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("TransvoxelMC Pass"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {

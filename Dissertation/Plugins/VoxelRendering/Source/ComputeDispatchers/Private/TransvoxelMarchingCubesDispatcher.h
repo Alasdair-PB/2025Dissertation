@@ -98,6 +98,7 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, FVoxelTransVoxelN
 	PassParams->outTypeInfo = nodeData.vertexFactory->GetVertexTypeUAV();
 
 	PassParams->voxelsPerAxis = voxelsPerAxis;
+
 	PassParams->baseDepthScale = updateData.scale;
 	PassParams->isoLevel = updateData.isoLevel;
 	PassParams->direction = transVoxelNodeData.direction;

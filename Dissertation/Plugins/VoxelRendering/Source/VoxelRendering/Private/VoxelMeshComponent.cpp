@@ -149,9 +149,10 @@ void UVoxelMeshComponent::SetRenderDataLOD()
             TransitionCell* cell = nullptr;
             cell = node->GetTransitionCell(i);
             if (cell && cell->enabled) {
-                if (cell->adjacentNodeIndex != 3)
+                if (cell->adjacentNodeIndex != 3) {
                     UE_LOG(LogTemp, Warning, TEXT("Debug: cell has non-3 index: %d"), cell->adjacentNodeIndex);
-
+                    continue;
+                }
                 FVoxelTransVoxelNodeData nodeData(cell, node, i);
                 nodeData.BuildDataCache();
                 computeTransvoxelData.Add(nodeData);
@@ -181,6 +182,7 @@ void UVoxelMeshComponent::SetChildrenVisible(TArray<OctreeNode*>& pushStack, Oct
 
 bool AreAdjacent(OctreeNode* a, OctreeNode* b, const FIntVector& direction) {
     const float epsilon = 0.001f;
+    int nodeDifference = a->GetDepth() - b->GetDepth();
 
     const AABB& boundsA = a->GetBounds();
     const AABB& boundsB = b->GetBounds();
@@ -190,7 +192,7 @@ bool AreAdjacent(OctreeNode* a, OctreeNode* b, const FIntVector& direction) {
             float faceA = direction[axis] > 0 ? boundsA.max[axis] : boundsA.min[axis];
             float faceB = direction[axis] > 0 ? boundsB.min[axis] : boundsB.max[axis];
 
-            if (FMath::Abs(faceA - faceB) > epsilon)
+            if (FMath::Abs(faceA - faceB) > epsilon) // faceA != faceB
                 return false;
         }
         else {
@@ -258,6 +260,7 @@ void UVoxelMeshComponent::BalanceVisibleNodes(TArray<OctreeNode*>& visibleNodes)
     }
 
     visibleNodes.RemoveAll([&](OctreeNode* n) {
+        n->ResetTransVoxelData();
         return removalStack.Contains(n);
     });
 

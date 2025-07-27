@@ -61,13 +61,13 @@ public:
 			if (transitionCell->adjacentNodes[i]) {
 				OctreeNode* dataNodeTree = transitionCell->adjacentNodes[i];
 				highResolutionData[i] = FVoxelComputeUpdateNodeData(dataNodeTree);
-				highResolutionData[i].BuildDataCache();
+				bReturnFlag = bReturnFlag && highResolutionData[i].BuildDataCache();
 			}
 			else bReturnFlag = false;
 		}
 		if (owningNode) {
 			lowResolutionData = FVoxelComputeUpdateNodeData(owningNode);
-			lowResolutionData.BuildDataCache();
+			bReturnFlag = bReturnFlag && lowResolutionData.BuildDataCache();
 		} 
 		else bReturnFlag = false;
 

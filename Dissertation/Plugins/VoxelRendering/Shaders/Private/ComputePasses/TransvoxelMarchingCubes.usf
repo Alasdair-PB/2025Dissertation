@@ -83,26 +83,29 @@ int3 GetDirectionalIsoIndex(int2 coord, int3 inDirection)
         z = int(coord.y);
     else if (mainAxis == 2)
         z = SetAxisValue(inDirection.z);
-    return int3(x, y, z);
+    return int3(y, x, z);
 
 }
 
-float GetDensityHighY(int flatIndex, int highResXCoord)
+float GetDensityHighY(int2 transVoxelCoord, float3 inDirection)
 {
-    return highResXCoord < 1.0 ? isoAdjValuesC[flatIndex] : isoAdjValuesD[flatIndex];
+    return transVoxelCoord.x < voxelsPerAxis ?
+        isoAdjValuesC[GetIsoIndex(GetDirectionalIsoIndex(transVoxelCoord, (-1 * inDirection)))] :
+        isoAdjValuesD[GetIsoIndex(GetDirectionalIsoIndex(transVoxelCoord - int2(voxelsPerAxis, 0), (-1 * inDirection)))];
 }
 
-float GetDensityLowY(int flatIndex, int highResXCoord)
+float GetDensityLowY(int2 transVoxelCoord, float3 inDirection)
 {
-    return highResXCoord < 1.0 ? isoAdjValuesA[flatIndex] : isoAdjValuesB[flatIndex];
+    return transVoxelCoord.x < voxelsPerAxis ? 
+        isoAdjValuesA[GetIsoIndex(GetDirectionalIsoIndex(transVoxelCoord, (-1 * inDirection)))] :
+        isoAdjValuesB[GetIsoIndex(GetDirectionalIsoIndex(transVoxelCoord - int2(voxelsPerAxis, 0), (-1 * inDirection)))];
 }
 
 // presumes >= 8 coord
 float GetTransvoxelLowRes(int2 voxelCoord, int transVoxelCoord, int3 inDirection)
 {
-    uint i = uint(transVoxelCoord - 8);    
-    int2 lowResCoord = int2(i / 2, i % 2) * voxelCoord.xy;
-    int3 pos = GetDirectionalIsoIndex(lowResCoord, direction);    
+    voxelCoord += (offsets[transVoxelCoord].xy / 2);
+    int3 pos = GetDirectionalIsoIndex(voxelCoord, inDirection);
     bool isEdge = any(pos < 0) || any(pos > voxelsPerAxis);
     
     return isEdge ? 
@@ -110,22 +113,20 @@ float GetTransvoxelLowRes(int2 voxelCoord, int transVoxelCoord, int3 inDirection
         isoValues[GetIsoIndex(pos)]; 
 }
 
-// presumes < 8 coord
+// presumes < 9 coord
 float GetTransvoxelHighRes(int2 voxelCoord, int transVoxelCoord, int3 inDirection)
-{
-    const int2 highResCoord = int2(transVoxelCoord / 3, transVoxelCoord % 3) * voxelCoord;
-    int3 pos = GetDirectionalIsoIndex(highResCoord, (-1 * direction));
-
-    bool isEdge = any(pos < 0) || any(pos > voxelsPerAxis);
-    return isEdge ? 
-        isoLevel : highResCoord.y > 1.0 ? 
-            GetDensityHighY(GetIsoIndex(pos), highResCoord.x) : 
-            GetDensityLowY(GetIsoIndex(pos), highResCoord.x);
+{    
+    voxelCoord *= 2;
+    voxelCoord += offsets[transVoxelCoord].xy;
+    
+    return voxelCoord.y > voxelsPerAxis ?
+            GetDensityHighY((voxelCoord - int2(0, voxelsPerAxis)), inDirection) :
+            GetDensityLowY(voxelCoord, inDirection);
 }
 
 float GetTransvoxelDensity(int2 voxelCoord, int transVoxelCoord, int3 inDirection)
 {
-    return (transVoxelCoord >= 8) ? 
+    return (transVoxelCoord >= 9) ? 
         GetTransvoxelLowRes(voxelCoord, transVoxelCoord, inDirection) : 
         GetTransvoxelHighRes(voxelCoord, transVoxelCoord, inDirection);
 }
@@ -144,30 +145,20 @@ float GetDensity(int3 coord)
     return isEdge ? isoLevel : isoValues[(GetIsoIndex(coord))];
 }
 
-float3 InterpolateVertex(uint edgeCode, int3 cornerCoords[13], float cornerValues[13], float3 worldPos, float isoScale)
+float3 InterpolateVertex(uint edgeCode, int3 cornerCoords[13], float cornerValues[13], float3 worldPos)
 {
-    int a = (edgeCode >> 4) & 0x0F;
-    int b = edgeCode & 0x0F; //0-15
+    uint a = (edgeCode >> 4) & 0x0F;
+    uint b = edgeCode & 0x0F; //0-15
     
-    if (a > 15 || b > 15)
-    {
-        return float3(200, 200, 200);
-    }
-    
-    float3 pa = worldPos + cornerCoords[a];
-    float3 pb = worldPos + cornerCoords[b];
+    float3 pa = pa < 13 ? cornerCoords[a] : float3(0,0,0); // + worldPos
+    float3 pb = pa < 13 ? cornerCoords[b] : float3(0,0,0);
 
     float da = cornerValues[a];
     float db = cornerValues[b];
     
-    float dab = (da - db);
+    float dab = abs(da - db);
     float t = dab == 0 ? 0 : da / dab;
     return lerp(pa, pb, t);
-}
-
-bool IsEqual(float a, float b)
-{
-    return abs(a - b) < 0.001;
 }
 
 // x, y, 0
@@ -181,18 +172,24 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     int transitionCellMarchIndex = (id.y * voxelsPerAxis) + id.x;
     int maxedCount = (voxelsPerAxis * voxelsPerAxis * voxelsPerAxis) * 15;
     int totalMarchCellsPerTransitionCell = voxelsPerAxis * voxelsPerAxis;
-    int flatIndex = transitionCellIndex * totalMarchCellsPerTransitionCell + transitionCellMarchIndex;
+    int flatIndex = (transitionCellIndex * totalMarchCellsPerTransitionCell) + transitionCellMarchIndex;
     int vertexStartIndex = maxedCount + (flatIndex * 36);
     
-    float scale = baseDepthScale / (1 << leafDepth);
-    float centerDis = scale / 2.0;
-    float isoScale = (scale / (voxelsPerAxis));
+    float scale = baseDepthScale / (1 << leafDepth); // 400/(2 or 4) => 200 or 100
+    float centerDis = scale / 2.0; // 100, 50
+    float isoScale = (scale / (voxelsPerAxis)); // 10 or 5
     float3 minimumCornerWorldPos = leafPosition - float3(centerDis, centerDis, centerDis);
     int2 transVoxelCoord = int2(id.x, id.y);
     
+    float3 inDir = direction;
+    
+    /*inDir.x *= -1;
+    inDir.y *= -1;
+    inDir.z *= -1;*/
+    
     float _trCellValues[13];
     for (int i = 0; i < 13; i++)
-        _trCellValues[i] = GetTransvoxelDensity(transVoxelCoord, i, direction);
+        _trCellValues[i] = GetTransvoxelDensity(transVoxelCoord, i, inDir);
     
     int caseCode = ((_trCellValues[0] < isoLevel ? 1 : 0)
         | (_trCellValues[1] < isoLevel ? 2 : 0)
@@ -204,42 +201,86 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         | (_trCellValues[3] < isoLevel ? 128 : 0)
         | (_trCellValues[4] < isoLevel ? 256 : 0));
     
-    int3 voxelCoord = GetDirectionalIsoIndex(transVoxelCoord, direction);
+    int3 voxelCoord = GetDirectionalIsoIndex(transVoxelCoord, inDir);
     int3 cornerCoords[13];
     
     for (int l = 0; l < 13; ++l)
-        cornerCoords[l] = offsets[l] + (voxelCoord * isoScale);
+        cornerCoords[l] = offsets[l] / 2; // * isoScale; //voxelCoord
     
     uint offset = transitionOffsets[caseCode];
-    uint length = transitionLengths[caseCode];
-
-    for (uint k = 0; k < length; k++) // Up to 0-24 
-    {
-
-        uint v0 = transitionLookup[offset + k]; //transitionLookup: size = 4752
-        
-        uint e0 = flatTransitionVertexData[caseCode * 12 + k]; //v0]; // v0 = 0-9 
-        float3 p0 = InterpolateVertex(e0, cornerCoords, _trCellValues, minimumCornerWorldPos, isoScale);
-        
-        uint vertexFloatIndex = (vertexStartIndex + k) * 3;
-        outVertexInfo[vertexFloatIndex] = p0.x;
-        outVertexInfo[vertexFloatIndex + 1] = p0.y;
-        outVertexInfo[vertexFloatIndex + 2] = p0.z;
-        outTypeInfo[vertexStartIndex + k] = 0;
-
-    }
+    uint length = transitionLengths[caseCode]; //0-511
     
-    /*for (int j = 0; j < 36; j++)
+    for (int j = 0; j < 36; j++)
     {
-        int base = vertexStartIndex + j;
-        outVertexInfo[base * 3 + 0] = 0.0;
-        outVertexInfo[base * 3 + 1] = 0.0;
-        outVertexInfo[base * 3 + 2] = 0.0;
-
+        uint vertexFloatIndex = (vertexStartIndex + j) * 3;
+        outVertexInfo[vertexFloatIndex] = 0.0;
+        outVertexInfo[vertexFloatIndex + 1] = 0.0;
+        outVertexInfo[vertexFloatIndex + 2] = 0.0;
+        outTypeInfo[vertexStartIndex + j] = 0;
+        
         //outNormalInfo[base * 3 + 0] = 0.0;
         //outNormalInfo[base * 3 + 1] = 1.0;
         //outNormalInfo[base * 3 + 2] = 0.0;
+    }
+
+    for (uint k = 0; k < length; k++) // Up to 0-24 
+    {
+        uint v0 = transitionLookup[offset + k]; //transitionLookup: size = 4752
+        uint vertexFloatIndex = (vertexStartIndex + k) * 3;
+        uint edgeCode = flatTransitionVertexData[caseCode * 12 + k];
+
+        uint a = (edgeCode >> 4) & 0x0F;
+        uint b = edgeCode & 0x0F;
         
-        outTypeInfo[base + j] = 0;
+    /*if (a > 12 || b > 12) //length % 3 != 0)
+    {
+        float size = 200.0;
+        float2 A = float2(-1.0, 1.0);
+        float2 B = float2(1.0, 1.0);
+        float2 C = float2(-1.0, -1.0);
+        float2 D = float2(1.0, -1.0);
+        
+        float x = k % 3 == 0 ? A.x : k % 3 == 1 ? B.x : C.x;
+        float y = k % 3 == 0 ? A.y : k % 3 == 1 ? B.y : C.y;
+
+        if (k % 3 == 0 &&
+        k > 2) &&
+        outVertexInfo[vertexFloatIndex - 3] == p0.x &&
+        outVertexInfo[vertexFloatIndex - 2] == p0.y &&
+        outVertexInfo[vertexFloatIndex - 1] == p0.z &&
+        outVertexInfo[vertexFloatIndex - 6] == p0.x &&
+        outVertexInfo[vertexFloatIndex - 5] == p0.y &&
+        outVertexInfo[vertexFloatIndex - 4] == p0.z)
+        {
+            outVertexInfo[vertexFloatIndex] = x * size;
+            outVertexInfo[vertexFloatIndex + 1] = y * size;
+            outVertexInfo[vertexFloatIndex + 2] = 0.0;
+            outTypeInfo[vertexStartIndex + k] = 1;
+            continue;
+
+        //}
     }*/
+        
+        float3 pa = pa < 13 ? float3(cornerCoords[a].x, cornerCoords[a].y, cornerCoords[a].z) : float3(0, 0, 0);
+        float3 pb = pa < 13 ? float3(cornerCoords[b].x, cornerCoords[b].y, cornerCoords[b].z) : float3(0, 0, 0);
+        
+        float densityA = clamp(GetTransvoxelDensity(transVoxelCoord, a, inDir), 0.0, 1.0);
+        float densityB = clamp(GetTransvoxelDensity(transVoxelCoord, b, inDir), 0.0, 1.0);
+    
+        float denom = densityB - densityA; // 1 to -1
+        float t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
+        float3 position = pa + (clamp(t, 0, 1) * (pb - pa));
+        
+        position.x *= abs(inDir.x) > 0.1 ? inDir.x : 1.0;
+        position.y *= abs(inDir.y) > 0.1 ? inDir.y : 1.0;
+        position.z *= abs(inDir.z) > 0.1 ? inDir.z : 1.0;
+        
+        position += voxelCoord;
+        position = minimumCornerWorldPos + (position * isoScale);
+        
+        outVertexInfo[vertexFloatIndex] = position.x;
+        outVertexInfo[vertexFloatIndex + 1] = position.y;
+        outVertexInfo[vertexFloatIndex + 2] = position.z;
+        outTypeInfo[vertexStartIndex + k] = 0;
+    }
 }

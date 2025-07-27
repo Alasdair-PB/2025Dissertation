@@ -116,12 +116,17 @@ public:
                 transitonCells[i].direction = direction;
                 transitonCells[i].adjacentNodeIndex = 0;
                 transitonCells[i].adjacentNodes[0] = node;
+                return;
             }
             else if (transitonCells[i].direction == direction && transitonCells[i].enabled) {
                 transitonCells[i].adjacentNodeIndex += 1;
                 int newAdjIndex = transitonCells[i].adjacentNodeIndex;
-                if (newAdjIndex < 4 && newAdjIndex >= 0)
+                if (newAdjIndex < 4 && newAdjIndex >= 0) {
                     transitonCells[i].adjacentNodes[newAdjIndex] = node;
+                    return;
+                }
+                UE_LOG(LogTemp, Warning, TEXT("Debug: cell has invalid adjacent index count: %d"), newAdjIndex);
+                return;
             }
         }
     }

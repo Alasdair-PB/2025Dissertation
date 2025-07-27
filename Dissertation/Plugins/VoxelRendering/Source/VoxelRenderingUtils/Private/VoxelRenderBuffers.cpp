@@ -60,11 +60,11 @@ void FMarchingCubesLookUpResource::Initialize()
     RHICmdList.UnlockBuffer(marchLookUpBuffer);
 
     uint8* structuredTVBuffer = (uint8*)RHICmdList.LockBuffer(transVoxelLookUpBuffer, 0, transVoxelLookUpSize * sizeof(uint32), RLM_WriteOnly);
-    FMemory::Memcpy(structuredTVBuffer, transVoxelLookUpBuffer, transVoxelLookUpSize * sizeof(uint32));
+    FMemory::Memcpy(structuredTVBuffer, transitionLookup, transVoxelLookUpSize * sizeof(uint32));
     RHICmdList.UnlockBuffer(transVoxelLookUpBuffer);
 
     uint8* structuredTVVBuffer = (uint8*)RHICmdList.LockBuffer(transVoxelVertexLookUpBuffer, 0, transVoxelVertexLookUpSize * sizeof(uint32), RLM_WriteOnly);
-    FMemory::Memcpy(structuredTVVBuffer, transVoxelVertexLookUpBuffer, transVoxelVertexLookUpSize * sizeof(uint32));
+    FMemory::Memcpy(structuredTVVBuffer, flatTransitionVertexData, transVoxelVertexLookUpSize * sizeof(uint32));
     RHICmdList.UnlockBuffer(transVoxelVertexLookUpBuffer);
 }
 

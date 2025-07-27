@@ -109,20 +109,21 @@ public:
     }
 
     void AssignTransVoxelData(int direction, OctreeNode* node) {
-        if (direction > 5 && direction < 0) return;
+        if (direction > 5 || direction < 0) return;
         for (int i = 0; i < 3; i++) {
             if (!(transitonCells[i].enabled)) {
                 transitonCells[i].enabled = true;
                 transitonCells[i].direction = direction;
-                transitonCells[i].adjacentNodeIndex = 0;
+                transitonCells[i].adjacentNodeIndex = 1;
                 transitonCells[i].adjacentNodes[0] = node;
                 return;
             }
             else if (transitonCells[i].direction == direction && transitonCells[i].enabled) {
-                transitonCells[i].adjacentNodeIndex += 1;
+                transitonCells[i].enabled = true;
                 int newAdjIndex = transitonCells[i].adjacentNodeIndex;
                 if (newAdjIndex < 4 && newAdjIndex >= 0) {
                     transitonCells[i].adjacentNodes[newAdjIndex] = node;
+                    transitonCells[i].adjacentNodeIndex += 1;
                     return;
                 }
                 UE_LOG(LogTemp, Warning, TEXT("Debug: cell has invalid adjacent index count: %d"), newAdjIndex);

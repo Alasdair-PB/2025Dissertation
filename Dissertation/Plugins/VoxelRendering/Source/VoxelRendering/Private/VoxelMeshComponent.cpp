@@ -149,7 +149,7 @@ void UVoxelMeshComponent::SetRenderDataLOD()
             TransitionCell* cell = nullptr;
             cell = node->GetTransitionCell(i);
             if (cell && cell->enabled) {
-                if (cell->adjacentNodeIndex != 3) {
+                if (cell->adjacentNodeIndex != 4) {
                     UE_LOG(LogTemp, Warning, TEXT("Debug: cell has non-3 index: %d"), cell->adjacentNodeIndex);
                     continue;
                 }
@@ -237,12 +237,15 @@ bool UVoxelMeshComponent::BalanceNode(TArray<OctreeNode*>& removalStack, TArray<
                 deepestAdjacentDepth = nodeDifference;
             }
 
-            if (nodeDifference == 1)
+            if (nodeDifference == 1) {
+                //UE_LOG(LogTemp, Warning, TEXT("Debug: Assigning transvoxelData: %d"), deepestAdjacentDepth);
                 node->AssignTransVoxelData(i, adjNode);
+            }
         }
         if (deepestAdjacentDepth < 2) continue;
 
         SetChildrenVisible(pushStack, node, 0, deepestAdjacentDepth - 1);
+        node->ResetTransVoxelData();
         removalStack.Add(node);
         return true;
     }
@@ -260,7 +263,6 @@ void UVoxelMeshComponent::BalanceVisibleNodes(TArray<OctreeNode*>& visibleNodes)
     }
 
     visibleNodes.RemoveAll([&](OctreeNode* n) {
-        n->ResetTransVoxelData();
         return removalStack.Contains(n);
     });
 

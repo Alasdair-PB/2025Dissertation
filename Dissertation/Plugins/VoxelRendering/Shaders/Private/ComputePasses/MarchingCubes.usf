@@ -80,7 +80,7 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     
     uint base = vertexIndex * 3;
    
-   // outInfo[base + 0] = position.x;
+    //outInfo[base + 0] = position.x;
     //outInfo[base + 1] = position.y;
     //outInfo[base + 2] = position.z;
 

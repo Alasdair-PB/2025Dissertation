@@ -71,13 +71,14 @@ void UVoxelMeshComponent::SetMaterial(int32 ElementIndex, UMaterialInterface* In
     UMeshComponent::SetMaterial(ElementIndex, InMaterial);
 }
 
+const bool rotatePlanet = false;
 void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     if (!tree) return;
-    //TraverseAndDraw(tree->GetRoot());
+    TraverseAndDraw(tree->GetRoot());
     InvokeVoxelRenderPasses();
-    RotateAroundAxis(FVector(0.2f, 1.0f, 0.2f), 0.5f);
+    if (rotatePlanet) RotateAroundAxis(FVector(0.2f, 1.0f, 0.2f), 0.5f);
 }
 
 void UVoxelMeshComponent::RotateAroundAxis(FVector axis, float degreeTick)
@@ -114,18 +115,23 @@ FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld)
     return FBoxSphereBounds(FBox(FVector(-200), FVector(200)));
 }
 
-float UVoxelMeshComponent::SampleSDF(FVector3f p) {
-    return (p.Length()) - 1.0f;
-}
-
 UBodySetup* UVoxelMeshComponent::GetBodySetup() {
     return voxelBodySetup;
+}
+
+void ResetVisibleNodes(OctreeNode* node) {
+    if (!node) return;
+    node->SetVisible(false);
+
+    for (int i = 0; i < 8; ++i)
+        ResetVisibleNodes(node->children[i]);
 }
 
 void UVoxelMeshComponent::SetRenderDataLOD() 
 {
     TArray<OctreeNode*> visibleNodes;
 
+    ResetVisibleNodes(tree->GetRoot());
     GetVisibleNodes(visibleNodes, tree->GetRoot());
     BalanceVisibleNodes(visibleNodes);
 
@@ -275,16 +281,15 @@ void UVoxelMeshComponent::BalanceVisibleNodes(TArray<OctreeNode*>& visibleNodes)
         BalanceVisibleNodes(visibleNodes);
 }
 
+const bool b_UseNode = true;
 void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
     if (!node) return;
-
-    node->SetVisible(false);
 
     if (!playerController)
         playerController = GetWorld()->GetFirstPlayerController();
 
     APawn* playerPawn = playerController->GetPawn();
-    FTransform playerTransform = playerPawn->GetActorTransform();// player->GetActorTransform();
+    FTransform playerTransform = b_UseNode ? player->GetActorTransform() : playerPawn->GetActorTransform();
     FVector playerPos = playerTransform.GetLocation();
     playerPos = GetComponentTransform().InverseTransformPosition(playerPos);
 
@@ -341,11 +346,9 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData
 void UVoxelMeshComponent::TraverseAndDraw(OctreeNode* node) {
     if (!node) return;
 
-    AABB bounds = node->GetBounds();
-    DrawDebugBox(GetWorld(), FVector(bounds.Center()), FVector(bounds.Extent()), FColor::Green, false, -1.f, 0, 1.f);
-
-    if (node->IsLeaf()) {
-
+    if (node->IsVisible()) {
+        AABB bounds = node->GetBounds();
+        DrawDebugBox(GetWorld(), FVector(bounds.Center()), FVector(bounds.Extent()), FColor::Green, false, -1.f, 0, 1.f);
         const int resolution = 2;
         FVector3f min = bounds.min;
         FVector3f max = bounds.max;
@@ -358,13 +361,13 @@ void UVoxelMeshComponent::TraverseAndDraw(OctreeNode* node) {
                         (float) y / resolution,
                         (float) z / resolution
                     ));
-                    float v = SampleSDF(p);
-                    FColor color = (FMath::Abs(v) < 0.01f) ? FColor::White : (v < 0.f ? FColor::Blue : FColor::Red);
+                    float v = node->GetDepth();
+                    FColor color = (FMath::Abs(v) <= 1.0f) ? FColor::White : (v <= 2.0f ? FColor::Blue : FColor::Red);
                     DrawDebugPoint(GetWorld(), FVector(p), 5.f, color, false, -1.f);
                 }
             }
         }
-        return;
+        //return;
     }
     for (int i = 0; i < 8; ++i)
         TraverseAndDraw(node->children[i]);

@@ -44,15 +44,15 @@ int GetIsoIndex(int3 coord)
 {
     int maxIsoCount = (voxelsPerAxis + 1) * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
     int index = coord.x + coord.y * (voxelsPerAxis + 1) + coord.z * (voxelsPerAxis + 1) * (voxelsPerAxis + 1);
-    return max(0, min(index, maxIsoCount - 1));
+    return max(0, min(index, maxIsoCount - 1)); // 0-35
 }
 
-int SetAxisValue(int1 directionAxisVal)
+int SetAxisValue(int1 directionAxisVal, int axisModifier, int highAxis)
 {
-    return directionAxisVal < 0 ? voxelsPerAxis : 0;
+    return ((directionAxisVal < 0 ? highAxis : 0) + axisModifier);
 }
 
-int3 GetDirectionalIsoIndex(int2 coord)
+int3 GetDirectionalIsoIndex(int2 coord, int axisModifier = 0, int highAxis = voxelsPerAxis)
 {
     int3 absDir = abs(direction);
     int mainAxis = dot(absDir, int3(0, 1, 2));
@@ -69,68 +69,73 @@ int3 GetDirectionalIsoIndex(int2 coord)
     else if (v == 0)
         x = coord.y;
     else if (mainAxis == 0)
-        x = SetAxisValue(direction.x);
+        x = SetAxisValue(direction.x, axisModifier, highAxis);
 
     if (u == 1)
         y = coord.x;
     else if (v == 1)
         y = coord.y;
     else if (mainAxis == 1)
-        y = SetAxisValue(direction.y);
+        y = SetAxisValue(direction.y, axisModifier, highAxis);
 
     if (u == 2)
         z = coord.x;
     else if (v == 2)
         z = coord.y;
     else if (mainAxis == 2)
-        z = SetAxisValue(direction.z);
+        z = SetAxisValue(direction.z, axisModifier, highAxis);
     return int3(x, y, z);
-
 }
 
 // VPA = 5 => 6 by 6 isoBuffer per leaf
 static const float testBuffer[216] =
 {
+    // z = 0
     0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
+    0.9, 0.6, 0.6, 0.6, 0.6, 0.9,
+    0.9, 0.6, 0.0, 0.0, 0.6, 0.9,
+    0.9, 0.6, 0.0, 0.0, 0.6, 0.9,
+    0.9, 0.6, 0.6, 0.6, 0.6, 0.9,
     0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    
+
+    // z = 1
+    0.9, 0.6, 0.6, 0.6, 0.6, 0.9,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.9, 0.6, 0.6, 0.6, 0.6, 0.9,
+
+    // z = 2
+    0.9, 0.6, 0.0, 0.0, 0.6, 0.9,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.9, 0.6, 0.0, 0.0, 0.6, 0.9,
+
+    // z = 3
+    0.9, 0.6, 0.0, 0.0, 0.6, 0.9,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.9, 0.6, 0.0, 0.0, 0.6, 0.9,
+
+    // z = 4
+    0.9, 0.6, 0.6, 0.6, 0.6, 0.9,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.6, 0.0, 0.0, 0.0, 0.0, 0.6,
+    0.9, 0.6, 0.6, 0.6, 0.6, 0.9,
+
+    // z = 5
     0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    
-    0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    
-    0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    
-    0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    
-    0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.0, 0.0, 0.0, 0.0, 0.9,
-    0.9, 0.9, 0.0, 0.0, 0.9, 0.9,
+    0.9, 0.6, 0.6, 0.6, 0.6, 0.9,
+    0.9, 0.6, 0.0, 0.0, 0.6, 0.9,
+    0.9, 0.6, 0.0, 0.0, 0.6, 0.9,
+    0.9, 0.6, 0.6, 0.6, 0.6, 0.9,
     0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
 };
 
@@ -281,9 +286,6 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     int2 transVoxelCoord = int2(id.x, id.y);
     int3 inDir = int3(direction.x, direction.y, direction.z);
     
-    //for (int i = 0; i < 13; i++)
-    //_trCellValues[i] = GetTransvoxelDensity(transVoxelCoord, i, inDir);
-    
     float _trCellValues[13];
     _trCellValues[0] = GetTransvoxelDensity(transVoxelCoord, 0);
     _trCellValues[2] = GetTransvoxelDensity(transVoxelCoord, 2);
@@ -312,17 +314,12 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         | (_trCellValues[3] < isoLevel ? 128 : 0)
         | (_trCellValues[4] < isoLevel ? 256 : 0));
     
-    /*if (caseCode == 0 || caseCode == 511)
+    if (caseCode == 0 || caseCode == 511)
     {
         return;
-    }*/
+    }
     
-    int3 voxelCoord = GetDirectionalIsoIndex(int2(id.x, id.y));
-    int3 cornerCoords[13];
-    
-    for (int l = 0; l < 13; ++l)
-        cornerCoords[l] = offsets[l];
-    
+    int3 voxelCoord = GetDirectionalIsoIndex(int2(id.x, id.y)) * isoScale;
     int offset = transitionOffsets[caseCode];
     int length = transitionLengths[caseCode]; //0-511
     
@@ -335,7 +332,6 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         outTypeInfo[vertexStartIndex + j] = 0;
     }
     
-    // lngth
     for (uint k = 0; k < 36; k++) // Up to 0-24 
     {
         uint v0 = transitionLookup[offset + k]; //transitionLookup: size = 4752
@@ -345,12 +341,18 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         uint a = (edgeCode >> 4) & 0x0F;
         uint b = edgeCode & 0x0F;
         
-        if (DebugTriangleOnCondition(a, b, k, vertexFloatIndex, vertexStartIndex, isoScale, minimumCornerWorldPos, int2(id.x, id.y)))
-            continue;
+        //if (DebugTriangleOnCondition(a, b, k, vertexFloatIndex, vertexStartIndex, isoScale, minimumCornerWorldPos, int2(id.x, id.y)))
+        //    continue;
 
-        float3 pa = pa < 13 ? float3(cornerCoords[a].x / 2, cornerCoords[a].y / 2, cornerCoords[a].z / 2) : float3(0, 0, 0);
-        float3 pb = pa < 13 ? float3(cornerCoords[b].x / 2, cornerCoords[b].y / 2, cornerCoords[b].z / 2) : float3(0, 0, 0);
+        int2 positionA = int2(offsets[a].x, offsets[a].y);
+        int3 positionAxisAlignedA = GetDirectionalIsoIndex(positionA, offsets[a].z, 0);
         
+        int2 positionB = int2(offsets[b].x, offsets[b].y);
+        int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, offsets[b].z, 0);
+        
+        float3 pa = float3(positionAxisAlignedA.x - 1, positionAxisAlignedA.y - 1, positionAxisAlignedA.z - 1);
+        float3 pb = float3(positionAxisAlignedB.x - 1, positionAxisAlignedB.y - 1, positionAxisAlignedB.z - 1);
+
         float densityA = _trCellValues[a];
         float densityB = _trCellValues[b];
     
@@ -359,17 +361,11 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         float3 position = pa + (clamp(t, 0, 1) * (pb - pa));
         
         position *= isoScale;
+        position += voxelCoord;
         
-        //position += GetDirectionalIsoIndex(int2(id.x, id.y)) * isoScale;
-        
-        position.x += minimumCornerWorldPos.x;
-        position.y += minimumCornerWorldPos.y;
-        position.z += minimumCornerWorldPos.z;
-        
-        outVertexInfo[vertexFloatIndex] = position.x;
-        outVertexInfo[vertexFloatIndex + 1] = position.y;
-        outVertexInfo[vertexFloatIndex + 2] = position.z;
-        
+        outVertexInfo[vertexFloatIndex] = position.x + minimumCornerWorldPos.x;
+        outVertexInfo[vertexFloatIndex + 1] = position.y + minimumCornerWorldPos.y;
+        outVertexInfo[vertexFloatIndex + 2] = position.z + minimumCornerWorldPos.z;
         outTypeInfo[vertexStartIndex + k] = 0;
     }
 }

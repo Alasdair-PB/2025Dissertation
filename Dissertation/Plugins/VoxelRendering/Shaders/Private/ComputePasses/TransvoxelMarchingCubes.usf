@@ -265,9 +265,13 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     int flatIndex = (transitionCellIndex * totalMarchCellsPerTransitionCell) + transitionCellMarchIndex;
     int vertexStartIndex = maxedCount + (flatIndex * 36);
     
-    float scale = baseDepthScale / (1 << leafDepth); // 400/(2 or 4) => 200 or 100
+    float scale = baseDepthScale / (1 << (leafDepth)); // 400/(2 or 4) => 200 or 100
+    float modScale = baseDepthScale / (1 << (leafDepth + 1)); // 400/(2 or 4) => 200 or 100
+
     float centerDis = scale / 2.0; // 100, 50
     float isoScale = (scale / (voxelsPerAxis)); // 10 or 5
+    float isoDetailScale = (modScale / (voxelsPerAxis)); // 10 or 5
+
     float3 minimumCornerWorldPos = leafPosition - float3(centerDis, centerDis, centerDis);
     
     if (resetNode > 0)
@@ -332,7 +336,7 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         outTypeInfo[vertexStartIndex + j] = 0;
     }
     
-    for (uint k = 0; k < 36; k++) // Up to 0-24 
+    for (uint k = 0; k < length; k++) // Up to 0-24 
     {
         uint v0 = transitionLookup[offset + k]; //transitionLookup: size = 4752
         uint vertexFloatIndex = (vertexStartIndex + k) * 3;
@@ -350,8 +354,8 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         int2 positionB = int2(offsets[b].x, offsets[b].y);
         int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, offsets[b].z, 0);
         
-        float3 pa = float3(positionAxisAlignedA.x - 1, positionAxisAlignedA.y - 1, positionAxisAlignedA.z - 1);
-        float3 pb = float3(positionAxisAlignedB.x - 1, positionAxisAlignedB.y - 1, positionAxisAlignedB.z - 1);
+        float3 pa = float3(positionAxisAlignedA.x / 2, positionAxisAlignedA.y / 2, positionAxisAlignedA.z / 2);
+        float3 pb = float3(positionAxisAlignedB.x/2, positionAxisAlignedB.y/2, positionAxisAlignedB.z/2 );
 
         float densityA = _trCellValues[a];
         float densityB = _trCellValues[b];
@@ -360,7 +364,7 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         float t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
         float3 position = pa + (clamp(t, 0, 1) * (pb - pa));
         
-        position *= isoScale;
+        position *= isoDetailScale;
         position += voxelCoord;
         
         outVertexInfo[vertexFloatIndex] = position.x + minimumCornerWorldPos.x;

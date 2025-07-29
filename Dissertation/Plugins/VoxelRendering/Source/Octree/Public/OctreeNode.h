@@ -103,21 +103,22 @@ public:
         }
     }
 
-    void AssignTransVoxelData(int inDirection, OctreeNode* inNode) {
+    void AssignTransVoxelData(int inDirection, OctreeNode* inNode, int adjIndex) {
         if (inDirection > 5 || inDirection < 0) return;
+
         for (int i = 0; i < 3; i++) {
             if (!(transitonCells[i].enabled)) {
                 transitonCells[i].enabled = true;
                 transitonCells[i].direction = inDirection;
                 transitonCells[i].adjacentNodeIndex = 1;
-                transitonCells[i].adjacentNodes[0] = inNode;
+                transitonCells[i].adjacentNodes[adjIndex] = inNode;
                 return;
             }
             else if (transitonCells[i].direction == inDirection && transitonCells[i].enabled) {
                 transitonCells[i].enabled = true;
                 int newAdjIndex = transitonCells[i].adjacentNodeIndex;
                 if (newAdjIndex < 4 && newAdjIndex >= 0) {
-                    transitonCells[i].adjacentNodes[newAdjIndex] = inNode;
+                    transitonCells[i].adjacentNodes[adjIndex] = inNode;
                     transitonCells[i].adjacentNodeIndex += 1;
                     return;
                 }

@@ -221,6 +221,27 @@ void GetNodesAdjacent(TArray<OctreeNode*>& adjNodes, OctreeNode* node, TArray<Oc
     }
 }
 
+int GetAdjacencyIndex(OctreeNode* node, OctreeNode* adjacentNode, int offsetIndex)
+{
+    FIntVector offset = neighborOffsets[offsetIndex];
+    const float epsilon = 0.0001f;
+
+    const AABB& boundsA = adjacentNode->GetBounds();
+    const AABB& boundsB = node->GetBounds();
+
+    int mainAxis = (offset.X != 0) ? 0 : (offset.Y != 0) ? 1 : 2;
+
+    int axisA = (mainAxis + 1) % 3;
+    int axisB = (mainAxis + 2) % 3;
+
+    FIntVector2 index;
+    index.X = boundsA.max[axisA] + epsilon >= boundsB.max[axisA] ? 1 : 0;
+    index.Y = boundsA.max[axisB] + epsilon >= boundsB.max[axisB] ? 1 : 0;
+
+    int flatIndex = index.X + (index.Y * 2);
+    return flatIndex;
+}
+
 bool UVoxelMeshComponent::BalanceNode(TArray<OctreeNode*>& removalStack, TArray<OctreeNode*>& pushStack, TArray<OctreeNode*>& visibleNodes, OctreeNode* node) {
     if (node->IsLeaf()) return false;
     node->ResetTransVoxelData();
@@ -248,7 +269,7 @@ bool UVoxelMeshComponent::BalanceNode(TArray<OctreeNode*>& removalStack, TArray<
             }
 
             if (nodeDifference == 1)
-                node->AssignTransVoxelData(i, adjNode);
+                node->AssignTransVoxelData(i, adjNode, GetAdjacencyIndex(node, adjNode, i));
         }
         if (deepestAdjacentDepth < 2) continue;
 

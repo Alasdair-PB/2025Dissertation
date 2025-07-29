@@ -61,7 +61,7 @@ class FMarchingCubes : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FMarchingCubes, "/ComputeDispatchersShaders/MarchingCubes.usf", "MarchingCubes", SF_Compute);
 
-void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FMarchingCubesDispatchParams& Params) {
+void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, const FVoxelComputeUpdateNodeData& nodeData, FMarchingCubesDispatchParams& Params) {
 	FMarchingCubes::FParameters* PassParams = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 	int voxelsPerAxis = Params.Input.updateData.voxelsPerAxis;
 
@@ -112,14 +112,17 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 		if (bIsShaderValid && bIsDefShaderValid && bIsTVMCShaderValid) {
 			// Deformation
-			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.updateData.nodeData)
+
+			for (const FVoxelComputeUpdateNodeData& nodeData : Params.Input.updateData.nodeData)
 				AddDeformationPass(GraphBuilder, nodeData, Params.Input.updateData);
 
-			for (FVoxelComputeUpdateNodeData nodeData : Params.Input.updateData.nodeData)
+			for (const FVoxelComputeUpdateNodeData& nodeData : Params.Input.updateData.nodeData)
 				AddOctreeMarchingPass(GraphBuilder, nodeData, Params);
 
-			for (FVoxelTransVoxelNodeData nodeData : Params.Input.updateData.transVoxelNodeData)
+			//UE_LOG(LogTemp, Warning, TEXT("Debug: start node transvoxel out"));
+			for (const FVoxelTransVoxelNodeData& nodeData : Params.Input.updateData.transVoxelNodeData)
 				AddTransvoxelMarchingCubesPass(GraphBuilder, nodeData, Params.Input.updateData);
+			//UE_LOG(LogTemp, Warning, TEXT("Debug: end node transvoxel out"));
 
 			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->
 				void {

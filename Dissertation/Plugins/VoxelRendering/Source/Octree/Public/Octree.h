@@ -20,6 +20,10 @@ public:
     TSharedPtr<FTypeUniformBuffer> GetTypeBuffer() { return typeUniformBuffer; }
     TSharedPtr<FTypeDynamicBuffer> GetDeltaTypeBuffer() { return deltaTypeBuffer; }
     TSharedPtr<FIsoDynamicBuffer> GetDeltaIsoBuffer() { return deltaIsoBuffer; }
+
+    TSharedPtr<FTypeDynamicBuffer> GetZeroTypeBuffer() { return zeroTypeBuffer; }
+    TSharedPtr<FIsoDynamicBuffer> GetZeroIsoBuffer() { return zeroIsoBuffer; }
+
     TSharedPtr<FMarchingCubesLookUpResource> GetMarchLookUpResourceBuffer() { return marchingCubeLookUpTable; }
 
     int GetVoxelsPerAxs() const { return voxelsPerAxis; }
@@ -53,6 +57,10 @@ protected:
 
     TSharedPtr<FIsoDynamicBuffer> deltaIsoBuffer;
     TSharedPtr<FTypeDynamicBuffer> deltaTypeBuffer;
+
+    TSharedPtr<FIsoDynamicBuffer> zeroIsoBuffer;
+    TSharedPtr<FTypeDynamicBuffer> zeroTypeBuffer;
+
     TArray<float> deltaIsoArray;
     TArray<float> initIsoArray;
     TArray<uint32> deltaTypeArray;

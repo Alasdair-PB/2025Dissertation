@@ -39,6 +39,15 @@ public:
     }
 };
 
+static const TArray<FIntVector> neighborOffsets = {
+    FIntVector(-1,  0,  0),
+    FIntVector(1,  0,  0),
+    FIntVector(0, -1,  0),
+    FIntVector(0,  1,  0),
+    FIntVector(0,  0, -1),
+    FIntVector(0,  0,  1)
+};
+
 class TransitionCell  {
 public:
     TransitionCell() : direction(0), adjacentNodeIndex(0), enabled(false) {}
@@ -47,15 +56,6 @@ public:
     bool enabled;
 
     OctreeNode* adjacentNodes[4]{nullptr, nullptr, nullptr, nullptr};
-};
-
-static const TArray<FIntVector> neighborOffsets = {
-    FIntVector(-1,  0,  0),
-    FIntVector(1,  0,  0),
-    FIntVector(0, -1,  0),
-    FIntVector(0,  1,  0),
-    FIntVector(0,  0, -1),
-    FIntVector(0,  0,  1)
 };
 
 class RegularCell : public VoxelCell {
@@ -94,11 +94,6 @@ public:
         else return nullptr;
     }
 
-    void SetTransvoxelDirection(int index, bool state) { 
-        if (index < 6 && index >= 0)
-            transVoxelDirections[index] = state;
-    }
-
     void ResetTransVoxelData() {
         for (int i = 0; i < 3; i++) {
             transitonCells[i].enabled = false;
@@ -108,21 +103,21 @@ public:
         }
     }
 
-    void AssignTransVoxelData(int direction, OctreeNode* node) {
-        if (direction > 5 || direction < 0) return;
+    void AssignTransVoxelData(int inDirection, OctreeNode* inNode) {
+        if (inDirection > 5 || inDirection < 0) return;
         for (int i = 0; i < 3; i++) {
             if (!(transitonCells[i].enabled)) {
                 transitonCells[i].enabled = true;
-                transitonCells[i].direction = direction;
+                transitonCells[i].direction = inDirection;
                 transitonCells[i].adjacentNodeIndex = 1;
-                transitonCells[i].adjacentNodes[0] = node;
+                transitonCells[i].adjacentNodes[0] = inNode;
                 return;
             }
-            else if (transitonCells[i].direction == direction && transitonCells[i].enabled) {
+            else if (transitonCells[i].direction == inDirection && transitonCells[i].enabled) {
                 transitonCells[i].enabled = true;
                 int newAdjIndex = transitonCells[i].adjacentNodeIndex;
                 if (newAdjIndex < 4 && newAdjIndex >= 0) {
-                    transitonCells[i].adjacentNodes[newAdjIndex] = node;
+                    transitonCells[i].adjacentNodes[newAdjIndex] = inNode;
                     transitonCells[i].adjacentNodeIndex += 1;
                     return;
                 }
@@ -132,32 +127,8 @@ public:
         }
     }
 
-    void AssignTransVoxelDirections() {
-        int transVoxelIndex = 0;
-        for (int i = 0; i < 6; i++) {
-            bool enabled = false;
-            if (transVoxelDirections[i]) {
-                if (transVoxelIndex < 3) {
-                    transitonCells[transVoxelIndex].direction = i;
-                    enabled = true;
-                }
-                else 
-                    UE_LOG(LogTemp, Warning, TEXT("Debug: Attempted to assign more than three transvoxel direction- why?"));
-                transVoxelIndex++;
-            }
-            transitonCells[transVoxelIndex].enabled = enabled;
-        }
-    }
-
     OctreeNode* children[8];
     OctreeNode* neighbours[6];
-    bool transVoxelDirections[6] {false, false, false, false, false, false};
-
-    void ResetTransvoxelDirections() {
-        for (int i = 0; i < 6; ++i) {
-            transVoxelDirections[i] = false;
-        }
-    }
 
 protected:
     int depth;

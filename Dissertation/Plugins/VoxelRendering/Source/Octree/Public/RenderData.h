@@ -50,12 +50,25 @@ public:
 	FVoxelComputeUpdateNodeData lowResolutionData;
 	FIntVector direction;
 	int transitionCellIndex;
+	bool zeroNode;
 
 	FVoxelTransVoxelNodeData() : FVoxelTransVoxelNodeData(nullptr, nullptr, 0) {}
 	FVoxelTransVoxelNodeData(TransitionCell* inTransitionCell, OctreeNode* inOwner, int inTransitionCellIndex)
-		: transitionCell(inTransitionCell), owningNode(inOwner), direction(FVector()), transitionCellIndex(inTransitionCellIndex){}
+		: transitionCell(inTransitionCell), owningNode(inOwner), direction(FVector()), transitionCellIndex(inTransitionCellIndex), zeroNode(false)
+{}
+	FVoxelTransVoxelNodeData(OctreeNode* inOwner, int inNodeIndex)
+		: transitionCell(nullptr), owningNode(inOwner), direction(FVector()), transitionCellIndex(inNodeIndex), zeroNode(true) {}
+
+	bool BuildEmptyDataCache() {
+		if (owningNode) {
+			lowResolutionData = FVoxelComputeUpdateNodeData(owningNode);
+			return lowResolutionData.BuildDataCache();
+		}
+		return false;
+	}
 
 	bool BuildDataCache() {
+		if (zeroNode) return BuildEmptyDataCache();
 		bool bReturnFlag = true;
 		for (int i = 0; i < 4; i++) {
 			if (transitionCell->adjacentNodes[i]) {
@@ -71,11 +84,12 @@ public:
 		} 
 		else bReturnFlag = false;
 
+		//UE_LOG(LogTemp, Warning, TEXT("Debug: assigning transvoxel direction: %d"), transitionCell->direction);
 		direction = neighborOffsets[transitionCell->direction];
+		//UE_LOG(LogTemp, Warning, TEXT("Debug: deformation pass occurs, direction = (%d, %d, %d)"), direction.X, direction.Y, direction.Z);
 		return bReturnFlag;
 	}
 };
-
 
 struct FVoxelComputeUpdateData {
 
@@ -90,6 +104,10 @@ public:
 
 	TSharedPtr<FIsoDynamicBuffer> deltaIsoBuffer;
 	TSharedPtr<FTypeDynamicBuffer> deltaTypeBuffer;
+
+	TSharedPtr<FIsoDynamicBuffer> zeroIsoBuffer;
+	TSharedPtr<FTypeDynamicBuffer> zeroTypeBuffer;
+
 	TSharedPtr<FIsoUniformBuffer> isoBuffer;
 	TSharedPtr<FTypeUniformBuffer> typeBuffer;
 	TArray<FVoxelComputeUpdateNodeData> nodeData;
@@ -109,7 +127,11 @@ public:
 		check(octree->GetDeltaIsoBuffer());
 		check(octree->GetDeltaTypeBuffer());
 		check(octree->GetMarchLookUpResourceBuffer());
+		check(octree->GetZeroIsoBuffer());
+		check(octree->GetZeroTypeBuffer());
 
+		zeroIsoBuffer = octree->GetZeroIsoBuffer();
+		zeroTypeBuffer = octree->GetZeroTypeBuffer();
 		isoBuffer = octree->GetIsoBuffer();
 		typeBuffer = octree->GetTypeBuffer();
 		deltaIsoBuffer = octree->GetDeltaIsoBuffer();

@@ -52,7 +52,7 @@ class FDeformation : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FDeformation, "/ComputeDispatchersShaders/Deformation.usf", "Deformation", SF_Compute);
 
-void AddDeformationPass(FRDGBuilder& GraphBuilder, FVoxelComputeUpdateNodeData& nodeData, FVoxelComputeUpdateData& updateData) {
+void AddDeformationPass(FRDGBuilder& GraphBuilder, const FVoxelComputeUpdateNodeData& nodeData, FVoxelComputeUpdateData& updateData) {
 
 	FShaderResourceViewRHIRef baseIsoValues = updateData.isoBuffer.Get()->bufferSRV;
 	FDeformation::FParameters* PassParams = GraphBuilder.AllocParameters<FDeformation::FParameters>();

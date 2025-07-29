@@ -46,6 +46,8 @@ class FTransvoxelMC : public FGlobalShader
 		SHADER_PARAMETER(float, isoLevel)
 		SHADER_PARAMETER(FIntVector, direction)
 		SHADER_PARAMETER(uint32, transitionCellIndex)
+		SHADER_PARAMETER(uint32, resetNode)
+
 
 	END_SHADER_PARAMETER_STRUCT()
 
@@ -65,29 +67,31 @@ class FTransvoxelMC : public FGlobalShader
 
 IMPLEMENT_GLOBAL_SHADER(FTransvoxelMC, "/ComputeDispatchersShaders/TransvoxelMarchingCubes.usf", "TransvoxelMarchingCubes", SF_Compute);
 
-void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, FVoxelTransVoxelNodeData& transVoxelNodeData, FVoxelComputeUpdateData& updateData) {
+void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, const FVoxelTransVoxelNodeData& transVoxelNodeData, FVoxelComputeUpdateData& updateData) {
 	
 	FTransvoxelMC::FParameters* PassParams = GraphBuilder.AllocParameters<FTransvoxelMC::FParameters>();
-	FVoxelComputeUpdateNodeData& nodeData = transVoxelNodeData.lowResolutionData;
+	const FVoxelComputeUpdateNodeData& nodeData = transVoxelNodeData.lowResolutionData;
+
 	int voxelsPerAxis = updateData.voxelsPerAxis;
+	bool useZeroData = transVoxelNodeData.zeroNode;
 
 	check(nodeData.isoBuffer->bufferSRV);
 	PassParams->leafPosition = nodeData.boundsCenter;
 	PassParams->leafDepth = nodeData.leafDepth;
 	PassParams->nodeIndex = 0; // Shader supports single vertex buffer for mesh, however as each LOD has its own vertex factory we can ignore this.
 
-	PassParams->isoValues = nodeData.isoBuffer->bufferSRV;
-	PassParams->typeValues = nodeData.typeBuffer->bufferSRV;
+	PassParams->isoValues = useZeroData ? updateData.zeroIsoBuffer->bufferSRV : nodeData.isoBuffer->bufferSRV;
+	PassParams->typeValues = useZeroData ? updateData.zeroTypeBuffer->bufferSRV : nodeData.typeBuffer->bufferSRV;
 
-	PassParams->isoAdjValuesA = transVoxelNodeData.highResolutionData[0].isoBuffer->bufferSRV;
-	PassParams->isoAdjValuesB = transVoxelNodeData.highResolutionData[1].isoBuffer->bufferSRV;
-	PassParams->isoAdjValuesC = transVoxelNodeData.highResolutionData[2].isoBuffer->bufferSRV;
-	PassParams->isoAdjValuesD = transVoxelNodeData.highResolutionData[3].isoBuffer->bufferSRV;
+	PassParams->isoAdjValuesA = useZeroData ? updateData.zeroIsoBuffer->bufferSRV : transVoxelNodeData.highResolutionData[0].isoBuffer->bufferSRV;
+	PassParams->isoAdjValuesB = useZeroData ? updateData.zeroIsoBuffer->bufferSRV : transVoxelNodeData.highResolutionData[1].isoBuffer->bufferSRV;
+	PassParams->isoAdjValuesC = useZeroData ? updateData.zeroIsoBuffer->bufferSRV : transVoxelNodeData.highResolutionData[2].isoBuffer->bufferSRV;
+	PassParams->isoAdjValuesD = useZeroData ? updateData.zeroIsoBuffer->bufferSRV : transVoxelNodeData.highResolutionData[3].isoBuffer->bufferSRV;
 
-	PassParams->typeAdjValuesA = transVoxelNodeData.highResolutionData[0].typeBuffer->bufferSRV;
-	PassParams->typeAdjValuesB = transVoxelNodeData.highResolutionData[1].typeBuffer->bufferSRV;
-	PassParams->typeAdjValuesC = transVoxelNodeData.highResolutionData[2].typeBuffer->bufferSRV;
-	PassParams->typeAdjValuesD = transVoxelNodeData.highResolutionData[3].typeBuffer->bufferSRV;
+	PassParams->typeAdjValuesA = useZeroData ? updateData.zeroTypeBuffer->bufferSRV : transVoxelNodeData.highResolutionData[0].typeBuffer->bufferSRV;
+	PassParams->typeAdjValuesB = useZeroData ? updateData.zeroTypeBuffer->bufferSRV : transVoxelNodeData.highResolutionData[1].typeBuffer->bufferSRV;
+	PassParams->typeAdjValuesC = useZeroData ? updateData.zeroTypeBuffer->bufferSRV : transVoxelNodeData.highResolutionData[2].typeBuffer->bufferSRV;
+	PassParams->typeAdjValuesD = useZeroData ? updateData.zeroTypeBuffer->bufferSRV : transVoxelNodeData.highResolutionData[3].typeBuffer->bufferSRV;
 
 	PassParams->transitionLookup = updateData.marchLookUpResource->transVoxelLookUpBufferSRV;
 	PassParams->flatTransitionVertexData = updateData.marchLookUpResource->transVoxelVertexLookUpBufferSRV;
@@ -102,12 +106,17 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, FVoxelTransVoxelN
 	PassParams->baseDepthScale = updateData.scale;
 	PassParams->isoLevel = updateData.isoLevel;
 	PassParams->direction = transVoxelNodeData.direction;
+
+	//if (!useZeroData)
+	//	UE_LOG(LogTemp, Warning, TEXT("Debug: deformation pass occurs, direction = (%d, %d, %d)"), PassParams->direction.X, PassParams->direction.Y, PassParams->direction.Z);
+
 	PassParams->transitionCellIndex = transVoxelNodeData.transitionCellIndex;
+	PassParams->resetNode = useZeroData;
 
 	int isoValuesPerAxis = voxelsPerAxis + 1;
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FTransvoxelMC> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((voxelsPerAxis, voxelsPerAxis, voxelsPerAxis)), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((voxelsPerAxis, voxelsPerAxis, 1)), FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("TransvoxelMC Pass"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {

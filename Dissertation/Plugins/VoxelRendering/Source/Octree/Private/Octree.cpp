@@ -10,12 +10,15 @@ Octree::Octree(AActor* inParent, float inIsoLevel, float inScale, int inVoxelsPe
     root->AssignChildNeighboursAsRoot();
 
     int bufferSize = (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1) * (inBufferSizePerAxis + 1);
-
+    int isoBufferCount = isoCount;
     isoUniformBuffer = MakeShareable(new FIsoUniformBuffer(bufferSize));
     deltaIsoBuffer = MakeShareable(new FIsoDynamicBuffer(bufferSize));
     typeUniformBuffer = MakeShareable(new FTypeUniformBuffer(bufferSize));
     deltaTypeBuffer = MakeShareable(new FTypeDynamicBuffer(bufferSize));
     marchingCubeLookUpTable = MakeShareable(new FMarchingCubesLookUpResource());
+
+    zeroIsoBuffer = MakeShareable(new FIsoDynamicBuffer(isoCount));
+    zeroTypeBuffer = MakeShareable(new FTypeDynamicBuffer(isoCount));
 
     deltaIsoArray.Init(0.0f, bufferSize);
     deltaTypeArray.Init(0, bufferSize);
@@ -24,13 +27,15 @@ Octree::Octree(AActor* inParent, float inIsoLevel, float inScale, int inVoxelsPe
     FMemory::Memcpy(initIsoArray.GetData(), isoBuffer.GetData(), bufferSize * sizeof(float));
 
     ENQUEUE_RENDER_COMMAND(InitVoxelResources)(
-        [this, bufferSize, isoBuffer, typeBuffer](FRHICommandListImmediate& RHICmdList)
+        [this, bufferSize, isoBuffer, typeBuffer, isoBufferCount](FRHICommandListImmediate& RHICmdList)
         {
             isoUniformBuffer->Initialize(isoBuffer, bufferSize);
             deltaIsoBuffer->Initialize(bufferSize);
             typeUniformBuffer->Initialize(typeBuffer, bufferSize);
             deltaTypeBuffer->Initialize(bufferSize);
             marchingCubeLookUpTable->Initialize();
+            zeroIsoBuffer->Initialize(isoBufferCount);
+            zeroTypeBuffer->Initialize(isoBufferCount);
         });
 }
 
@@ -44,6 +49,9 @@ Octree::~Octree() {
     marchingCubeLookUpTable.Reset();
     deltaIsoArray.Reset();
     deltaTypeArray.Reset();
+
+    zeroIsoBuffer.Reset();
+    zeroTypeBuffer.Reset();
     initIsoArray.Reset();
 
     // Not deleting roots due to Fatal error: A FRenderResource was deleted without being released first! To be investigated when time permits
@@ -63,6 +71,10 @@ void Octree::Release() {
                 deltaTypeBuffer->ReleaseResource();
             if (marchingCubeLookUpTable.IsValid())
                 marchingCubeLookUpTable->ReleaseResource();
+            if (zeroIsoBuffer.IsValid())
+                zeroIsoBuffer->ReleaseResource();
+            if (zeroTypeBuffer.IsValid())
+                zeroTypeBuffer->ReleaseResource();
         });
 }
 

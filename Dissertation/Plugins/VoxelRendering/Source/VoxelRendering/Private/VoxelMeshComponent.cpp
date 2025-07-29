@@ -141,7 +141,6 @@ void UVoxelMeshComponent::SetRenderDataLOD()
 
     for (OctreeNode* node : visibleNodes)
     {
-        node->AssignTransVoxelDirections();
         uint8 nodeDepth = node->GetDepth();
         FVoxelProxyUpdateDataNode proxyNode(nodeDepth, node);
         FVoxelComputeUpdateNodeData computeUpdateDataNode(node);
@@ -160,6 +159,11 @@ void UVoxelMeshComponent::SetRenderDataLOD()
                     continue;
                 }
                 FVoxelTransVoxelNodeData nodeData(cell, node, i);
+                nodeData.BuildDataCache();
+                computeTransvoxelData.Add(nodeData);
+            }
+            else {
+                FVoxelTransVoxelNodeData nodeData(node, i);
                 nodeData.BuildDataCache();
                 computeTransvoxelData.Add(nodeData);
             }
@@ -187,13 +191,11 @@ void UVoxelMeshComponent::SetChildrenVisible(TArray<OctreeNode*>& pushStack, Oct
 }
 
 bool AreAdjacent(OctreeNode* a, OctreeNode* b, const FIntVector& direction) {
-    const float epsilon = 0.001f;
-    int nodeDifference = a->GetDepth() - b->GetDepth();
-
+    const float epsilon = 0.0001f;
     const AABB& boundsA = a->GetBounds();
     const AABB& boundsB = b->GetBounds();
 
-    for (int axis = 0; axis < 3; ++axis) {
+    for (int axis = 0; axis < 3; axis++) {
         if (FMath::Abs(direction[axis]) > 0.5f) {
             float faceA = direction[axis] > 0 ? boundsA.max[axis] : boundsA.min[axis];
             float faceB = direction[axis] > 0 ? boundsB.min[axis] : boundsB.max[axis];
@@ -231,7 +233,9 @@ bool UVoxelMeshComponent::BalanceNode(TArray<OctreeNode*>& removalStack, TArray<
         TArray<OctreeNode*> neighbors; 
         GetNodesAdjacent(neighbors, node, visibleNodes, offset);
 
-        if (neighbors.Num() == 0) continue;
+        if (neighbors.Num() == 0)
+            continue;
+
         int deepestAdjacentDepth = 0;
         OctreeNode* deepestAdjacentNode;
 
@@ -243,15 +247,14 @@ bool UVoxelMeshComponent::BalanceNode(TArray<OctreeNode*>& removalStack, TArray<
                 deepestAdjacentDepth = nodeDifference;
             }
 
-            if (nodeDifference == 1) {
-                //UE_LOG(LogTemp, Warning, TEXT("Debug: Assigning transvoxelData: %d"), deepestAdjacentDepth);
+            if (nodeDifference == 1)
                 node->AssignTransVoxelData(i, adjNode);
-            }
         }
         if (deepestAdjacentDepth < 2) continue;
 
         SetChildrenVisible(pushStack, node, 0, deepestAdjacentDepth - 1);
         node->ResetTransVoxelData();
+        node->SetVisible(false);
         removalStack.Add(node);
         return true;
     }

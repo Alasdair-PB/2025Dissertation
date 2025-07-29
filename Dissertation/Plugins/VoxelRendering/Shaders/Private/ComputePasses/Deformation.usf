@@ -112,36 +112,66 @@ void Deformation(int3 id : SV_DispatchThreadID)
         return;
     }
     
-    float count = 0.0;
-    float sum = 0.0;  
+
     
-    uint2 packedCounts = uint2(0, 0);
     leafStride /= 2;
     int halfStride = leafStride;
     
-    [loop]
-    for (int dz = startIndex.z - halfStride; dz < (startIndex.z + halfStride + 1); dz++)
+    if (any(id == 0))
     {
-        for (int dy = startIndex.y - halfStride; dy < (startIndex.y + halfStride + 1); dy++)
-        {
-            for (int dx = startIndex.x - halfStride; dx < (startIndex.x + halfStride + 1); dx++)
-            {
-                int3 readBufferIndex = int3(dx, dy, dz);
+        int3 readBufferIndex = startIndex - int3(halfStride, halfStride, halfStride);
+        int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
+        float cornerDensity = clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
+        int type = GetType(typeValues[flat], typeDeltaValues[flat]);
+        
+        int writeIndex = GetIsoIndex(id, isoPerAxis);
+        isoCombinedValues[writeIndex] = cornerDensity;
+        typeCombinedValues[writeIndex] = type;
+        return;
+    }    
+    
+    if (any(id == voxelsPerAxis))
+    {
+        int3 readBufferIndex = startIndex + int3(halfStride + 1, halfStride + 1, halfStride + 1);
+        int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
+        float cornerDensity = clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
+        int type = GetType(typeValues[flat], typeDeltaValues[flat]);
+        
+        int writeIndex = GetIsoIndex(id, isoPerAxis);
+        isoCombinedValues[writeIndex] = cornerDensity;
+        typeCombinedValues[writeIndex] = type;
+        return;
+    }
+    
+    float count = 0.0;
+    float sum = 0.0;  
+    uint2 packedCounts = uint2(0, 0);
 
-                if (any(readBufferIndex < 0)) continue;
-                if (any(readBufferIndex >= isoPerAxisMaxRes)) continue;
+    [loop]
+        for (int dz = startIndex.z - halfStride; dz < (startIndex.z + halfStride + 1); dz++)
+        {
+            for (int dy = startIndex.y - halfStride; dy < (startIndex.y + halfStride + 1); dy++)
+            {
+                for (int dx = startIndex.x - halfStride; dx < (startIndex.x + halfStride + 1); dx++)
+                {
+                    int3 readBufferIndex = int3(dx, dy, dz);
+
+                    if (any(readBufferIndex < 0))
+                        continue;
+                    if (any(readBufferIndex >= isoPerAxisMaxRes))
+                        continue;
                     
-                int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
+                    int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
                     
-                sum += clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
-                int type = GetType(typeValues[flat], typeDeltaValues[flat]);
+                    sum += clamp(isoValues[flat] + isoDeltaValues[flat], 0.0, 1.0);
+                    int type = GetType(typeValues[flat], typeDeltaValues[flat]);
                     
-                if (type >= 0 && type < 8)
-                    packedCounts = PackDataFromType(type, packedCounts);
-                count++;
+                    if (type >= 0 && type < 8)
+                        packedCounts = PackDataFromType(type, packedCounts);
+                    count++;
+                }
             }
         }
-    }
     
     int mostCommonType = GetMostCommonTypeFromPackedData(packedCounts);
     float density = sum / count;

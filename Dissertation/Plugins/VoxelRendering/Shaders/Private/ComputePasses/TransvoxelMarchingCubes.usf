@@ -129,7 +129,7 @@ float GetTransvoxelHighRes(int2 voxelCoord, int offsetCoord)
     voxelCoord.y += offsets[offsetCoord].y;
 
     return voxelCoord.y >= voxelsPerAxis ?
-            GetDensityHighY((voxelCoord - int2(0, (voxelsPerAxis)))) :
+            GetDensityHighY((voxelCoord - int2(0, voxelsPerAxis))) :
             GetDensityLowY(voxelCoord);
 }
 
@@ -312,10 +312,18 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         
         
         float t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
-        float3 position = pa + (clamp(t, 0, 1) * (pb - pa));
+        float3 position = pa + (clamp(t, -1, 1) * (pb - pa));
         
+        float dab = abs(densityA - densityB);
+        t = dab == 0 ? 0 : densityA / dab;
+        //position= lerp(pa, pb, t);
+        
+        /*if (densityA > isoLevel)
+            position = pa;
+        if (densityB > isoLevel)
+            position = pb;*/
             
-        position *= isoDetailScale;
+            position *= isoDetailScale;
         position += voxelCoord;
         
         outVertexInfo[vertexFloatIndex] = position.x + minimumCornerWorldPos.x;

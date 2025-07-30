@@ -49,7 +49,7 @@ int GetIsoIndex(int3 coord)
 
 int SetAxisValue(int1 directionAxisVal, int axisModifier, int highAxis)
 {
-    return ((directionAxisVal < 0 ? highAxis : 0) + axisModifier);
+    return ((directionAxisVal.x < 0 ? highAxis : 0) + axisModifier);
 }
 
 int3 GetDirectionalIsoIndex(int2 coord, int axisModifier = 0, int highAxis = voxelsPerAxis, int directionMult = 1)
@@ -115,7 +115,7 @@ float GetTransvoxelLowRes(int2 voxelCoord, int offsetCoord)
     bool isEdge = any(pos < 0) || any(pos > voxelsPerAxis);
     
     return isEdge ? 
-        isoLevel : 
+        0.0 : 
         isoValues[GetIsoIndex(pos)]; 
 }
 
@@ -252,10 +252,16 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     _trCellValues[5] = GetTransvoxelDensity(transVoxelCoord, 5);
     _trCellValues[7] = GetTransvoxelDensity(transVoxelCoord, 7);
     
-    _trCellValues[9] = _trCellValues[0]; //GetTransvoxelDensity(transVoxelCoord, 9, inDir);
-    _trCellValues[10] = _trCellValues[2]; //GetTransvoxelDensity(transVoxelCoord, 10, inDir);
-    _trCellValues[11] = _trCellValues[6]; //GetTransvoxelDensity(transVoxelCoord, 11, inDir);
-    _trCellValues[12] = _trCellValues[8]; //GetTransvoxelDensity(transVoxelCoord, 12, inDir);
+    
+    _trCellValues[9] = _trCellValues[0];
+    _trCellValues[10] = _trCellValues[2];
+    _trCellValues[11] = _trCellValues[6];
+    _trCellValues[12] = _trCellValues[8];
+    
+    _trCellValues[9] = GetTransvoxelDensity(transVoxelCoord, 9);
+    _trCellValues[10] = GetTransvoxelDensity(transVoxelCoord, 10);
+    _trCellValues[11] = GetTransvoxelDensity(transVoxelCoord, 11);
+    _trCellValues[12] = GetTransvoxelDensity(transVoxelCoord, 12);
     
     int caseCode = ((
         _trCellValues[0] < isoLevel ? 1 : 0)
@@ -303,9 +309,12 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         float densityB = _trCellValues[b];
     
         float denom = densityB - densityA; // 1 to -1
+        
+        
         float t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
         float3 position = pa + (clamp(t, 0, 1) * (pb - pa));
         
+            
         position *= isoDetailScale;
         position += voxelCoord;
         

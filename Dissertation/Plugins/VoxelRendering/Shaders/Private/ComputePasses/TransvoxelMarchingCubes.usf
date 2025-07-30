@@ -309,10 +309,8 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         float densityB = _trCellValues[b];
     
         float denom = densityB - densityA; // 1 to -1
-        
-        
-        float t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
-        float3 position = pa + (clamp(t, -1, 1) * (pb - pa));
+        float t = denom == 0 ? 0 : (isoLevel - densityA) / denom; //isoLevel - densityA) * denom 
+        float3 position = lerp(t, pa, pb); //pa + (clamp(t, -1, 1) * (pb - pa));
         
         float dab = abs(densityA - densityB);
         t = dab == 0 ? 0 : densityA / dab;

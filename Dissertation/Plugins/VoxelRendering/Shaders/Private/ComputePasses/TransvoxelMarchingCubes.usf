@@ -105,12 +105,8 @@ float GetTransvoxelLowRes(int2 voxelCoord, int offsetCoord)
     voxelCoord.x += (offsets[offsetCoord].x / 2);
     voxelCoord.y += (offsets[offsetCoord].y / 2);
 
-    int3 pos = GetDirectionalIsoIndex(voxelCoord);
-    bool isEdge = any(pos < 0) || any(pos > voxelsPerAxis);
-    
-    return isEdge ? 
-        0.0 : 
-        isoValues[GetIsoIndex(pos)]; 
+    int3 pos = GetDirectionalIsoIndex(voxelCoord, 0, voxelsPerAxis, 1);
+    return isoValues[GetIsoIndex(pos)]; 
 }
 
 // presumes < 9 coord
@@ -123,8 +119,8 @@ float GetTransvoxelHighRes(int2 voxelCoord, int offsetCoord)
     voxelCoord.y += offsets[offsetCoord].y;
 
     return voxelCoord.y >= voxelsPerAxis ?
-            GetDensityHighY((voxelCoord - int2(0, voxelsPerAxis))) :
-            GetDensityLowY(voxelCoord);
+        GetDensityHighY((voxelCoord - int2(0, voxelsPerAxis))) :
+        GetDensityLowY(voxelCoord);
 }
 
 float GetTransvoxelDensity(int2 voxelCoord, int offsetCoord)
@@ -142,47 +138,77 @@ int GetType(int3 coord)
     return isEdge ? 0 : typeValues[(GetIsoIndex(coord))];
 }
 
-bool DebugTriangleOnCondition(int a, int b, int k, int vertexFloatIndex, int vertexStartIndex, float isoScale, float3 worldPos, int2 voxelCoords)
+        /*if ((densityA < isoLevel) != (densityB < isoLevel))
+        {
+            position = pa + t * (pb - pa);
+        }*/
+        
+        /*if (densityA < isoLevel)
+        {
+            position = pb;
+        }
+        else if (densityB < isoLevel)
+        {
+            position = pa;
+        }*/
+
+float3 InterpolateVertice(int a, int b, int k, int3 voxelCoord, float isoDetailScale, float isoScale, float3 worldPos, float densityA, float densityB)
 {
-    //  if (length % 3 != 0) // Length count check
-    if (a > 12 || b > 12) // EdgeCode index check
+    int2 positionA = a >= 9 ? int2(offsets[a].x, offsets[a].y) : int2(offsets[a].x, offsets[a].y);
+    int3 positionAxisAlignedA = GetDirectionalIsoIndex(positionA, offsets[a].z, 0);
+        
+    int2 positionB = a >= 9 ? int2(offsets[b].x, offsets[b].y) : int2(offsets[b].x, offsets[b].y);
+    int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, offsets[b].z, 0);
+        
+    float3 pa = float3(positionAxisAlignedA.x, positionAxisAlignedA.y, positionAxisAlignedA.z);
+    float3 pb = float3(positionAxisAlignedB.x, positionAxisAlignedB.y, positionAxisAlignedB.z);
+    int3 zeroAxis = GetDirectionalIsoIndex(int2(1,1), 0, 0);
+    float3 zeroFAxis = float3(zeroAxis.x, zeroAxis.y, zeroAxis.z);
+
+    float3 position = pa;
+    float denom = densityB - densityA;
+    float t = abs(denom) < 0.01 ? 0.5 : (isoLevel - densityA) / denom;
+    float t1 = 1 - t;
+    
+    /*if (densityA < isoLevel)
+        position = pa;
+    if (densityB < isoLevel)
+        position = pb;*/
+    
+    if (abs(denom) > 0.1)
     {
-        float2 A = float2(0.0, 1.0);
-        float2 B = float2(1.0, 1.0);
-        float2 C = float2(0.0, 0.0);
-        float2 D = float2(1.0, 0.0);
-        
-        float x = k % 3 == 0 ? A.x : k % 3 == 1 ? B.x : C.x;
-        float y = k % 3 == 0 ? A.y : k % 3 == 1 ? B.y : C.y;
-
-        //if (k % 3 == 0 && k > 2)  
-        /* Triangle check:
-        outVertexInfo[vertexFloatIndex - 3] == p0.x &&
-        outVertexInfo[vertexFloatIndex - 2] == p0.y &&
-        outVertexInfo[vertexFloatIndex - 1] == p0.z &&
-        outVertexInfo[vertexFloatIndex - 6] == p0.x &&
-        outVertexInfo[vertexFloatIndex - 5] == p0.y &&
-        outVertexInfo[vertexFloatIndex - 4] == p0.z)*/
-        //{
-        
-        int2 deltaCoord;
-        deltaCoord.x = x + voxelCoords.x;
-        deltaCoord.y = y + voxelCoords.y;
-
-        float3 position = GetDirectionalIsoIndex(deltaCoord); // isoscale
-        outVertexInfo[vertexFloatIndex] = position.x + worldPos.x;
-        outVertexInfo[vertexFloatIndex + 1] = (position.y * 300) + worldPos.y;
-        outVertexInfo[vertexFloatIndex + 2] = position.z + worldPos.z;
-        outTypeInfo[vertexStartIndex + k] = 1;
-        return true;
-
-        //}
+        if (denom > 0)
+            position = pa + t * (pb - pa);
+        else
+            position = pb + t * (pa - pb);
     }
-    return false;
+    else if (abs(isoLevel - densityA) < 0.01)
+        position = lerp(pa, pb, 0.5);
+    else
+        position = lerp(pa, pb, isoLevel - densityA);
+    
+    // (densityA <= 0.01 || densityB <= 0.01)
+    /*(pa * (densityA / 2)) + (pb * (densityB / 2));
+    else if (abs(isoLevel - densityA) > 0.01 || abs(isoLevel - densityB))
+        position = pa * abs((isoLevel - densityB) / 2) + pb * abs((isoLevel - densityA) / 2);
+    else if (abs(1 - densityA) > 0.01 || abs(1 - densityB))
+        position = pa * abs((1 - densityB) / 2) + pb * abs((1 - densityA) / 2);
+    else 
+    if (a>=9 || b >=9)
+        position = a >= 9 ? pa : pb;
+    
+        position = pa;*/
+    
+
+    
+    position *= zeroFAxis;
+    position *= isoDetailScale;
+    position += voxelCoord;
+    position += worldPos;
+    return position;
 }
 
-// x, y, 0
-// Use id as int2 as z value is 0. 
+// x, y, 1
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
 {
@@ -218,10 +244,6 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     int3 inDir = int3(direction.x, direction.y, direction.z);
     
     float _trCellValues[13];
-    _trCellValues[0] = GetTransvoxelDensity(transVoxelCoord, 0); //_trCellValues[9];
-    _trCellValues[2] = GetTransvoxelDensity(transVoxelCoord, 2); //_trCellValues[10];
-    _trCellValues[6] = GetTransvoxelDensity(transVoxelCoord, 6); //_trCellValues[11];
-    _trCellValues[8] = GetTransvoxelDensity(transVoxelCoord, 8); //_trCellValues[12]; 
     
     _trCellValues[1] = GetTransvoxelDensity(transVoxelCoord, 1);
     _trCellValues[3] = GetTransvoxelDensity(transVoxelCoord, 3);
@@ -234,20 +256,12 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     _trCellValues[11] = GetTransvoxelDensity(transVoxelCoord, 11); //_trCellValues[6];
     _trCellValues[12] = GetTransvoxelDensity(transVoxelCoord, 12); //_trCellValues[8];
     
-    
-    /*int caseCode = ((
-        _trCellValues[9] < isoLevel ? 1 : 0)
-        | (_trCellValues[1] < isoLevel ? 2 : 0)
-        | (_trCellValues[10] < isoLevel ? 4 : 0)
-        | (_trCellValues[3] < isoLevel ? 8 : 0)
-        | (_trCellValues[4] < isoLevel ? 16 : 0)
-        | (_trCellValues[5] < isoLevel ? 32 : 0)
-        | (_trCellValues[11] < isoLevel ? 64 : 0)
-        | (_trCellValues[7] < isoLevel ? 128 : 0)
-        | (_trCellValues[12] < isoLevel ? 256 : 0)
-    );*/
-    
-    /*int caseCode = (
+    _trCellValues[0] = GetTransvoxelDensity(transVoxelCoord, 0);
+    _trCellValues[2] = GetTransvoxelDensity(transVoxelCoord, 2);
+    _trCellValues[6] = GetTransvoxelDensity(transVoxelCoord, 6);
+    _trCellValues[8] = GetTransvoxelDensity(transVoxelCoord, 8);
+
+    int caseCode = (
         (_trCellValues[0] < isoLevel ? 1 : 0)
         | (_trCellValues[1] < isoLevel ? 2 : 0)
         | (_trCellValues[2] < isoLevel ? 4 : 0)
@@ -257,7 +271,8 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         | (_trCellValues[6] < isoLevel ? 64 : 0)
         | (_trCellValues[3] < isoLevel ? 128 : 0)
         | (_trCellValues[4] < isoLevel ? 256 : 0));
-    */
+
+    /*
     int caseCode = ((_trCellValues[9] < 0 ? 1 : 0)
         | (_trCellValues[1] < isoLevel ? 2 : 0)
         | (_trCellValues[10] < isoLevel ? 4 : 0)
@@ -266,7 +281,7 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         | (_trCellValues[7] < isoLevel ? 32 : 0)
         | (_trCellValues[11] < isoLevel ? 64 : 0)
         | (_trCellValues[3] < isoLevel ? 128 : 0)
-        | (_trCellValues[4] < isoLevel ? 256 : 0));
+        | (_trCellValues[4] < isoLevel ? 256 : 0));*/
 
     int3 voxelCoord = GetDirectionalIsoIndex(int2(id.x, id.y)) * isoScale;
     int offset = transitionOffsets[caseCode];
@@ -277,52 +292,50 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         return;
     }
     
-    for (uint k = 0; k < length; k++) // Up to 0-24 
+    for (uint k = 0; k < length; k += 3) // Up to 0-24 
     {
-        uint vertexFloatIndex = (vertexStartIndex + k) * 3;
-        uint edgeCode = flatTransitionVertexData[caseCode * 12 + k];
+        uint vertexFloatIndexA = (vertexStartIndex + k) * 3;
+        uint vertexFloatIndexB = (vertexStartIndex + k + 1) * 3;
+        uint vertexFloatIndexC = (vertexStartIndex + k + 2) * 3;
 
-        uint a = (edgeCode >> 4) & 0x0F;
-        uint b = edgeCode & 0x0F;
-        
-        //if (DebugTriangleOnCondition(a, b, k, vertexFloatIndex, vertexStartIndex, isoScale, minimumCornerWorldPos, int2(id.x, id.y)))
-        //    continue;
-        
-        int2 positionA = int2(offsets[a].x, offsets[a].y);
-        int3 positionAxisAlignedA = GetDirectionalIsoIndex(positionA, 0, 0); //offsets[a].z
-        
-        int2 positionB = int2(offsets[b].x, offsets[b].y);
-        int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, 0, 0); //offsets[b].z
-        
-        float3 pa = float3(positionAxisAlignedA.x, positionAxisAlignedA.y, positionAxisAlignedA.z);
-        float3 pb = float3(positionAxisAlignedB.x, positionAxisAlignedB.y, positionAxisAlignedB.z);
+        uint edgeCodeA = flatTransitionVertexData[caseCode * 12 + k];
+        uint edgeCodeB = flatTransitionVertexData[caseCode * 12 + k + 1];
+        uint edgeCodeC = flatTransitionVertexData[caseCode * 12 + k + 2];
 
+        uint a = (edgeCodeA >> 4) & 0x0F;
+        uint b = edgeCodeA & 0x0F;
+        
+        uint c = (edgeCodeB >> 4) & 0x0F;
+        uint d = edgeCodeB & 0x0F;
+        
+        uint e = (edgeCodeC >> 4) & 0x0F;
+        uint f = edgeCodeC & 0x0F;
+        
         float densityA = _trCellValues[a];
         float densityB = _trCellValues[b];
         
-        float3 position = pa;
-        if ((densityA < isoLevel) != (densityB < isoLevel))
-        {
-            float denom = densityB - densityA;
-            float t = (isoLevel - densityA) / denom;
-            position = pa + t * (pb - pa);
-        }
-        else
-        {
-            if (densityA < isoLevel)
-                position = pa;
-            else if (densityB < isoLevel)
-                position = pb;
-            else
-                position = float3(0, 0, 0);
-
-        }
-        position *= isoDetailScale;
-        position += voxelCoord;
+        float densityC = _trCellValues[c];
+        float densityD = _trCellValues[d];
         
-        outVertexInfo[vertexFloatIndex] = position.x + minimumCornerWorldPos.x;
-        outVertexInfo[vertexFloatIndex + 1] = position.y + minimumCornerWorldPos.y;
-        outVertexInfo[vertexFloatIndex + 2] = position.z + minimumCornerWorldPos.z;
+        float densityE = _trCellValues[e];
+        float densityF = _trCellValues[f];
+        
+        float3 positionA = InterpolateVertice(a, b, k, voxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, densityA, densityB);
+        float3 positionB = InterpolateVertice(c, d, k + 1, voxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, densityC, densityD);
+        float3 positionC = InterpolateVertice(e, f, k + 2, voxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, densityE, densityF);
+
+        outVertexInfo[vertexFloatIndexA] = positionA.x;
+        outVertexInfo[vertexFloatIndexA + 1] = positionA.y;
+        outVertexInfo[vertexFloatIndexA + 2] = positionA.z;
+        
+        outVertexInfo[vertexFloatIndexB] = positionB.x;
+        outVertexInfo[vertexFloatIndexB + 1] = positionB.y;
+        outVertexInfo[vertexFloatIndexB + 2] = positionB.z;
+        
+        outVertexInfo[vertexFloatIndexC] = positionC.x;
+        outVertexInfo[vertexFloatIndexC + 1] = positionC.y;
+        outVertexInfo[vertexFloatIndexC + 2] = positionC.z;
+        
         outTypeInfo[vertexStartIndex + k] = 0;
     }
 }

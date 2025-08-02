@@ -69,9 +69,9 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     float t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
     float3 position = posA + (t * (posB - posA));
     
-    //float3 normalA = CalculateNormal(cornerPosA);
-    //float3 normalB = CalculateNormal(cornerPosB);
-    //float3 normalRes = normalA + (t * (normalB - normalA));
+    float3 normalA = CalculateNormal(cornerPosA);
+    float3 normalB = CalculateNormal(cornerPosB);
+    float3 normalRes = normalA + (t * (normalB - normalA));
 
     int typeA = GetType(cornerPosA);
     int typeB = GetType(cornerPosB);
@@ -84,9 +84,9 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     outInfo[base + 1] = position.y;
     outInfo[base + 2] = position.z;
 
-    //outNormalInfo[base + 0] = normalRes.x;
-    //outNormalInfo[base + 1] = normalRes.y;
-    //outNormalInfo[base + 2] = normalRes.z;
+    outNormalInfo[base + 0] = normalRes.x;
+    outNormalInfo[base + 1] = normalRes.y;
+    outNormalInfo[base + 2] = normalRes.z;
     outTypeInfo[vertexIndex] = typeFinal;
 }
 
@@ -111,7 +111,7 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         outNormalInfo[base * 3 + 0] = 0.0;
         outNormalInfo[base * 3 + 1] = 0.0;
         outNormalInfo[base * 3 + 2] = 0.0;
-        //outTypeInfo[base] = 0.0;
+        outTypeInfo[base] = 0.0;
     }
     
     float scale = baseDepthScale / (1 << leafDepth);

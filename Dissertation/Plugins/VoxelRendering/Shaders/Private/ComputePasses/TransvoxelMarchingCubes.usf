@@ -36,6 +36,7 @@ int resetNode;
 static const int transitionLengths[512] = { 0, 6, 3, 0, 6, 12, 9, 9, 3, 0, 6, 0, 0, 15, 12, 12, 6, 12, 9, 0, 12, 18, 0, 15, 9, 15, 12, 18, 9, 0, 0, 0, 3, 9, 6, 0, 0, 15, 12, 12, 6, 12, 9, 0, 0, 18, 0, 15, 0, 0, 0, 0, 15, 0, 18, 18, 12, 18, 15, 0, 12, 18, 0, 15, 6, 12, 0, 15, 12, 18, 15, 0, 9, 15, 12, 18, 0, 0, 18, 18, 12, 18, 15, 0, 18, 18, 21, 0, 0, 21, 0, 24, 15, 0, 0, 0, 9, 0, 12, 18, 15, 21, 18, 0, 12, 0, 15, 21, 18, 24, 21, 0, 9, 15, 12, 18, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 3, 9, 6, 12, 9, 0, 12, 0, 6, 12, 9, 0, 0, 18, 15, 0, 0, 15, 12, 18, 15, 21, 0, 0, 12, 18, 15, 21, 12, 0, 0, 0, 6, 12, 9, 15, 12, 0, 15, 0, 9, 15, 12, 18, 0, 21, 18, 18, 0, 18, 0, 0, 18, 24, 21, 21, 0, 21, 18, 24, 15, 0, 18, 18, 0, 9, 0, 12, 0, 15, 18, 0, 0, 12, 0, 15, 0, 18, 0, 15, 15, 0, 18, 18, 0, 0, 24, 0, 18, 0, 21, 0, 18, 0, 21, 0, 12, 0, 0, 0, 18, 0, 21, 0, 15, 0, 18, 18, 0, 21, 24, 18, 12, 0, 15, 15, 18, 0, 0, 0, 0, 0, 18, 18, 15, 0, 18, 0, 6, 12, 9, 0, 12, 18, 15, 15, 9, 0, 12, 0, 0, 21, 12, 0, 12, 18, 15, 0, 18, 24, 0, 21, 15, 21, 18, 24, 15, 0, 12, 0, 9, 15, 12, 0, 0, 21, 18, 0, 12, 18, 15, 21, 0, 24, 15, 0, 0, 0, 0, 0, 21, 0, 0, 12, 12, 18, 0, 0, 0, 0, 0, 9, 12, 18, 0, 21, 18, 24, 21, 0, 15, 21, 18, 24, 0, 0, 18, 0, 18, 24, 21, 0, 24, 36, 27, 21, 0, 27, 0, 18, 21, 21, 18, 12, 15, 0, 18, 0, 21, 27, 24, 0, 18, 0, 0, 0, 24, 18, 21, 9, 15, 21, 0, 12, 0, 21, 0, 0, 12, 18, 15, 0, 0, 12, 0, 0, 9, 15, 12, 12, 15, 0, 18, 12, 12, 18, 15, 15, 0, 0, 0, 0, 0, 21, 18, 18, 21, 27, 0, 18, 18, 24, 0, 21, 0, 0, 15, 0, 12, 18, 15, 0, 18, 0, 0, 15, 15, 0, 0, 0, 21, 0, 0, 0, 0, 24, 21, 0, 24, 18, 0, 0, 15, 21, 0, 18, 0, 9, 0, 0, 0, 15, 0, 0, 0, 21, 24, 0, 0, 0, 21, 0, 0, 12, 0, 9, 21, 0, 24, 0, 0, 21, 18, 12, 0, 0, 0, 9, 12, 0, 0, 0, 12, 12, 15, 0, 18, 18, 21, 0, 0, 15, 0, 0, 0, 0, 18, 0, 0, 0, 0, 9, 0, 12, 9, 0, 0, 0, 0, 0, 9, 0, 0, 0 };
 static const int transitionOffsets[512] = { 0, 0, 6, 0, 9, 15, 27, 36, 45, 0, 48, 0, 0, 54, 69, 81, 93, 99, 111, 0, 120, 132, 0, 150, 165, 174, 189, 201, 219, 0, 0, 0, 228, 231, 240, 0, 0, 246, 261, 273, 285, 291, 303, 0, 0, 312, 0, 330, 0, 0, 0, 0, 345, 0, 360, 378, 396, 408, 426, 0, 441, 453, 0, 471, 486, 492, 0, 504, 519, 531, 549, 0, 564, 573, 588, 600, 0, 0, 618, 636, 654, 666, 684, 0, 699, 717, 735, 0, 0, 756, 0, 777, 801, 0, 0, 0, 816, 0, 825, 837, 855, 870, 891, 0, 909, 0, 921, 936, 957, 975, 999, 0, 1020, 1029, 1044, 1056, 0, 0, 0, 0, 0, 0, 0, 1074, 0, 0, 0, 0, 1095, 1098, 1107, 1113, 1125, 0, 1134, 0, 1146, 1152, 1164, 0, 0, 1173, 1191, 0, 0, 1206, 1221, 1233, 1251, 1266, 0, 0, 1287, 1299, 1317, 1332, 1353, 0, 0, 0, 1365, 1371, 1383, 1392, 1407, 0, 1419, 0, 1434, 1443, 1458, 1470, 0, 1488, 1509, 1527, 0, 1545, 0, 0, 1563, 1581, 1605, 1626, 0, 1647, 1668, 1686, 1710, 0, 1725, 1743, 0, 1761, 0, 1770, 0, 1782, 1797, 0, 0, 1815, 0, 1827, 0, 1842, 0, 1860, 1875, 0, 1890, 1908, 0, 0, 1926, 0, 1950, 0, 1968, 0, 1989, 0, 2007, 0, 2028, 0, 0, 0, 2040, 0, 2058, 0, 2079, 0, 2094, 2112, 0, 2130, 2151, 2175, 2193, 0, 2205, 2220, 2235, 0, 0, 0, 0, 0, 2253, 2271, 2289, 0, 2304, 0, 2322, 2328, 2340, 0, 2349, 2361, 2379, 2394, 2409, 0, 2418, 0, 0, 2430, 2451, 0, 2463, 2475, 2493, 0, 2508, 2526, 0, 2550, 2571, 2586, 2607, 2625, 2649, 0, 2664, 0, 2676, 2685, 2700, 0, 0, 2712, 2733, 0, 2751, 2763, 2781, 2796, 0, 2817, 2841, 0, 0, 0, 0, 0, 2856, 0, 0, 2877, 2889, 2901, 0, 0, 0, 0, 0, 2919, 2928, 2940, 0, 2958, 2979, 2997, 3021, 0, 3042, 3057, 3078, 3096, 0, 0, 3120, 0, 3138, 3156, 3180, 0, 3201, 3225, 3261, 3288, 0, 3309, 0, 3336, 3354, 3375, 3396, 3414, 3426, 0, 3441, 0, 3459, 3480, 3507, 0, 3531, 0, 0, 0, 3549, 3573, 3591, 3612, 3621, 3636, 0, 3657, 0, 3669, 0, 0, 3690, 3702, 3720, 0, 0, 3735, 0, 0, 3747, 3756, 3771, 3783, 3795, 0, 3810, 3828, 3840, 3852, 3870, 3885, 0, 0, 0, 0, 0, 3900, 3921, 3939, 3957, 3978, 0, 4005, 4023, 4041, 0, 4065, 0, 0, 4086, 0, 4101, 4113, 4131, 0, 4146, 0, 0, 4164, 4179, 0, 0, 0, 4194, 0, 0, 0, 0, 4215, 4239, 0, 4260, 4284, 0, 0, 4302, 4317, 0, 4338, 0, 4356, 0, 0, 0, 4365, 0, 0, 0, 4380, 4401, 0, 0, 0, 4425, 0, 0, 4446, 0, 4458, 4467, 0, 4488, 0, 0, 4512, 4533, 4551, 0, 0, 0, 4563, 4572, 0, 0, 0, 4584, 4596, 4608, 0, 4623, 4641, 4659, 0, 0, 4680, 0, 0, 0, 0, 4695, 0, 0, 0, 0, 4713, 0, 4722, 4734, 0, 0, 0, 0, 0, 4743, 0, 0, 0 };
 static const int3 offsets[13] = { int3(0, 0, 0), int3(1, 0, 0), int3(2, 0, 0), int3(0, 1, 0), int3(1, 1, 0), int3(2, 1, 0), int3(0, 2, 0), int3(1, 2, 0), int3(2, 2, 0), int3(0, 0, 2), int3(2, 0, 2), int3(0, 2, 2), int3(2, 2, 2)};
+static const int transitionCornerData[13] = {0x30, 0x21, 0x20, 0x12, 0x40, 0x82, 0x10, 0x81, 0x80, 0x37, 0x27, 0x17, 0x87};
 
 int GetIsoIndex(int3 coord)
 {
@@ -99,10 +100,10 @@ float GetDensityLowY(int2 transVoxelCoord)
         isoAdjValuesB[GetIsoIndex(GetDirectionalIsoIndex((transVoxelCoord - int2(voxelsPerAxis, 0)), 0, voxelsPerAxis, -1))]; // B
 }
 
-// presumes >= 8 coord
+// presumes >= 9 coord
 float GetTransvoxelLowRes(int2 voxelCoord, int offsetCoord)
 {
-    voxelCoord.x += (offsets[offsetCoord].x / 2);
+    voxelCoord.x += (offsets[offsetCoord].x / 2); // 0 or 2 -> 1/2
     voxelCoord.y += (offsets[offsetCoord].y / 2);
 
     int3 pos = GetDirectionalIsoIndex(voxelCoord, 0, voxelsPerAxis, 1);
@@ -138,73 +139,62 @@ int GetType(int3 coord)
     return isEdge ? 0 : typeValues[(GetIsoIndex(coord))];
 }
 
-        /*if ((densityA < isoLevel) != (densityB < isoLevel))
-        {
-            position = pa + t * (pb - pa);
-        }*/
-        
-        /*if (densityA < isoLevel)
-        {
-            position = pb;
-        }
-        else if (densityB < isoLevel)
-        {
-            position = pa;
-        }*/
-
-float3 InterpolateVertice(int a, int b, int k, int3 voxelCoord, float isoDetailScale, float isoScale, float3 worldPos, float densityA, float densityB)
+float3 InterpolateVertice(int a, int b, int k, int2 transVoxelCoord, float isoDetailScale, float isoScale, float3 worldPos, float densityA, float densityB, float _trCellValues[13])
 {
-    int2 positionA = a >= 9 ? int2(offsets[a].x, offsets[a].y) : int2(offsets[a].x, offsets[a].y);
-    int3 positionAxisAlignedA = GetDirectionalIsoIndex(positionA, offsets[a].z, 0);
+    int2 positionA = int2(offsets[a].x + (transVoxelCoord.x * 2), offsets[a].y + (transVoxelCoord.y * 2));
+    int2 positionB = int2(offsets[b].x + (transVoxelCoord.x * 2), offsets[b].y + (transVoxelCoord.y * 2));
+
+    int3 positionAxisAlignedA = GetDirectionalIsoIndex(positionA, 0, (voxelsPerAxis * 2));
+    int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, 0, (voxelsPerAxis * 2));
         
-    int2 positionB = a >= 9 ? int2(offsets[b].x, offsets[b].y) : int2(offsets[b].x, offsets[b].y);
-    int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, offsets[b].z, 0);
-        
-    float3 pa = float3(positionAxisAlignedA.x, positionAxisAlignedA.y, positionAxisAlignedA.z);
-    float3 pb = float3(positionAxisAlignedB.x, positionAxisAlignedB.y, positionAxisAlignedB.z);
+    float3 pa = worldPos + (float3(positionAxisAlignedA.x, positionAxisAlignedA.y, positionAxisAlignedA.z) * isoDetailScale);
+    float3 pb = worldPos + (float3(positionAxisAlignedB.x, positionAxisAlignedB.y, positionAxisAlignedB.z) * isoDetailScale);
     int3 zeroAxis = GetDirectionalIsoIndex(int2(1,1), 0, 0);
     float3 zeroFAxis = float3(zeroAxis.x, zeroAxis.y, zeroAxis.z);
 
-    float3 position = pa;
-    float denom = densityB - densityA;
-    float t = abs(denom) < 0.01 ? 0.5 : (isoLevel - densityA) / denom;
-    float t1 = 1 - t;
-    
-    /*if (densityA < isoLevel)
-        position = pa;
-    if (densityB < isoLevel)
-        position = pb;*/
-    
-    if (abs(denom) > 0.1)
-    {
-        if (denom > 0)
-            position = pa + t * (pb - pa);
-        else
-            position = pb + t * (pa - pb);
-    }
-    else if (abs(isoLevel - densityA) < 0.01)
-        position = lerp(pa, pb, 0.5);
-    else
-        position = lerp(pa, pb, isoLevel - densityA);
-    
-    // (densityA <= 0.01 || densityB <= 0.01)
-    /*(pa * (densityA / 2)) + (pb * (densityB / 2));
-    else if (abs(isoLevel - densityA) > 0.01 || abs(isoLevel - densityB))
-        position = pa * abs((isoLevel - densityB) / 2) + pb * abs((isoLevel - densityA) / 2);
-    else if (abs(1 - densityA) > 0.01 || abs(1 - densityB))
-        position = pa * abs((1 - densityB) / 2) + pb * abs((1 - densityA) / 2);
-    else 
-    if (a>=9 || b >=9)
-        position = a >= 9 ? pa : pb;
-    
-        position = pa;*/
-    
+    //densityA = a >= 9 ? 0 : densityA; //GetTransvoxelDensity(transVoxelCoord, a);
+    //densityB = b >= 9 ? 0 : densityB; //GetTransvoxelDensity(transVoxelCoord, b);
 
+   /* float3 position = pa;
+    float denom = densityB - densityA;
+    float t = 0;*/
+
+    float denom = densityB - densityA;
+    float3 position = pa;
+    float t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
     
-    position *= zeroFAxis;
-    position *= isoDetailScale;
-    position += voxelCoord;
-    position += worldPos;
+   
+
+    if (abs(denom) > 0.01)
+    {
+        position = pa + (t * (pb - pa));
+    }
+    else
+    {
+        int v = t == 0 ? b : a;
+        int cornerData = transitionCornerData[v];
+        int dir = (cornerData >> 4) & 0x0F;
+        int idx = cornerData & 0x0F;
+        
+        densityA = _trCellValues[dir];
+        densityB = _trCellValues[idx];
+        
+        positionA = int2(offsets[dir].x + (transVoxelCoord.x * 2), offsets[dir].y + (transVoxelCoord.y * 2));
+        positionB = int2(offsets[idx].x + (transVoxelCoord.x * 2), offsets[idx].y + (transVoxelCoord.y * 2));
+
+        positionAxisAlignedA = GetDirectionalIsoIndex(positionA, 0, (voxelsPerAxis * 2));
+        positionAxisAlignedB = GetDirectionalIsoIndex(positionB, 0, (voxelsPerAxis * 2));
+        
+        pa = worldPos + (float3(positionAxisAlignedA.x, positionAxisAlignedA.y, positionAxisAlignedA.z) * isoDetailScale);
+        pb = worldPos + (float3(positionAxisAlignedB.x, positionAxisAlignedB.y, positionAxisAlignedB.z) * isoDetailScale);
+        
+        denom = densityB - densityA;
+        t = denom == 0 ? 0 : (isoLevel - densityA) / denom;
+        position = pa + (t * (pb - pa));
+        
+    }
+    
+    //position *= zeroFAxis;
     return position;
 }
 
@@ -251,10 +241,10 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     _trCellValues[5] = GetTransvoxelDensity(transVoxelCoord, 5);
     _trCellValues[7] = GetTransvoxelDensity(transVoxelCoord, 7);
     
-    _trCellValues[9] = GetTransvoxelDensity(transVoxelCoord, 9); // _trCellValues[0];
-    _trCellValues[10] = GetTransvoxelDensity(transVoxelCoord, 10); // _trCellValues[2];
-    _trCellValues[11] = GetTransvoxelDensity(transVoxelCoord, 11); //_trCellValues[6];
-    _trCellValues[12] = GetTransvoxelDensity(transVoxelCoord, 12); //_trCellValues[8];
+    _trCellValues[9] = 0.0; // GetTransvoxelDensity(transVoxelCoord, 9); // _trCellValues[0];
+    _trCellValues[10] = 0.0;//GetTransvoxelDensity(transVoxelCoord, 10); // _trCellValues[2];
+    _trCellValues[11] = 0.0; //GetTransvoxelDensity(transVoxelCoord, 11); //_trCellValues[6];
+    _trCellValues[12] = 0.0; //GetTransvoxelDensity(transVoxelCoord, 12); //_trCellValues[8];
     
     _trCellValues[0] = GetTransvoxelDensity(transVoxelCoord, 0);
     _trCellValues[2] = GetTransvoxelDensity(transVoxelCoord, 2);
@@ -271,19 +261,10 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         | (_trCellValues[6] < isoLevel ? 64 : 0)
         | (_trCellValues[3] < isoLevel ? 128 : 0)
         | (_trCellValues[4] < isoLevel ? 256 : 0));
+    
 
-    /*
-    int caseCode = ((_trCellValues[9] < 0 ? 1 : 0)
-        | (_trCellValues[1] < isoLevel ? 2 : 0)
-        | (_trCellValues[10] < isoLevel ? 4 : 0)
-        | (_trCellValues[5] < isoLevel ? 8 : 0)
-        | (_trCellValues[12] < isoLevel ? 16 : 0)
-        | (_trCellValues[7] < isoLevel ? 32 : 0)
-        | (_trCellValues[11] < isoLevel ? 64 : 0)
-        | (_trCellValues[3] < isoLevel ? 128 : 0)
-        | (_trCellValues[4] < isoLevel ? 256 : 0));*/
-
-    int3 voxelCoord = GetDirectionalIsoIndex(int2(id.x, id.y)) * isoScale;
+    int3 voxelCoord = GetDirectionalIsoIndex(transVoxelCoord);
+    float3 voxelPosition = float3(voxelCoord.x, voxelCoord.y, voxelCoord.z) * isoScale;
     int offset = transitionOffsets[caseCode];
     int length = transitionLengths[caseCode]; //0-511
     
@@ -311,18 +292,9 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         uint e = (edgeCodeC >> 4) & 0x0F;
         uint f = edgeCodeC & 0x0F;
         
-        float densityA = _trCellValues[a];
-        float densityB = _trCellValues[b];
-        
-        float densityC = _trCellValues[c];
-        float densityD = _trCellValues[d];
-        
-        float densityE = _trCellValues[e];
-        float densityF = _trCellValues[f];
-        
-        float3 positionA = InterpolateVertice(a, b, k, voxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, densityA, densityB);
-        float3 positionB = InterpolateVertice(c, d, k + 1, voxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, densityC, densityD);
-        float3 positionC = InterpolateVertice(e, f, k + 2, voxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, densityE, densityF);
+        float3 positionA = InterpolateVertice(a, b, k, int2(id.x, id.y), isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues[a], _trCellValues[b], _trCellValues);
+        float3 positionB = InterpolateVertice(c, d, k + 1, int2(id.x, id.y), isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues[c], _trCellValues[d], _trCellValues);
+        float3 positionC = InterpolateVertice(e, f, k + 2, int2(id.x, id.y), isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues[e], _trCellValues[f], _trCellValues);
 
         outVertexInfo[vertexFloatIndexA] = positionA.x;
         outVertexInfo[vertexFloatIndexA + 1] = positionA.y;

@@ -45,7 +45,6 @@ public:
     void UpdateIsoValuesDirty();
     void UpdateValuesDirty();
     void UpdateTypeValuesDirty();
-
 protected:    
     FBoxSphereBounds GetBoxSphereBoundsBounds();
     OctreeNode* root;

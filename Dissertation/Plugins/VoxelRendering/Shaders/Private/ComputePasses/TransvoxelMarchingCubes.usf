@@ -159,19 +159,36 @@ float3 InterpolateVertice(uint edgeCode, int k, int2 transVoxelCoord, float isoD
     int2 positionA = int2(offsets[a].x + (transVoxelCoord.x * 2), offsets[a].y + (transVoxelCoord.y * 2));
     int2 positionB = int2(offsets[b].x + (transVoxelCoord.x * 2), offsets[b].y + (transVoxelCoord.y * 2));
 
-    int3 positionAxisAlignedA = GetDirectionalIsoIndex(positionA, 0, (voxelsPerAxis * 2));
-    int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, 0, (voxelsPerAxis * 2));
+    int3 positionAxisAlignedA = GetDirectionalIsoIndex(positionA, 0, (voxelsPerAxis * 2)); // offsets[a].z if non-zero transcell distance
+    int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, 0, (voxelsPerAxis * 2)); // offsets[b].z 
         
     float3 pa = worldPos + (float3(positionAxisAlignedA.x, positionAxisAlignedA.y, positionAxisAlignedA.z) * isoDetailScale);
     float3 pb = worldPos + (float3(positionAxisAlignedB.x, positionAxisAlignedB.y, positionAxisAlignedB.z) * isoDetailScale);
     float3 position = pa;
     
     float denom = densityB - densityA;
-    float t = abs(denom) < 0.01? 
+    float t = 0;
+    abs(denom) < 0.01 ?
     (densityA > isoLevel ? -0.5 : 0.5)
     : (isoLevel - densityA) / denom;
     
-    t = clamp(t, -1.0, 1.0);
+    if (abs(denom) < 0.01)
+    {
+        if (a >= 9 || b >= 9)
+        {
+            t = (densityA > isoLevel ? 0.5 : -0.5);
+        }
+        else
+        {
+            t = (densityA > isoLevel ? -0.5 : 0.5);
+        }
+    }
+    else
+    {
+        t = (isoLevel - densityA) / denom;
+    }
+    
+        t = clamp(t, -1.0, 1.0);
     position = lerp(pa, pb, t); //pa + t * (pb - pa);
     return position;
 }
@@ -251,10 +268,10 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     _trCellValues[6] = GetTransvoxelDensity(transVoxelCoord, 6);
     _trCellValues[8] = GetTransvoxelDensity(transVoxelCoord, 8);
     
-    _trCellValues[9] = 0.0; //GetTransvoxelDensity(transVoxelCoord, 9); // _trCellValues[0];
-    _trCellValues[10] = 0.0;  //GetTransvoxelDensity(transVoxelCoord, 10); // _trCellValues[2];
-    _trCellValues[11] = 0.0;  //GetTransvoxelDensity(transVoxelCoord, 11); //_trCellValues[6];
-    _trCellValues[12] = 0.0;  //GetTransvoxelDensity(transVoxelCoord, 12); //_trCellValues[8];
+    _trCellValues[9] = GetTransvoxelDensity(transVoxelCoord, 9); // _trCellValues[0];
+    _trCellValues[10] = GetTransvoxelDensity(transVoxelCoord, 10); // _trCellValues[2];
+    _trCellValues[11] = GetTransvoxelDensity(transVoxelCoord, 11); //_trCellValues[6];
+    _trCellValues[12] = GetTransvoxelDensity(transVoxelCoord, 12); //_trCellValues[8];
     
     int caseCode = (
         (_trCellValues[0] < isoLevel ? 1 : 0)
@@ -278,9 +295,9 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     for (uint k = 0; k < length; k += 3) // Up to 0-24 
     {
         uint startVertexIndex = caseCode * 12;
-        uint edgeCodeA = flatTransitionVertexData[startVertexIndex + transitionLookup[offset + k]]; // [caseCode * 12 + k];
+        uint edgeCodeA = flatTransitionVertexData[startVertexIndex + transitionLookup[offset + k]]; // transitionLookup[offset + k] => up to 11
         uint edgeCodeB = flatTransitionVertexData[startVertexIndex + transitionLookup[offset + k + 1]]; // [caseCode * 12 + k + 1];
-        uint edgeCodeC = flatTransitionVertexData[startVertexIndex + transitionLookup[offset + k] + 2]; // [caseCode  * 12 + k + 2];
+        uint edgeCodeC = flatTransitionVertexData[startVertexIndex + transitionLookup[offset + k + 2]]; // [caseCode  * 12 + k + 2];
         
         float3 positionA = InterpolateVertice(edgeCodeA, k, int2(id.x, id.y), isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues);
         float3 positionB = InterpolateVertice(edgeCodeB, k + 1, int2(id.x, id.y), isoDetailScale, isoScale, minimumCornerWorldPos,_trCellValues);

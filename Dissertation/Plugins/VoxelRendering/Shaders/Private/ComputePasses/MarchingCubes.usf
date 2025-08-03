@@ -75,9 +75,7 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
 
     int typeA = GetType(cornerPosA);
     int typeB = GetType(cornerPosB);
-    float fType = lerp((float) typeA, (float) typeB, t);
-    int typeFinal = round(fType);
-    
+    int typeFinal = densityA < densityB ? typeA : typeB;
     uint base = vertexIndex * 3;
    
     outInfo[base + 0] = position.x;
@@ -111,7 +109,6 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         outNormalInfo[base * 3 + 0] = 0.0;
         outNormalInfo[base * 3 + 1] = 0.0;
         outNormalInfo[base * 3 + 2] = 0.0;
-        outTypeInfo[base] = 0.0;
     }
     
     float scale = baseDepthScale / (1 << leafDepth);

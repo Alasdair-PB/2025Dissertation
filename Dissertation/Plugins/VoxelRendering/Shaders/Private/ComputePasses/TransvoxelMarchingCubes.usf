@@ -232,9 +232,7 @@ void InterpolateVertice(uint edgeCode, int k, int2 transVoxelCoord, float isoDet
     
     int typeA = _trCellTypeValues[a];
     int typeB = _trCellTypeValues[b];
-    float fType = lerp((float) typeA, (float) typeB, t);
-    int typeFinal = round(fType);
-    
+    int typeFinal = densityA < densityB ? typeA : typeB;
     uint vertexFloatIndex = (vertexStartIndex + k) * 3;
 
     outTypeInfo[vertexStartIndex + k] = typeFinal;
@@ -270,7 +268,6 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         outVertexInfo[vertexFloatIndex] = 0.0;
         outVertexInfo[vertexFloatIndex + 1] = 0.0;
         outVertexInfo[vertexFloatIndex + 2] = 0.0;
-        outTypeInfo[vertexStartIndex + j] = 0;
     }
     
     if (resetNode > 0) return;

@@ -73,9 +73,9 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     float3 normalB = CalculateNormal(cornerPosB);
     float3 normalRes = normalA + (t * (normalB - normalA));
 
-    int typeA = GetType(cornerPosA);
-    int typeB = GetType(cornerPosB);
-    int typeFinal = densityA < densityB ? typeA : typeB;
+    uint typeA = GetType(cornerPosA);
+    uint typeB = GetType(cornerPosB);
+    uint typeFinal = densityA < densityB ? typeA : typeB;
     uint base = vertexIndex * 3;
    
     outInfo[base + 0] = position.x;

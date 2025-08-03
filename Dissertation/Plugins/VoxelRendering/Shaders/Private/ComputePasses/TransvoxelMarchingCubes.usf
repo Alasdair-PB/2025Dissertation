@@ -233,6 +233,7 @@ void InterpolateVertice(uint edgeCode, int k, int2 transVoxelCoord, float isoDet
     int typeA = _trCellTypeValues[a];
     int typeB = _trCellTypeValues[b];
     int typeFinal = densityA < densityB ? typeA : typeB;
+
     uint vertexFloatIndex = (vertexStartIndex + k) * 3;
 
     outTypeInfo[vertexStartIndex + k] = typeFinal;

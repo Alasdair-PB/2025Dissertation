@@ -329,7 +329,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.TangentToWorld = (half3x3) CalcTangentToWorldNoScale((float3x3) Intermediates.TangentToLocal);
     
     int typeValue = Input.Type;
-    half4 vertexColourOut = half4(((half) typeValue), 0.0, 0.0, 1.0);
+    half4 vertexColourOut = half4(typeValue, 0.0, 0.0, 1.0);
     Intermediates.Color = vertexColourOut;
     Intermediates.Alpha = half(1.0);
     Intermediates.Normal = Input.Normal.xyz;

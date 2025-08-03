@@ -13,45 +13,48 @@ float planetScaleRatio;
 StructuredBuffer<float> isoValues;
 RWStructuredBuffer<int> outTypeValues;
 
-// Core type = 0
+// Rock type = 0
 // Surface type = 1
-// Cliff type = 2
+// Core type = 2
+// Cliff type = 3
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void PlanetBiomeGenerator(int3 id : SV_DispatchThreadID)
 {
     if (any(id >= size))
         return;
+    
     int NoiseIndex = GetIsoIndex(id, size);
-    float isoValue = isoValues[NoiseIndex];
-
-    int typeValue = 1;
+    float isoValue = isoValues[NoiseIndex];    
+    float isoScale = (baseDepthScale / (size));
+    float3 position = (id * isoScale) + (isoScale / 2);
+    float distance = GetCenterDistance(position, isoScale, size, baseDepthScale);
+    float distanceMult = baseDepthScale * clamp(planetScaleRatio, 0.0, 1.0);
+    
+    distance = clamp(distance / distanceMult, 0, 1);
+    int typeValue = 3;  //distance < 0.15 ? 2: 0;
     bool hasAirNeighbor = false;
 
-    if (isoValue < isoLevel)
+    [unroll]
+    for (int i = 0; i < 6; i++)
     {
-        typeValue = 0;
+        int3 offset = int3(0, 0, 0);
+        offset[i % 3] = (i < 3) ? -1 : 1;
 
-        [unroll]
-        for (int i = 0; i < 6; i++)
+        int3 neighbor = id + offset;
+        if (any(neighbor < 0) || any(neighbor >= size))
+            continue;
+
+        int neighborIdx = GetIsoIndex(neighbor, size);
+        float neighborIso = isoValues[neighborIdx];
+
+        if (neighborIso > isoLevel - 0.15) // 0.1
         {
-            int3 offset = int3(0, 0, 0);
-            offset[i % 3] = (i < 3) ? -1 : 1;
-
-            int3 neighbor = id + offset;
-            if (any(neighbor < 0) || any(neighbor >= size))
-                continue;
-
-            int neighborIdx = GetIsoIndex(neighbor, size);
-            float neighborIso = isoValues[neighborIdx];
-
-            if (neighborIso > isoLevel - 0.1)
-            {
-                hasAirNeighbor = true;
-                break;
-            }
+            hasAirNeighbor = true;
+            break;
         }
     }
+    
     
     if (hasAirNeighbor)
     {
@@ -80,7 +83,7 @@ void PlanetBiomeGenerator(int3 id : SV_DispatchThreadID)
         if (facing > 0.5)
             typeValue = 1; // grass surface
         else
-            typeValue = 2; // cliff
+            typeValue = 3; // cliff
     }
 
     outTypeValues[NoiseIndex] = typeValue;

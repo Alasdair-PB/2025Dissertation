@@ -74,6 +74,7 @@ public:
     void SetBrushRadius(float radius) { if (palette) palette->SetBrushRadius(radius);}
     void SetPaintType(int type) { if (palette) palette->SetPaintType(type);}
     void ToggleLODState() { usePlayerLOD = !usePlayerLOD; }
+    void UpdateSceneProxyNodes(const TArray<FVoxelProxyUpdateDataNode> updateNodes);
 
 private:
     UPROPERTY(Transient)
@@ -91,14 +92,13 @@ protected:
     void CheckVoxelMining();
     void RotateAroundAxis(FVector axis, float degreeTick);
     void SetRenderDataLOD();
-    void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData, TArray<FVoxelTransVoxelNodeData>& transVoxelUpdateData);
+    void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData, TArray<FVoxelTransVoxelNodeData>& transVoxelUpdateData, const TArray<FVoxelProxyUpdateDataNode> updateNodes);
     void TraverseAndDraw();
     void SetNodeVisible(TArray<OctreeNode*>& nodes, OctreeNode* node);
     void SetChildrenVisible(TArray<OctreeNode*>& pushStack, OctreeNode* node, int currentDepth, int targetDepth);
     bool BalanceNode(TArray<OctreeNode*>& removalStack, TArray<OctreeNode*>& pushStack, TArray<OctreeNode*>& visibleNodes, OctreeNode* node);
     void BalanceVisibleNodes(TArray<OctreeNode*>&visibleNodes);
     void CheckRotation();
-
     void InitMaterial();
 
     Palette* palette;

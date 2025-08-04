@@ -200,8 +200,7 @@ void UVoxelMeshComponent::SetRenderDataLOD()
             }
         }
     }
-    sceneProxy->UpdateSelectedNodes(proxyNodes);
-    InvokeVoxelRenderer(computeUpdateDataNodes, computeTransvoxelData);
+    InvokeVoxelRenderer(computeUpdateDataNodes, computeTransvoxelData, proxyNodes);
 }
 
 void UVoxelMeshComponent::SetNodeVisible(TArray<OctreeNode*>& nodes, OctreeNode* node) {
@@ -375,7 +374,12 @@ void UVoxelMeshComponent::InvokeVoxelRenderPasses() {
     SetRenderDataLOD();
 }
 
-void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData, TArray<FVoxelTransVoxelNodeData>& transVoxelUpdateData) {
+void UVoxelMeshComponent::UpdateSceneProxyNodes(const TArray<FVoxelProxyUpdateDataNode> updateNodes) {
+    sceneProxy->UpdateSelectedNodes(updateNodes);
+}
+
+
+void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData, TArray<FVoxelTransVoxelNodeData>& transVoxelUpdateData, const TArray<FVoxelProxyUpdateDataNode> proxyNodes) {
 
     if (!sceneProxy) return;
     if (!sceneProxy->IsInitialized()) return;
@@ -389,9 +393,11 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData
         return;
 
     FMarchingCubesInterface::Dispatch(Params,
-        [WeakThis = TWeakObjectPtr<UVoxelMeshComponent>(this)](FMarchingCubesOutput OutputVal) {
+        [WeakThis = TWeakObjectPtr<UVoxelMeshComponent>(this), proxyNodes](FMarchingCubesOutput OutputVal) {
             if (!WeakThis.IsValid()) return;
             if (IsEngineExitRequested()) return;
+
+            WeakThis->UpdateSceneProxyNodes(proxyNodes);
         });
 }
 

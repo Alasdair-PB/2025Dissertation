@@ -241,9 +241,9 @@ void InterpolateVertice(uint edgeCode, int k, int2 transVoxelCoord, float isoDet
     outVertexInfo[vertexFloatIndex + 1] = position.y;
     outVertexInfo[vertexFloatIndex + 2] = position.z;
     
-    outNormalInfo[vertexFloatIndex] = 0.0;
-    outNormalInfo[vertexFloatIndex + 1] = 0.0;
-    outNormalInfo[vertexFloatIndex + 2] = 0.0;
+    outNormalInfo[vertexFloatIndex] = 1.0;
+    outNormalInfo[vertexFloatIndex + 1] = 1.0;
+    outNormalInfo[vertexFloatIndex + 2] = 1.0;
 }
 
 // x, y, 1

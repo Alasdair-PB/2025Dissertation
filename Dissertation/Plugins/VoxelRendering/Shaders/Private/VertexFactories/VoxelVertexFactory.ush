@@ -225,18 +225,15 @@ FMaterialVertexParameters GetMaterialVertexParameters(FVertexFactoryInput Input,
     Result.WorldPosition = WorldPosition;
     Result.VertexColor = Intermediates.Color;
     Result.PositionPrimitiveSpace = Result.PositionInstanceSpace; 
-    Result.TangentToWorld = mul(TangentToLocal, GetLocalToWorld3x3());
+    Result.TangentToWorld = Intermediates.TangentToWorld;
+
     Result.PreSkinnedPosition = WorldPosition;
     Result.PreSkinnedNormal = Intermediates.Normal;
 
     if (bIsPreviousFrame)
-    {
         Result.PositionInstanceSpace = VertexFactoryGetPreviousInstanceSpacePosition(Input, Intermediates);
-    }
     else
-    {
         Result.PositionInstanceSpace = VertexFactoryGetInstanceSpacePosition(Input, Intermediates);
-    }
     
     Result.PositionPrimitiveSpace = Result.PositionInstanceSpace;
     Result.LWCData = MakeMaterialLWCData(Result);
@@ -251,7 +248,6 @@ uint GetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
 FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
 {
     FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
-    
     Result.Particle.Color = half4(1, 1, 1, 1);
     Result.TwoSidedSign = 1;
     Result.VertexColor = Interpolants.Color;
@@ -295,11 +291,7 @@ float3x3 CalcTangentBasis(FVertexFactoryInput Input)
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
     FVertexFactoryInterpolantsVSToPS Interpolants;
-    
-    float3x3 TangentToLocal = CalcTangentBasis(Input);
-    float3x3 TangentToWorld = mul(TangentToLocal, GetLocalToWorld3x3());
-
-    Interpolants.TangentToWorld0.xyz = TangentToWorld[0];
+    Interpolants.TangentToWorld0.xyz = Intermediates.TangentToWorld[0];
     Interpolants.TangentToWorld0.w = 0.0;    
     Interpolants.TangentToWorld2 = float4((float3)Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
     
@@ -313,16 +305,23 @@ half3x3 CalcTangentToLocal(FVertexFactoryInput Input)
 {
     half3x3 TangentToLocal;
     float3 Normal = SafeNormalize(Input.Normal);
-    float3 Tangent = SafeNormalize(cross(Normal, float3(0.0, 0.0, 1.0)));
+    float3 WorldUpWS = float3(0.0, 0.0, 1.0);
+    float3x3 WorldToLocal = GetLocalToWorld3x3();
+    float3x3 LocalToWorld = WorldToLocal;
+    float3x3 InverseLocalToWorld = transpose(LocalToWorld);
+    float3 WorldUpLS = mul(WorldUpWS, InverseLocalToWorld);
+    float3 Tangent = SafeNormalize(cross(Normal, WorldUpLS));
+    
     if (length(Tangent) < 0.1)
         Tangent = SafeNormalize(cross(Normal, float3(1.0, 0.0, 0.0)));
+
     float3 Binormal = cross(Normal, Tangent);
-    
     TangentToLocal[0] = half3(Tangent);
     TangentToLocal[1] = half3(Binormal);
     TangentToLocal[2] = half3(Normal);
     return TangentToLocal;
 }
+
 
 FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
 {
@@ -330,9 +329,9 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
     Intermediates.Position = Input.Position.xyz;
     Intermediates.TangentToLocal = CalcTangentToLocal(Input);
-    Intermediates.TangentToWorldSign = 1;
     Intermediates.TangentToWorld = (half3x3) CalcTangentToWorldNoScale((float3x3) Intermediates.TangentToLocal);
-    
+    Intermediates.TangentToWorldSign = (half) (determinant((float3x3) Intermediates.TangentToWorld) < 0 ? -1.0 : 1.0);
+
     int typeValue = Input.Type;
     half4 vertexColourOut = half4(typeValue, 0.0, 0.0, 1.0);
     Intermediates.Color = vertexColourOut;

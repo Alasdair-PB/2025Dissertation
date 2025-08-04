@@ -136,8 +136,8 @@ void UVoxelMeshComponent::CheckVoxelMining() {
                         GetWorld(),
                         vfxSystem,
                         position,
-                        FRotator(),
-                        FVector(palette->GetBrushRadius()/100.0f),
+                        (end - start).Rotation(),
+                        FVector((palette->GetBrushRadius()/500.0f)),
                         true,
                         true
                     );

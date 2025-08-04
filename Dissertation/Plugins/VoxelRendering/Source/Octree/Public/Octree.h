@@ -41,11 +41,12 @@ public:
     }
 
     int GetIsoValueFromIndex(FIntVector coord, int axisSize);
-    void ApplyDeformationAtPosition(FVector position, float radius, float influence, uint32 type = 0, bool additive = false);
+    void ApplyDeformationAtPosition(FVector position, float radius, float influence, uint32 type = 0, bool additive = false, bool paintOnly = false);
     void UpdateIsoValuesDirty();
     void UpdateValuesDirty();
     void UpdateTypeValuesDirty();
     void DebugOctreeNodes(UWorld* world);
+    void ResetDeformation();
 
 protected:
     FBoxSphereBounds GetBoxSphereBoundsBounds();

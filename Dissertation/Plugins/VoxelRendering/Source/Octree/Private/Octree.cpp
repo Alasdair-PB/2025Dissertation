@@ -242,6 +242,30 @@ void Octree::UpdateValuesDirty() {
     UpdateIsoValuesDirty();
 }
 
+void Octree::ResetDeformation() {
+    if (deltaTypeBuffer.IsValid() && deltaIsoBuffer.IsValid()) {
+
+        int bufferSize = deltaTypeBuffer->GetCapacity();
+        float* isoPtr = deltaIsoArray.GetData();
+        uint32* typePtr = deltaTypeArray.GetData();
+
+        ENQUEUE_RENDER_COMMAND(CopyTypeDelta)(
+            [deltaIsoBuffer = deltaIsoBuffer, deltaTypeBuffer = deltaTypeBuffer, typePtr, isoPtr, bufferSize](FRHICommandListImmediate& RHICmdList)
+            {
+                FMemory::Memzero(typePtr, bufferSize * sizeof(uint32));
+                FMemory::Memzero(isoPtr, bufferSize * sizeof(float));
+
+                void* LockedData = RHICmdList.LockBuffer(deltaTypeBuffer->buffer, 0, bufferSize * sizeof(uint32), RLM_WriteOnly);
+                FMemory::Memzero(LockedData, bufferSize * sizeof(uint32));
+                RHICmdList.UnlockBuffer(deltaTypeBuffer->buffer);
+
+                void* LockedIsoData = RHICmdList.LockBuffer(deltaIsoBuffer->buffer, 0, bufferSize * sizeof(float), RLM_WriteOnly);
+                FMemory::Memzero(LockedIsoData, bufferSize * sizeof(float));
+                RHICmdList.UnlockBuffer(deltaIsoBuffer->buffer);
+            });
+    }
+}
+
 void Octree::UpdateTypeValuesDirty() {
     if (!bTypeValuesDirty) return;
 
@@ -252,8 +276,8 @@ void Octree::UpdateTypeValuesDirty() {
         ENQUEUE_RENDER_COMMAND(CopyTypeDelta)(
             [deltaTypeBuffer = deltaTypeBuffer, typePtr, bufferSize, bTypeValuesDirty = bTypeValuesDirty](FRHICommandListImmediate& RHICmdList)
             {
-                void* LockedData = RHICmdList.LockBuffer(deltaTypeBuffer->buffer, 0, bufferSize * sizeof(float), RLM_WriteOnly);
-                FMemory::Memcpy(LockedData, typePtr, bufferSize * sizeof(float));
+                void* LockedData = RHICmdList.LockBuffer(deltaTypeBuffer->buffer, 0, bufferSize * sizeof(uint32), RLM_WriteOnly);
+                FMemory::Memcpy(LockedData, typePtr, bufferSize * sizeof(uint32));
                 RHICmdList.UnlockBuffer(deltaTypeBuffer->buffer);
             });
     }
@@ -285,7 +309,7 @@ int Octree::GetIsoValueFromIndex(FIntVector coord, int axisSize) {
     return FMath::Max(0, FMath::Min(index, maxIsoCount + 1));
 }
 
-void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float influence, uint32 paintType, bool additive) {
+void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float influence, uint32 paintType, bool additive, bool paintOnly) {
     FTransform parentTransform = parent->GetTransform();
     inPosition = parentTransform.InverseTransformPosition(inPosition);
 
@@ -319,15 +343,23 @@ void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float 
                 if (dx < 0 || dx >= isoValuesPerAxisMaxRes) continue;
 
                 int flatIndex = GetIsoValueFromIndex(FIntVector3(dx, dy, dz), isoValuesPerAxisMaxRes);
-                float innitIsoValue = deltaIsoArray[flatIndex];
-                float modifiedIsoValue = innitIsoValue;
 
-                float distance = FVector::Distance(FVector(dx, dy, dz), FVector(localInPosition.X, localInPosition.Y, localInPosition.Z));
-                float t = FMath::Clamp(1.0f - (distance / isoRadius), 0.0f, 1.0f);
-                float weightedInfluence = influence * t * t;
+                if (!paintOnly) {
+                    float innitIsoValue = deltaIsoArray[flatIndex];
+                    float modifiedIsoValue = innitIsoValue;
 
-                additive ? modifiedIsoValue -= weightedInfluence : modifiedIsoValue += weightedInfluence;
-                modifiedIsoValue = FMath::Clamp(modifiedIsoValue, -1.0f, 1.0f);
+                    float distance = FVector::Distance(FVector(dx, dy, dz), FVector(localInPosition.X, localInPosition.Y, localInPosition.Z));
+                    float t = FMath::Clamp(1.0f - (distance / isoRadius), 0.0f, 1.0f);
+                    float weightedInfluence = influence * t * t;
+
+                    additive ? modifiedIsoValue -= weightedInfluence : modifiedIsoValue += weightedInfluence;
+                    modifiedIsoValue = FMath::Clamp(modifiedIsoValue, -1.0f, 1.0f);
+
+                    if (innitIsoValue != modifiedIsoValue) {
+                        deltaIsoArray[flatIndex] = modifiedIsoValue;
+                        bIsoValuesDirty = true;
+                    }
+                }
 
                 uint32 innitType = deltaTypeArray[flatIndex];
                 uint32 modifiedType = additive ? paintType : innitType;
@@ -335,11 +367,6 @@ void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float 
                 if (innitType != modifiedType) {
                     bTypeValuesDirty = true;
                     deltaTypeArray[flatIndex] = modifiedType;
-                }
-
-                if (innitIsoValue != modifiedIsoValue) { 
-                    deltaIsoArray[flatIndex] = modifiedIsoValue;
-                    bIsoValuesDirty = true; 
                 }
             }
         }

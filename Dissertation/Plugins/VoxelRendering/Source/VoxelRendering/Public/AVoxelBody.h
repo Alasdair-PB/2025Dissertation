@@ -9,7 +9,15 @@
 class UVoxelMeshComponent;
 class UBufferResource;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGlobalEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRefresh);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDebugToggle);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRotateToggle);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLODToggle);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeformToggle);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDensityDelta, float, value);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRadiusDelta, float, value);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTypeDelta, int, value);
 
 UCLASS()
 class VOXELRENDERING_API AVoxelBody : public AActor
@@ -19,25 +27,28 @@ class VOXELRENDERING_API AVoxelBody : public AActor
 public:
 
     UFUNCTION(BlueprintCallable, Category = "Events")
-    static void BroadcastGlobalEvent();
+    static void BroadcastDensityDeltaEvent(float density);
 
-    UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-    void OnRefreshButtonClicked();
+    UFUNCTION(BlueprintCallable, Category = "Events")
+    static void BroadcastRadiusDeltaEvent(float radius);
 
-    UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-    void OnTogglePlanetRotationClicked();
+    UFUNCTION(BlueprintCallable, Category = "Events")
+    static void BroadcastTypeDeltaEvent(int type);
 
-    UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-    void OnToggleDebugNodesClicked();
+    UFUNCTION(BlueprintCallable, Category = "Events")
+    static void BroadcastRotateToggleEvent();
 
-    UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-    void OnSliderBrushDensityModified(float density);
+    UFUNCTION(BlueprintCallable, Category = "Events")
+    static void BroadcastDeformToggleEvent();
 
-    UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-    void OnSliderBrushRadiusModified(float radius);
+    UFUNCTION(BlueprintCallable, Category = "Events")
+    static void BroadcastDebugToggleEvent();
 
-    UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-    void OnDropDownBrushTypeModified(int type);
+    UFUNCTION(BlueprintCallable, Category = "Events")
+    static void BroadcastRefreshEvent();
+
+    UFUNCTION(BlueprintCallable, Category = "Events")
+    static void BroadcastLODToggleEvent();
 
     AVoxelBody();
     static AVoxelBody* CreateVoxelMeshActor(UWorld* World, float scale, int size, int depth, int voxelsPerAxis, 
@@ -56,6 +67,9 @@ public:
     void TogglePlanetRotate();
 
     UFUNCTION(BlueprintCallable, Category = "UI")
+    void ToggleDeform();
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
     void SetBrushDensity(float density);
 
     UFUNCTION(BlueprintCallable, Category = "UI")
@@ -64,12 +78,46 @@ public:
     UFUNCTION(BlueprintCallable, Category = "UI")
     void SetBrushType(int type);
 
-    static FOnGlobalEvent OnGlobalEvent;
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void ToggleLOD();
+
+    static FOnRefresh onRefresh;
+    static FOnDebugToggle onDebugToggle;
+    static FOnRotateToggle onRotateToggle;
+    static FOnLODToggle onLODToggle;
+    static FOnDeformToggle onDeformToggle;
+
+    static FOnDensityDelta onDensityDelta;
+    static FOnRadiusDelta onRadiusDelta;
+    static FOnTypeDelta onTypeDelta;
 
     void BeginPlay()
     {
         Super::BeginPlay();
-        OnGlobalEvent.AddDynamic(this, &AVoxelBody::ToggleNodeDebug);
+        onRefresh.AddDynamic(this, &AVoxelBody::RefreshDeformation);
+        onDebugToggle.AddDynamic(this, &AVoxelBody::ToggleNodeDebug);
+        onRotateToggle.AddDynamic(this, &AVoxelBody::TogglePlanetRotate);
+
+        onDensityDelta.AddDynamic(this, &AVoxelBody::SetBrushDensity);
+        onRadiusDelta.AddDynamic(this, &AVoxelBody::SetBrushRadius);
+        onTypeDelta.AddDynamic(this, &AVoxelBody::SetBrushType);
+        onLODToggle.AddDynamic(this, &AVoxelBody::ToggleLOD);
+        onDeformToggle.AddDynamic(this, &AVoxelBody::ToggleDeform);
+    }
+
+    void EndPlay(const EEndPlayReason::Type EndPlayReason)
+    {
+        Super::EndPlay(EndPlayReason);
+
+        onRefresh.RemoveDynamic(this, &AVoxelBody::RefreshDeformation);
+        onDebugToggle.RemoveDynamic(this, &AVoxelBody::ToggleNodeDebug);
+        onRotateToggle.RemoveDynamic(this, &AVoxelBody::TogglePlanetRotate);
+
+        onDensityDelta.RemoveDynamic(this, &AVoxelBody::SetBrushDensity);
+        onRadiusDelta.RemoveDynamic(this, &AVoxelBody::SetBrushRadius);
+        onTypeDelta.RemoveDynamic(this, &AVoxelBody::SetBrushType);
+        onLODToggle.RemoveDynamic(this, &AVoxelBody::ToggleLOD);
+        onDeformToggle.RemoveDynamic(this, &AVoxelBody::ToggleDeform);
     }
 
 protected:

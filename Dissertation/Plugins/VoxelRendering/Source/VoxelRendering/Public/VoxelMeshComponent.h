@@ -62,6 +62,7 @@ public:
 
     void TogglePlanetRotate() { rotatePlanet = !rotatePlanet; }
     void ToggleDebugNode() { debugNodes = !debugNodes; }
+    void ToggleDeform() { deform = !deform; }
 
     void SetRotationState(bool inState) { rotatePlanet = inState; }
     void SetDebugNodesState(bool inState) { debugNodes = inState; }
@@ -70,6 +71,7 @@ public:
     void SetBrushDensity(float density) { if (palette) palette->SetBrushPower(density);}
     void SetBrushRadius(float radius) { if (palette) palette->SetBrushRadius(radius);}
     void SetPaintType(int type) { if (palette) palette->SetPaintType(type);}
+    void ToggleLODState() { usePlayerLOD = !usePlayerLOD; }
 
 private:
     UPROPERTY(Transient)
@@ -102,4 +104,6 @@ protected:
     UBodySetup* voxelBodySetup;
     bool rotatePlanet;
     bool debugNodes;
+    bool usePlayerLOD;
+    bool deform;
 };

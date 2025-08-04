@@ -8,7 +8,7 @@
 #include "RenderData.h"
 #include "PhysicsEngine/BodySetup.h"
 
-UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr), rotatePlanet(true), debugNodes(false)
+UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr), rotatePlanet(true), debugNodes(false), usePlayerLOD(true), deform(true)
 {
     PrimaryComponentTick.bCanEverTick = true;
     bUseAsOccluder = false;
@@ -103,7 +103,8 @@ void UVoxelMeshComponent::RotateAroundAxis(FVector axis, float degreeTick)
 }
 
 void UVoxelMeshComponent::RefreshDeformation() {
-
+    if (!tree) return;
+    tree->ResetDeformation();
 }
 
 void UVoxelMeshComponent::CheckVoxelMining() {
@@ -125,9 +126,14 @@ void UVoxelMeshComponent::CheckVoxelMining() {
         if (tree->RaycastToVoxelBody(hit, start, end))
         {
             FVector position = hit.Location;
-            leftMouseDown ?
-                tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower()) :
-                tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower(), palette->GetPaintType(), true);
+            if (deform) {
+                leftMouseDown ?
+                    tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower()) :
+                    tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower(), palette->GetPaintType(), true, false);
+            }
+            else {
+                tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower(), palette->GetPaintType(), true, true);
+            }
         }
     }
 }
@@ -318,7 +324,6 @@ void UVoxelMeshComponent::BalanceVisibleNodes(TArray<OctreeNode*>& visibleNodes)
         BalanceVisibleNodes(visibleNodes);
 }
 
-const bool b_UseNode = true;
 void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode* node) {
     if (!node) return;
 
@@ -326,7 +331,7 @@ void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode
         playerController = GetWorld()->GetFirstPlayerController();
 
     APawn* playerPawn = playerController->GetPawn();
-    FTransform playerTransform = b_UseNode ? player->GetActorTransform() : playerPawn->GetActorTransform();
+    FTransform playerTransform = usePlayerLOD ? playerPawn->GetActorTransform() : player->GetActorTransform();
     FVector playerPos = playerTransform.GetLocation();
     playerPos = GetComponentTransform().InverseTransformPosition(playerPos);
 

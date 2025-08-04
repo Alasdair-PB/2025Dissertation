@@ -309,7 +309,7 @@ int Octree::GetIsoValueFromIndex(FIntVector coord, int axisSize) {
     return FMath::Max(0, FMath::Min(index, maxIsoCount + 1));
 }
 
-void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float influence, uint32 paintType, bool additive, bool paintOnly) {
+bool Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float influence, uint32 paintType, bool additive, bool paintOnly) {
     FTransform parentTransform = parent->GetTransform();
     inPosition = parentTransform.InverseTransformPosition(inPosition);
 
@@ -322,7 +322,7 @@ void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float 
     bounds = bounds.BuildAABB(nodeCenter, extent);
 
     if (!bounds.IsInsideOrOnXY(inPosition))
-        return;
+        return false;
 
     float isoScale = scale / isoValuesPerAxisMaxRes;
     float isoRadius = radius / isoScale;
@@ -371,6 +371,8 @@ void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float 
             }
         }
     }
+
+    return bIsoValuesDirty;
 }
 
 void Octree::DebugOctreeNodes(UWorld* world) {

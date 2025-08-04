@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "Octree.h"
 #include "Delegates/DelegateCombinations.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "AVoxelBody.generated.h"
 
 class UVoxelMeshComponent;
@@ -53,7 +55,7 @@ public:
     AVoxelBody();
     static AVoxelBody* CreateVoxelMeshActor(UWorld* World, float scale, int size, int depth, int voxelsPerAxis, 
         TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer, 
-        AActor* eraser, AActor* player);
+        AActor* eraser, AActor* player, UNiagaraSystem* vfxSystem);
 
     void SetMeshComponent(UVoxelMeshComponent* inMeshComponent);
 

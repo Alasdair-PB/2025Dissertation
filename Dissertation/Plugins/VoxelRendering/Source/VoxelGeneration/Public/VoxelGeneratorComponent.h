@@ -9,6 +9,8 @@
 #include "../../ComputeDispatchers/Public/PlanetGeneratorDispatcher.h"
 #include "StopWatch.h"
 #include "VoxelMeshComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "VoxelGeneratorComponent.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -61,6 +63,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")
 	int surfaceLayers = 3;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MyCategory")
+	UNiagaraSystem* pointer;
 
 	UVoxelGeneratorComponent();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;

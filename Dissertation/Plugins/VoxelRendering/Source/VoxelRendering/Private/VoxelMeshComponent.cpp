@@ -30,12 +30,12 @@ void UVoxelMeshComponent::InitMaterial() {
 void UVoxelMeshComponent::InitVoxelMesh(
     float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis,
     TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer,
-    AActor* inEraser, AActor* inPlayer)
+    AActor* inEraser, AActor* inPlayer, UNiagaraSystem* inVfxSystem)
 {
     eraser = inEraser;
     player = inPlayer;
     palette = new Palette(100.0f, 1.0, 3);
-
+    vfxSystem = inVfxSystem;
     AActor* owner = GetOwner();
     tree = new Octree(owner, isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
 }
@@ -127,9 +127,21 @@ void UVoxelMeshComponent::CheckVoxelMining() {
         {
             FVector position = hit.Location;
             if (deform) {
-                leftMouseDown ?
+                bool terrainEdit = leftMouseDown ?
                     tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower()) :
                     tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower(), palette->GetPaintType(), true, false);
+
+                if (vfxSystem && terrainEdit && leftMouseDown) {
+                    UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+                        GetWorld(),
+                        vfxSystem,
+                        position,
+                        FRotator(),
+                        FVector(palette->GetBrushRadius()/100.0f),
+                        true,
+                        true
+                    );
+                }
             }
             else {
                 tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower(), palette->GetPaintType(), true, true);

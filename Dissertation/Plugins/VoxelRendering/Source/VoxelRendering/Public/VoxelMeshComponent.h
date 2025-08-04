@@ -7,6 +7,8 @@
 #include "OctreeNode.h"
 #include "MarchingCubesDispatcher.h"
 #include "VoxelSceneViewExtension.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "VoxelMeshComponent.generated.h"
 
 static const float isoLevel = 0.5f;
@@ -45,7 +47,7 @@ class VOXELRENDERING_API UVoxelMeshComponent : public UMeshComponent
 public:
     UVoxelMeshComponent();
     void InitVoxelMesh(float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer,
-        AActor* inEraser, AActor* inPlayer)
+        AActor* inEraser, AActor* inPlayer, UNiagaraSystem* vfxSystem)
     ;
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
@@ -80,6 +82,7 @@ protected:
     APlayerController* playerController;
     AActor* eraser;
     AActor* player;
+
     virtual void BeginPlay() override;
     virtual void BeginDestroy() override;
     virtual void OnRegister() override;
@@ -102,6 +105,7 @@ protected:
     FVoxelSceneProxy* sceneProxy;
     Octree* tree;
     UBodySetup* voxelBodySetup;
+    UNiagaraSystem* vfxSystem;
     bool rotatePlanet;
     bool debugNodes;
     bool usePlayerLOD;

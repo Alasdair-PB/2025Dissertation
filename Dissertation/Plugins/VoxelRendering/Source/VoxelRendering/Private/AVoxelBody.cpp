@@ -56,7 +56,7 @@ void AVoxelBody::BroadcastDeformToggleEvent() {
 }
 
 AVoxelBody* AVoxelBody::CreateVoxelMeshActor(UWorld* World, float scale, int size, int depth, int voxelsPerAxis,
-    TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer, AActor* eraser, AActor* player)
+    TArray<float>& inIsovalueBuffer, TArray<uint32>& inTypeValueBuffer, AActor* eraser, AActor* player, UNiagaraSystem* vfxSystem)
 {
     if (!World) return nullptr;
 
@@ -69,7 +69,7 @@ AVoxelBody* AVoxelBody::CreateVoxelMeshActor(UWorld* World, float scale, int siz
 
     voxelMesh->AttachToComponent(newActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
     voxelMesh->RegisterComponent();
-    voxelMesh->InitVoxelMesh(scale, size, depth, voxelsPerAxis, inIsovalueBuffer, inTypeValueBuffer, eraser, player);
+    voxelMesh->InitVoxelMesh(scale, size, depth, voxelsPerAxis, inIsovalueBuffer, inTypeValueBuffer, eraser, player, vfxSystem);
 
     newActor->SetMeshComponent(voxelMesh);
     return newActor;

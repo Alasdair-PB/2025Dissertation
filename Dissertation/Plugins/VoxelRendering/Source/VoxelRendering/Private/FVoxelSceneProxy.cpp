@@ -121,7 +121,7 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 
 		if (selectedNodes.Num() == 0) continue; 
 
-		for (const FVoxelProxyUpdateDataNode& node : selectedNodes)
+		for (const FVoxelProxyUpdateDataNode node : selectedNodes)
 		{
 			if ((node.vertexFactory.IsValid() && node.vertexFactory->IsInitialized()))
 			{

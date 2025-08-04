@@ -10,7 +10,7 @@ public class VoxelGeneration : ModuleRules
 		PublicIncludePaths.AddRange(new string[] {});	
 		PrivateIncludePaths.AddRange(new string[] {});
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "ComputeDispatchers", "Octree", "Profiling", "CoreUObject", "VoxelRendering", "Engine", "InputCore", "ProceduralMeshComponent"});
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "Niagara", "ComputeDispatchers", "Octree", "Profiling", "CoreUObject", "VoxelRendering", "Engine", "InputCore", "ProceduralMeshComponent"});
         PrivateDependencyModuleNames.AddRange(new string[] { "CoreUObject", "Engine","Slate", "SlateCore" });
 		DynamicallyLoadedModuleNames.AddRange(new string[]{});
 	}

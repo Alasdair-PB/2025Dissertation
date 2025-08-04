@@ -8,11 +8,14 @@
 #include "RenderData.h"
 #include "PhysicsEngine/BodySetup.h"
 
-UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr)
+UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr), rotatePlanet(true), debugNodes(false)
 {
     PrimaryComponentTick.bCanEverTick = true;
     bUseAsOccluder = false;
+    InitMaterial();
+}
 
+void UVoxelMeshComponent::InitMaterial() {
     static ConstructorHelpers::FObjectFinder<UMaterial> MaterialAsset(TEXT("/Game/Materials/M_VoxelPixelShader"));
     if (MaterialAsset.Succeeded()) {
         Material = UMaterialInstanceDynamic::Create(MaterialAsset.Object, this);
@@ -24,30 +27,17 @@ UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr)
     }
 }
 
-void UVoxelMeshComponent::CheckVoxelMining() {
-    if (!playerController)
-        playerController = GetWorld()->GetFirstPlayerController();
+void UVoxelMeshComponent::InitVoxelMesh(
+    float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis,
+    TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer,
+    AActor* inEraser, AActor* inPlayer)
+{
+    eraser = inEraser;
+    player = inPlayer;
+    palette = new Palette(100.0f, 1.0, 3);
 
-    bool leftMouseDown = playerController->IsInputKeyDown(EKeys::LeftMouseButton);
-    bool keyDown = leftMouseDown || playerController->IsInputKeyDown(EKeys::RightMouseButton);
-
-    if (!keyDown || playerController->IsInputKeyDown(EKeys::LeftShift)) return;
-
-    FVector worldLoc, worldDir;
-    if (playerController->DeprojectMousePositionToWorld(worldLoc, worldDir))
-    {
-        FHitResult hit;
-        FVector start = worldLoc;
-        FVector end = start + worldDir * 1000;
-
-        if (tree->RaycastToVoxelBody(hit, start, end))
-        {
-            FVector position = hit.Location;
-            leftMouseDown ? 
-            tree->ApplyDeformationAtPosition(position, 30.0f, 1.0f) :
-            tree->ApplyDeformationAtPosition(position, 30.0f, 1.0f, 1, true);
-        }
-    }
+    AActor* owner = GetOwner();
+    tree = new Octree(owner, isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
 }
 
 void UVoxelMeshComponent::OnRegister()
@@ -71,38 +61,6 @@ void UVoxelMeshComponent::SetMaterial(int32 ElementIndex, UMaterialInterface* In
     UMeshComponent::SetMaterial(ElementIndex, InMaterial);
 }
 
-const bool rotatePlanet = false;
-void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    if (!tree) return;
-    TraverseAndDraw(tree->GetRoot());
-    InvokeVoxelRenderPasses();
-    if (rotatePlanet) RotateAroundAxis(FVector(0.2f, 1.0f, 0.2f), 0.5f);
-}
-
-void UVoxelMeshComponent::RotateAroundAxis(FVector axis, float degreeTick)
-{
-    axis = axis.GetSafeNormal();
-    FQuat quatRotation = FQuat(axis, FMath::DegreesToRadians(degreeTick));
-    FQuat currentRotation = GetComponentQuat();
-    FQuat newRotation = quatRotation * currentRotation;
-    newRotation.Normalize();
-    GetOwner()->SetActorRotation(newRotation);
-}
-
-void UVoxelMeshComponent::InitVoxelMesh(
-    float scale, int inBufferSizePerAxis, int depth, int voxelsPerAxis, 
-    TArray<float>& in_isoValueBuffer, TArray<uint32>& in_typeValueBuffer,
-    AActor* inEraser, AActor* inPlayer)
-{    
-    eraser = inEraser;
-    player = inPlayer;
-
-    AActor* owner = GetOwner();
-    tree = new Octree(owner, isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
-}
-
 FPrimitiveSceneProxy* UVoxelMeshComponent::CreateSceneProxy()
 {
     sceneProxy = new FVoxelSceneProxy(this);
@@ -117,6 +75,61 @@ FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld)
 
 UBodySetup* UVoxelMeshComponent::GetBodySetup() {
     return voxelBodySetup;
+}
+
+void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+    if (!tree) return;
+    TraverseAndDraw();
+    InvokeVoxelRenderPasses();
+    CheckRotation();
+
+}
+
+void UVoxelMeshComponent::CheckRotation() {
+    if (rotatePlanet) RotateAroundAxis(FVector(0.2f, 1.0f, 0.2f), 0.5f);
+}
+
+void UVoxelMeshComponent::RotateAroundAxis(FVector axis, float degreeTick)
+{
+    axis = axis.GetSafeNormal();
+    FQuat quatRotation = FQuat(axis, FMath::DegreesToRadians(degreeTick));
+    FQuat currentRotation = GetComponentQuat();
+    FQuat newRotation = quatRotation * currentRotation;
+    newRotation.Normalize();
+    GetOwner()->SetActorRotation(newRotation);
+}
+
+void UVoxelMeshComponent::RefreshDeformation() {
+
+}
+
+void UVoxelMeshComponent::CheckVoxelMining() {
+    if (!playerController)
+        playerController = GetWorld()->GetFirstPlayerController();
+
+    bool leftMouseDown = playerController->IsInputKeyDown(EKeys::LeftMouseButton);
+    bool keyDown = leftMouseDown || playerController->IsInputKeyDown(EKeys::RightMouseButton);
+
+    if (!keyDown || playerController->IsInputKeyDown(EKeys::LeftShift)) return;
+
+    FVector worldLoc, worldDir;
+    if (playerController->DeprojectMousePositionToWorld(worldLoc, worldDir))
+    {
+        FHitResult hit;
+        FVector start = worldLoc;
+        FVector end = start + worldDir * 1000;
+
+        if (tree->RaycastToVoxelBody(hit, start, end))
+        {
+            FVector position = hit.Location;
+            leftMouseDown ?
+                tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower()) :
+                tree->ApplyDeformationAtPosition(position, palette->GetBrushRadius(), palette->GetBrushPower(), palette->GetPaintType(), true);
+        }
+    }
 }
 
 void ResetVisibleNodes(OctreeNode* node) {
@@ -358,8 +371,6 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData
     if (!Params.Input.updateData.BuildDataCache())
         return;
 
-    check(Params.Input.updateData.isoBuffer);
-
     FMarchingCubesInterface::Dispatch(Params,
         [WeakThis = TWeakObjectPtr<UVoxelMeshComponent>(this)](FMarchingCubesOutput OutputVal) {
             if (!WeakThis.IsValid()) return;
@@ -367,32 +378,7 @@ void UVoxelMeshComponent::InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData
         });
 }
 
-void UVoxelMeshComponent::TraverseAndDraw(OctreeNode* node) {
-    if (!node) return;
-
-    if (node->IsVisible()) {
-        AABB bounds = node->GetBounds();
-        DrawDebugBox(GetWorld(), FVector(bounds.Center()), FVector(bounds.Extent()), FColor::Green, false, -1.f, 0, 1.f);
-        const int resolution = 2;
-        FVector3f min = bounds.min;
-        FVector3f max = bounds.max;
-
-        for (int x = 0; x <= resolution; ++x) {
-            for (int y = 0; y <= resolution; ++y) {
-                for (int z = 0; z <= resolution; ++z) {
-                    FVector3f p = FMath::Lerp(min, max, FVector3f(
-                        (float) x / resolution,
-                        (float) y / resolution,
-                        (float) z / resolution
-                    ));
-                    float v = node->GetDepth();
-                    FColor color = (FMath::Abs(v) <= 1.0f) ? FColor::White : (v <= 2.0f ? FColor::Blue : FColor::Red);
-                    DrawDebugPoint(GetWorld(), FVector(p), 5.f, color, false, -1.f);
-                }
-            }
-        }
-        //return;
-    }
-    for (int i = 0; i < 8; ++i)
-        TraverseAndDraw(node->children[i]);
+void UVoxelMeshComponent::TraverseAndDraw() {
+    if (!debugNodes) return;
+    tree->DebugOctreeNodes(GetWorld());
 }

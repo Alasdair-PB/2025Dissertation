@@ -93,6 +93,7 @@ void FIsoUniformBuffer::InitRHI(FRHICommandListBase& RHICmdList)
     buffer = RHICmdList.CreateBuffer(sizeof(float) * capacity, UsageFlags, 0, ERHIAccess::SRVMask, CreateInfo);
     bufferSRV = RHICmdList.CreateShaderResourceView(buffer, sizeof(float), PF_R32_FLOAT);
 
+    // Uniform buffer removed as it isn't essential for rendering and impacts performance
     //FIsoFetchShaderParameters uniformParameters;
     //uniformParameters.isoFetch_Buffer = bufferSRV;
     //uniformBuffer = TUniformBufferRef<FIsoFetchShaderParameters>::CreateUniformBufferImmediate(uniformParameters, UniformBuffer_MultiFrame);

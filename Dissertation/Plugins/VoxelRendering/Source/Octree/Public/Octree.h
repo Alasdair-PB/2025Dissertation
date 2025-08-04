@@ -45,7 +45,9 @@ public:
     void UpdateIsoValuesDirty();
     void UpdateValuesDirty();
     void UpdateTypeValuesDirty();
-protected:    
+    void DebugOctreeNodes(UWorld* world);
+
+protected:
     FBoxSphereBounds GetBoxSphereBoundsBounds();
     OctreeNode* root;
     AActor* parent;
@@ -70,6 +72,8 @@ protected:
     void GetIsoPlaneInDirection(FVector direction, FVector position,
         float& isoA, float& isoB, float& isoC, float& isoD,
         FVector& posA, FVector& posB, FVector& posC, FVector& posD);
+    void DebugOctreeNodesRecursive(OctreeNode* node, UWorld* world, FQuat rotator, FTransform parentTransform);
+
 private:
     float scale;
     float isoLevel;

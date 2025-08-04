@@ -75,7 +75,6 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, const FVoxelTrans
 	int voxelsPerAxis = updateData.voxelsPerAxis;
 	bool useZeroData = transVoxelNodeData.zeroNode;
 
-	check(nodeData.isoBuffer->bufferSRV);
 	PassParams->leafPosition = nodeData.boundsCenter;
 	PassParams->leafDepth = nodeData.leafDepth;
 	PassParams->nodeIndex = 0; // Shader supports single vertex buffer for mesh, however as each LOD has its own vertex factory we can ignore this.
@@ -96,7 +95,6 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, const FVoxelTrans
 	PassParams->transitionLookup = updateData.marchLookUpResource->transVoxelLookUpBufferSRV;
 	PassParams->flatTransitionVertexData = updateData.marchLookUpResource->transVoxelVertexLookUpBufferSRV;
 
-	check(nodeData.vertexFactory->GetVertexUAV());
 	PassParams->outVertexInfo = nodeData.vertexFactory->GetVertexUAV();
 	PassParams->outNormalInfo = nodeData.vertexFactory->GetVertexNormalsUAV();
 	PassParams->outTypeInfo = nodeData.vertexFactory->GetVertexTypeUAV();
@@ -106,10 +104,6 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, const FVoxelTrans
 	PassParams->baseDepthScale = updateData.scale;
 	PassParams->isoLevel = updateData.isoLevel;
 	PassParams->direction = transVoxelNodeData.direction;
-
-	//if (!useZeroData)
-	//	UE_LOG(LogTemp, Warning, TEXT("Debug: deformation pass occurs, direction = (%d, %d, %d)"), PassParams->direction.X, PassParams->direction.Y, PassParams->direction.Z);
-
 	PassParams->transitionCellIndex = transVoxelNodeData.transitionCellIndex;
 	PassParams->resetNode = useZeroData;
 

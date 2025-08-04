@@ -84,9 +84,7 @@ public:
 		} 
 		else bReturnFlag = false;
 
-		//UE_LOG(LogTemp, Warning, TEXT("Debug: assigning transvoxel direction: %d"), transitionCell->direction);
 		direction = neighborOffsets[transitionCell->direction];
-		//UE_LOG(LogTemp, Warning, TEXT("Debug: deformation pass occurs, direction = (%d, %d, %d)"), direction.X, direction.Y, direction.Z);
 		return bReturnFlag;
 	}
 };

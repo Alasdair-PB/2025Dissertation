@@ -65,7 +65,6 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, const FVoxelComputeUpdateN
 	FMarchingCubes::FParameters* PassParams = GraphBuilder.AllocParameters<FMarchingCubes::FParameters>();
 	int voxelsPerAxis = Params.Input.updateData.voxelsPerAxis;
 
-	check(nodeData.isoBuffer->bufferSRV);
 	PassParams->leafPosition = nodeData.boundsCenter;
 	PassParams->leafDepth = nodeData.leafDepth;
 	PassParams->nodeIndex = 0; // Shader supports single vertex buffer for mesh, however as each LOD has its own vertex factory we can ignore this.
@@ -111,18 +110,14 @@ void FMarchingCubesInterface::DispatchRenderThread(FRHICommandListImmediate& RHI
 
 
 		if (bIsShaderValid && bIsDefShaderValid && bIsTVMCShaderValid) {
-			// Deformation
-
 			for (const FVoxelComputeUpdateNodeData& nodeData : Params.Input.updateData.nodeData)
 				AddDeformationPass(GraphBuilder, nodeData, Params.Input.updateData);
 
 			for (const FVoxelComputeUpdateNodeData& nodeData : Params.Input.updateData.nodeData)
 				AddOctreeMarchingPass(GraphBuilder, nodeData, Params);
 
-			//UE_LOG(LogTemp, Warning, TEXT("Debug: start node transvoxel out"));
 			for (const FVoxelTransVoxelNodeData& nodeData : Params.Input.updateData.transVoxelNodeData)
 				AddTransvoxelMarchingCubesPass(GraphBuilder, nodeData, Params.Input.updateData);
-			//UE_LOG(LogTemp, Warning, TEXT("Debug: end node transvoxel out"));
 
 			auto RunnerFunc = [AsyncCallback](auto&& RunnerFunc) ->
 				void {

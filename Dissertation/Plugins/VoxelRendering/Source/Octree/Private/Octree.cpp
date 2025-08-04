@@ -53,9 +53,6 @@ Octree::~Octree() {
     zeroIsoBuffer.Reset();
     zeroTypeBuffer.Reset();
     initIsoArray.Reset();
-
-    // Not deleting roots due to Fatal error: A FRenderResource was deleted without being released first! To be investigated when time permits
-    //delete root;
 }
 
 void Octree::Release() {
@@ -79,8 +76,6 @@ void Octree::Release() {
 }
 
 FBoxSphereBounds Octree::GetBoxSphereBoundsBounds() {
-    // Replace with actual bounds
-    // Recalculate bounds after octree change
     float halfSize = scale / 2;
     return FBoxSphereBounds(FBox(FVector(-halfSize), FVector(halfSize)));
 }
@@ -136,7 +131,7 @@ void Octree::GetIsoPlaneInDirection(FVector direction, FVector position,
     isoD = GetIsoSafe(cornerD);
 }
 
-// Should be done by leaf
+// Post diss submission: Refactor by leaf
 bool Octree::RaycastToVoxelBody(FHitResult& hit, FVector& start, FVector& end)
 {
     FTransform parentTransform = parent->GetTransform();
@@ -350,3 +345,23 @@ void Octree::ApplyDeformationAtPosition(FVector inPosition, float radius, float 
         }
     }
 }
+
+void Octree::DebugOctreeNodes(UWorld* world) {
+    FTransform parentTransform = parent->GetTransform();
+    FQuat rotator = FQuat(parentTransform.GetRotation());
+    DebugOctreeNodesRecursive(root, world, rotator, parentTransform);
+}
+
+void Octree::DebugOctreeNodesRecursive(OctreeNode* node, UWorld* world, FQuat rotator, FTransform parentTransform) {
+    if (!node) return;
+
+    if (node->IsVisible()) {
+        AABB bounds = node->GetBounds();
+        FVector worldPosition = parentTransform.TransformPosition(FVector(bounds.Center()));
+        DrawDebugBox(world, worldPosition, FVector(bounds.Extent()), rotator, FColor::Green, false, -1.f, 0, 1.f);
+    }
+
+    for (int i = 0; i < 8; ++i)
+        DebugOctreeNodesRecursive(node->children[i], world, rotator, parentTransform);
+}
+

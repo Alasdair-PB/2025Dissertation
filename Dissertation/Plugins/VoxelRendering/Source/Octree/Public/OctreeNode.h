@@ -129,7 +129,7 @@ public:
     }
 
     OctreeNode* children[8];
-    OctreeNode* neighbours[6];
+    OctreeNode* neighbours[6]; // Post diss submission refactor to remove neighbours
 
 protected:
     int depth;

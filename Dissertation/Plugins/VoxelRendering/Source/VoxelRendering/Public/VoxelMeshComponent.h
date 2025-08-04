@@ -12,6 +12,31 @@
 static const float isoLevel = 0.5f;
 class FPrimitiveSceneProxy;
 
+class Palette {
+public:
+    Palette(float inMaxRadius, float inMaxPower, int inMaxType) : 
+        brushRadius(30.0f), maxRadius(inMaxRadius), 
+        brushPower(0.5f), maxBrushPower(inMaxPower), 
+        paintType(1), maxTypes(inMaxType) {}
+
+    void SetBrushRadius(float inRadius) { brushRadius = FMath::Clamp(inRadius, 0.0f, maxRadius); }
+    void SetPaintType(int inType) { paintType = FMath::Clamp(inType, 0.0f, maxTypes); }
+    void SetBrushPower(float inPower) { brushPower = FMath::Clamp(inPower, 0.0f, maxBrushPower); }
+
+    float GetBrushPower() const { return brushPower; }
+    float GetBrushRadius() const { return brushRadius; }
+    int GetPaintType() const { return paintType; }
+
+protected:
+    float brushRadius;
+    float maxRadius; 
+    float brushPower;
+    float maxBrushPower;
+    int paintType;
+    int maxTypes;
+};
+
+
 UCLASS()
 class VOXELRENDERING_API UVoxelMeshComponent : public UMeshComponent
 {
@@ -32,6 +57,20 @@ public:
     virtual void SetMaterial(int32 ElementIndex, UMaterialInterface* InMaterial) override;
     virtual UMaterialInterface* GetMaterial(int32 ElementIndex) const override { return Material; }
 
+    void EnableRotation() { rotatePlanet = true; }
+    void DisableRotation() { rotatePlanet = false; }
+
+    void TogglePlanetRotate() { rotatePlanet = !rotatePlanet; }
+    void ToggleDebugNode() { debugNodes = !debugNodes; }
+
+    void SetRotationState(bool inState) { rotatePlanet = inState; }
+    void SetDebugNodesState(bool inState) { debugNodes = inState; }
+    void RefreshDeformation();
+
+    void SetBrushDensity(float density) { if (palette) palette->SetBrushPower(density);}
+    void SetBrushRadius(float radius) { if (palette) palette->SetBrushRadius(radius);}
+    void SetPaintType(int type) { if (palette) palette->SetPaintType(type);}
+
 private:
     UPROPERTY(Transient)
     TObjectPtr<UMaterialInterface> Material;
@@ -48,14 +87,19 @@ protected:
     void RotateAroundAxis(FVector axis, float degreeTick);
     void SetRenderDataLOD();
     void InvokeVoxelRenderer(TArray<FVoxelComputeUpdateNodeData>& updateData, TArray<FVoxelTransVoxelNodeData>& transVoxelUpdateData);
-    void TraverseAndDraw(OctreeNode* node);
+    void TraverseAndDraw();
     void SetNodeVisible(TArray<OctreeNode*>& nodes, OctreeNode* node);
     void SetChildrenVisible(TArray<OctreeNode*>& pushStack, OctreeNode* node, int currentDepth, int targetDepth);
     bool BalanceNode(TArray<OctreeNode*>& removalStack, TArray<OctreeNode*>& pushStack, TArray<OctreeNode*>& visibleNodes, OctreeNode* node);
     void BalanceVisibleNodes(TArray<OctreeNode*>&visibleNodes);
+    void CheckRotation();
 
+    void InitMaterial();
 
+    Palette* palette;
     FVoxelSceneProxy* sceneProxy;
     Octree* tree;
     UBodySetup* voxelBodySetup;
+    bool rotatePlanet;
+    bool debugNodes;
 };

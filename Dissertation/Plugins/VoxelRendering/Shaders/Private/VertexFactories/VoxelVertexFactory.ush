@@ -253,9 +253,14 @@ FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVS
     FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
     
     Result.Particle.Color = half4(1, 1, 1, 1);
-    Result.TwoSidedSign = 0;
+    Result.TwoSidedSign = 1;
     Result.VertexColor = Interpolants.Color;
     Result.PrimitiveId = GetPrimitiveId(Interpolants);
+    
+    half3 TangentToWorld0 = Interpolants.TangentToWorld0.xyz;
+    half4 TangentToWorld2 = Interpolants.TangentToWorld2;
+    Result.UnMirrored = TangentToWorld2.w;
+    Result.TangentToWorld = AssembleTangentToWorld(TangentToWorld0, TangentToWorld2);
 
     #if NUM_TEX_COORD_INTERPOLATORS
         Result.TexCoords[0] = Interpolants.TexCoords;

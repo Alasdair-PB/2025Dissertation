@@ -349,7 +349,7 @@ void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode
     if (node->IsLeaf()) 
         SetNodeVisible(nodes, node);
     else {
-        float visibleDistance = 500.0f / (1 << node->GetDepth());
+        float visibleDistance = 1000.0f / (1 << node->GetDepth());
         FVector boundsCenter = node->GetWorldNodePosition();
         float distance = (playerPos - boundsCenter).Length();
 

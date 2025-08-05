@@ -15,7 +15,6 @@ FVoxelSceneProxy::FVoxelSceneProxy(UPrimitiveComponent* Component) :
 	bCompatiblePlatform(GetScene().GetFeatureLevel() >= ERHIFeatureLevel::SM5)
 {
 	Material = Component->GetMaterial(0);
-	Material->ForceRecompileForRendering();
 }
 
 FVoxelSceneProxy::~FVoxelSceneProxy() {}

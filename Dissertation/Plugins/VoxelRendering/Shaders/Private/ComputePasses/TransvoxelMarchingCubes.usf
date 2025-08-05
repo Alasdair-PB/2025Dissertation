@@ -333,9 +333,8 @@ out float3 position, out float3 normalRes, out int typeFinal, out float lowResDe
     
     int3 positionAxisAlignedA = GetDirectionalIsoIndex(positionA, 0, (voxelsPerAxis * 2)); // offsets[a].z if non-zero transcell distance
     int3 positionAxisAlignedB = GetDirectionalIsoIndex(positionB, 0, (voxelsPerAxis * 2)); // offsets[b].z 
-    
-    float3 normalA = CalculateNormal(positionA, positionAxisAlignedA, a);
-    float3 normalB = CalculateNormal(positionB, positionAxisAlignedB, b);
+    float3 normalA = float3(0, 0, 0); //CalculateNormal(positionA, positionAxisAlignedA, a);
+    float3 normalB = float3(0, 0, 0); //= CalculateNormal(positionB, positionAxisAlignedB, b);
     
     float3 pa = worldPos + (float3(positionAxisAlignedA.x, positionAxisAlignedA.y, positionAxisAlignedA.z) * isoDetailScale);
     float3 pb = worldPos + (float3(positionAxisAlignedB.x, positionAxisAlignedB.y, positionAxisAlignedB.z) * isoDetailScale);
@@ -432,6 +431,7 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     int directionMagnitude = direction.x + direction.y + direction.z;
     bool directionPriority = directionMagnitude > 0;
 
+    bool switchOrder = false;
     for (uint k = 0; k < length; k += 3) // Up to 0-24 
     {
         uint startVertexIndex = caseCode * 12;
@@ -464,12 +464,13 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         float lowDensity = densityLowA + densityLowB + densityLowC;
         float highDensity = densityHighA + densityHighB + densityHighC;
 
-        bool highResPriority = lowDensity + 0.01 > highDensity;
+        bool switchOnDensity = lowDensity + 0.01 > highDensity;
         //highDensity = directionPriority ? !highResPriority : highResPriority;
-        float signedArea = (positionB.x - positionA.x) * (positionC.y - positionA.y) - (positionB.y - positionA.y) * (positionC.x - positionA.x);
-        highResPriority = signedArea > 0.001 ? highResPriority : !highResPriority;
+        //float signedArea = (positionB.x - positionA.x) * (positionC.y - positionA.y) - (positionB.y - positionA.y) * (positionC.x - positionA.x);
+        //highResPriority = signedArea > 0.001 ? highResPriority : !highResPriority;
         
-        int3 order = highResPriority ? int3(0, 1, 2) : int3(2, 1, 0);
+        int3 order = switchOrder ? int3(0, 1, 2) : int3(2, 1, 0);
+        switchOrder = !switchOrder;
         AssignVertexInfo(positionA, normalResA, typeA, order.x + k, vertexStartIndex);
         AssignVertexInfo(positionB, normalResB, typeB, order.y + k, vertexStartIndex);
         AssignVertexInfo(positionC, normalResC, typeC, order.z + k, vertexStartIndex);

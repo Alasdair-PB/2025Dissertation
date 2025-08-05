@@ -10,8 +10,7 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine"
-			],
-			"DisableHotReload": true
+			]
 		}
 	],
 	"Plugins": [
@@ -26,5 +25,8 @@
 			"Name": "ProceduralMeshComponent",
 			"Enabled": true
 		}
+	],
+	"TargetPlatforms": [
+		"Windows"
 	]
 }

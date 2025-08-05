@@ -227,9 +227,9 @@ float3 ZeroAxisInDirection(float3 position)
     return position;
 }
 
-float GetDensityOnFace(int2 voxelPosition, uint offsetCoord)
+float GetDensityOnFace(int2 voxelPosition, bool isHighRes)
 {
-    if (offsetCoord >= 9)
+    if (isHighRes)
     {
         int3 pos = GetDirectionalIsoIndex((voxelPosition / 2), 0, voxelsPerAxis, 1);
         return isoValues[GetIsoIndex(pos)];
@@ -242,11 +242,11 @@ float GetDensityOnFace(int2 voxelPosition, uint offsetCoord)
     }
 }
 
-float GetDensityWithFaceOffset(int2 voxelPosition, uint offsetCoord, int axisMod, bool onAxis)
+float GetDensityWithFaceOffset(int2 voxelPosition, bool isHighRes, int axisMod, bool onAxis)
 {
     if (onAxis)
     {
-        if (offsetCoord >= 9)
+        if (isHighRes)
         {
             int3 pos = GetDirectionalIsoIndex((voxelPosition / 2), axisMod, voxelsPerAxis, 1);
             return isoValues[GetIsoIndex(pos)];
@@ -259,7 +259,7 @@ float GetDensityWithFaceOffset(int2 voxelPosition, uint offsetCoord, int axisMod
         }
     } else
     { // Switch to adjacent face buffer
-        if (offsetCoord >= 9)
+        if (isHighRes)
         {
             return voxelPosition.y >= voxelsPerAxis ?
             GetDensityHighY((voxelPosition - int2(0, voxelsPerAxis)), -axisMod) :
@@ -273,7 +273,7 @@ float GetDensityWithFaceOffset(int2 voxelPosition, uint offsetCoord, int axisMod
     }
 }
 
-float3 CalculateNormal(int2 coord, int3 coordXYZ, uint offsetCoord)
+float3 CalculateNormal(int2 coord, int3 coordXYZ, bool isHighRes)
 {
     int3 lengthVector = coordXYZ * direction;
     int length = (lengthVector.x + coordXYZ.y + coordXYZ.z) / 2; // In low res coords
@@ -281,30 +281,53 @@ float3 CalculateNormal(int2 coord, int3 coordXYZ, uint offsetCoord)
     int2 offsetX = int2(1, 0);
     int2 offsetY = int2(0, 1);
     
-    int3 offsetVX = GetDirectionalIsoIndex(offsetX, 0, 0, offsetCoord >= 9 ? 1 : -1);
-    int3 offsetVY = GetDirectionalIsoIndex(offsetY, 0, 0, offsetCoord >= 9 ? 1 : -1);
-    int3 offsetZ = offsetCoord >= 9 ? -direction : direction;
+    int3 offsetVX = GetDirectionalIsoIndex(offsetX, 0, 0, isHighRes ? 1 : -1);
+    int3 offsetVY = GetDirectionalIsoIndex(offsetY, 0, 0, isHighRes >= 9 ? 1 : -1);
+    int3 offsetZ = isHighRes ? -direction : direction;
     
     int zOffsetLength = offsetZ.x + offsetZ.y + offsetZ.z;
     int dirOffset = zOffsetLength + length;
     bool onAxis = dirOffset < voxelsPerAxis || dirOffset >= 0;
 
-    float dx = GetDensityOnFace(coord + offsetX, offsetCoord) - GetDensityOnFace(coord - offsetX, offsetCoord);
-    float dy = GetDensityOnFace(coord + offsetY, offsetCoord) - GetDensityOnFace(coord - offsetY, offsetCoord);
-    float dz = GetDensityWithFaceOffset(coord, offsetCoord, zOffsetLength, onAxis) - GetDensityWithFaceOffset(coord, offsetCoord, zOffsetLength, !onAxis);
+    float dx = GetDensityOnFace(coord + offsetX, isHighRes) - GetDensityOnFace(coord - offsetX, isHighRes);
+    float dy = GetDensityOnFace(coord + offsetY, isHighRes) - GetDensityOnFace(coord - offsetY, isHighRes);
+    float dz = GetDensityWithFaceOffset(coord, isHighRes, zOffsetLength, onAxis) - GetDensityWithFaceOffset(coord, isHighRes, zOffsetLength, !onAxis);
     
     float3 delta = GetDirectionalVector(float2(dx, dy), dz, 1);
     return all(delta == 0) ? float3(0.0f, 0.0f, 0.0f) : normalize(float3(dx, dy, dz));
 }
 
-int InterpolateVertice(uint edgeCode, int k, int2 transVoxelCoord, float isoDetailScale, float isoScale, float3 worldPos, float _trCellValues[13], int _trCellTypeValues[13], int vertexStartIndex)
+void AssignVertexInfo(float3 position, float3 normalRes, int typeFinal, int k, int vertexStartIndex)
+{
+    uint vertexFloatIndex = (vertexStartIndex + k) * 3;
+
+    outVertexInfo[vertexFloatIndex] = position.x;
+    outVertexInfo[vertexFloatIndex + 1] = position.y;
+    outVertexInfo[vertexFloatIndex + 2] = position.z;
+    
+    outNormalInfo[vertexFloatIndex] = normalRes.x;
+    outNormalInfo[vertexFloatIndex + 1] = normalRes.y;
+    outNormalInfo[vertexFloatIndex + 2] = normalRes.z;
+    outTypeInfo[vertexStartIndex + k] = typeFinal;
+}
+
+void InterpolateVertice(uint edgeCode, int2 transVoxelCoord, float isoDetailScale, float isoScale, float3 worldPos, float _trCellValues[13], int _trCellTypeValues[13], 
+out float3 position, out float3 normalRes, out int typeFinal, out float lowResDensity, out float highResDensity)
 {
     uint a = (edgeCode >> 4) & 0x0F;
     uint b = edgeCode & 0x0F;
     
+    bool isAHighRes = a >= 9;
+    bool isBHighRes = b >= 9;
+    
     float densityA = _trCellValues[a];
     float densityB = _trCellValues[b];
     
+    highResDensity = 0;
+    lowResDensity = 0;
+    isAHighRes ? highResDensity += densityA : lowResDensity += densityA;
+    isBHighRes ? highResDensity += densityB : lowResDensity += densityB;
+
     int2 positionA = int2(offsets[a].x + (transVoxelCoord.x * 2), offsets[a].y + (transVoxelCoord.y * 2));
     int2 positionB = int2(offsets[b].x + (transVoxelCoord.x * 2), offsets[b].y + (transVoxelCoord.y * 2));
     
@@ -325,7 +348,7 @@ int InterpolateVertice(uint edgeCode, int k, int2 transVoxelCoord, float isoDeta
     
     if (abs(denom) < 0.01)
     {
-        if (a >= 9 || b >= 9)
+        if (isAHighRes || isBHighRes)
             t = (densityA > isoLevel ? 0.5 : -0.5);
         else
             t = (densityA > isoLevel ? -0.5 : 0.5);
@@ -334,24 +357,12 @@ int InterpolateVertice(uint edgeCode, int k, int2 transVoxelCoord, float isoDeta
         t = (isoLevel - densityA) / denom;
     
      t = clamp(t, -1.0, 1.0);
-    float3 normalRes = lerp(normalA, normalB, t);
-    float3 position = lerp(pa, pb, t);
+    normalRes = lerp(normalA, normalB, t);
+    position = lerp(pa, pb, t);
     
     int typeA = _trCellTypeValues[a];
     int typeB = _trCellTypeValues[b];
-    int typeFinal = densityA < densityB ? typeA : typeB;
-
-    uint vertexFloatIndex = (vertexStartIndex + k) * 3;
-
-    outVertexInfo[vertexFloatIndex] = position.x;
-    outVertexInfo[vertexFloatIndex + 1] = position.y;
-    outVertexInfo[vertexFloatIndex + 2] = position.z;
-    
-    outNormalInfo[vertexFloatIndex] = normalRes.x;
-    outNormalInfo[vertexFloatIndex + 1] = normalRes.y;
-    outNormalInfo[vertexFloatIndex + 2] = normalRes.z;
-    outTypeInfo[vertexStartIndex + k] = typeFinal;
-    return typeFinal;
+    typeFinal = densityA < densityB ? typeA : typeB;
 }
 
 // x, y, 1
@@ -420,6 +431,9 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
     if (caseCode == 0 || caseCode == 511)
         return;
     
+    int directionMagnitude = direction.x + direction.y + direction.z;
+    bool directionPriority = directionMagnitude > 0;
+
     for (uint k = 0; k < length; k += 3) // Up to 0-24 
     {
         uint startVertexIndex = caseCode * 12;
@@ -427,13 +441,39 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         uint edgeCodeB = flatTransitionVertexData[startVertexIndex + transitionLookup[offset + k + 1]];
         uint edgeCodeC = flatTransitionVertexData[startVertexIndex + transitionLookup[offset + k + 2]];
         
-        int typeA = InterpolateVertice(edgeCodeA, k + 2, int2(id.x, id.y), isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues, _triCellTypeValues, vertexStartIndex);
-        int typeB = InterpolateVertice(edgeCodeB, k + 1, int2(id.x, id.y), isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues, _triCellTypeValues, vertexStartIndex);
-        int typeC = InterpolateVertice(edgeCodeC, k, int2(id.x, id.y), isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues, _triCellTypeValues, vertexStartIndex);
+        float3 positionA = float3(0.0, 0.0, 0.0);
+        float3 positionB = float3(0.0, 0.0, 0.0);
+        float3 positionC = float3(0.0, 0.0, 0.0);
+        float3 normalResA = float3(0.0, 0.0, 0.0);
+        float3 normalResB = float3(0.0, 0.0, 0.0);
+        float3 normalResC = float3(0.0, 0.0, 0.0);
+        int typeA = 0;
+        int typeB = 0;
+        int typeC = 0;
         
-        //outTypeInfo[vertexStartIndex + k + 2] = typeA == typeB || typeA == typeC ? typeA : typeB;
-        //outTypeInfo[vertexStartIndex + k + 1] = typeA == typeB || typeA == typeC ? typeA : typeB;
-        //outTypeInfo[vertexStartIndex + k] = typeA == typeB || typeA == typeC ? typeA : typeB;
+        float densityLowA = 0.0;
+        float densityHighA = 0.0;
+        float densityLowB = 0.0;
+        float densityHighB = 0.0;
+        float densityLowC = 0.0;
+        float densityHighC = 0.0;
+        
+        InterpolateVertice(edgeCodeA, transVoxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues, _triCellTypeValues, positionA, normalResA, typeA, densityLowA, densityHighA);
+        InterpolateVertice(edgeCodeB, transVoxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues, _triCellTypeValues, positionB, normalResB, typeB, densityLowB, densityHighB);
+        InterpolateVertice(edgeCodeC, transVoxelCoord, isoDetailScale, isoScale, minimumCornerWorldPos, _trCellValues, _triCellTypeValues, positionC, normalResC, typeC, densityLowC, densityHighC);
+        
+        float lowDensity = densityLowA + densityLowB + densityLowC;
+        float highDensity = densityHighA + densityHighB + densityHighC;
+
+        bool highResPriority = lowDensity + 0.01 > highDensity;
+        highDensity = directionPriority ? !highResPriority : highResPriority;
+        int3 order = highResPriority ? int3(0, 1, 2) : int3(2, 1, 0);
+        
+        AssignVertexInfo(positionA, normalResA, typeA, order.x + k, vertexStartIndex);
+        AssignVertexInfo(positionB, normalResB, typeB, order.y + k, vertexStartIndex);
+        AssignVertexInfo(positionC, normalResC, typeC, order.z + k, vertexStartIndex);
+
+
     }
 }
 

@@ -40,7 +40,7 @@ float GetDensity(int3 coord)
 int GetType(int3 coord)
 {
     bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
-    if (isEdge) return 0;
+    if (isEdge) return 1; // Warning this creates a seam
     return typeValues[(GetIsoIndex(coord))];
 }
 

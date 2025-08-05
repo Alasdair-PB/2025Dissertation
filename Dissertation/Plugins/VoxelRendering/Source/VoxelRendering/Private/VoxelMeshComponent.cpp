@@ -47,11 +47,12 @@ void UVoxelMeshComponent::SetMaterial(int32 ElementIndex, UMaterialInterface* In
     UMeshComponent::SetMaterial(ElementIndex, InMaterial);
 }
 
+const bool traverseGraph = false;
 void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     if (!tree) return;
-    TraverseAndDraw(tree->GetRoot());
+    if (traverseGraph) TraverseAndDraw(tree->GetRoot());
     InvokeVoxelRenderPasses();
 }
 void UVoxelMeshComponent::InitVoxelMesh(
@@ -74,7 +75,6 @@ FBoxSphereBounds UVoxelMeshComponent::CalcBounds(const FTransform& LocalToWorld)
 {
     if (tree) return tree->CalcVoxelBounds(LocalToWorld);
     return FBoxSphereBounds(FBox(FVector(-200), FVector(200)));
-    //return UMeshComponent::CalcBounds(LocalToWorld);
 }
 
 float UVoxelMeshComponent::SampleSDF(FVector3f p) {

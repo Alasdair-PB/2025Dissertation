@@ -289,11 +289,7 @@ float3x3 CalcTangentBasis(FVertexFactoryInput Input)
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
     FVertexFactoryInterpolantsVSToPS Interpolants;
-    
-    float3x3 TangentToLocal = CalcTangentBasis(Input);
-    float3x3 TangentToWorld = mul(TangentToLocal, GetLocalToWorld3x3());
-
-    Interpolants.TangentToWorld0.xyz = TangentToWorld[0];
+    Interpolants.TangentToWorld0.xyz = Intermediates.TangentToWorld[0];
     Interpolants.TangentToWorld0.w = 0.0;    
     Interpolants.TangentToWorld2 = float4((float3)Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
     
@@ -303,15 +299,22 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
     return Interpolants;
 }
 
+
 half3x3 CalcTangentToLocal(FVertexFactoryInput Input)
 {
     half3x3 TangentToLocal;
     float3 Normal = SafeNormalize(Input.Normal);
-    float3 Tangent = SafeNormalize(cross(Normal, float3(0.0, 0.0, 1.0)));
+    float3 WorldUpWS = float3(0.0, 0.0, 1.0);
+    float3x3 WorldToLocal = GetLocalToWorld3x3();
+    float3x3 LocalToWorld = WorldToLocal;
+    float3x3 InverseLocalToWorld = transpose(LocalToWorld);
+    float3 WorldUpLS = mul(WorldUpWS, InverseLocalToWorld);
+    float3 Tangent = SafeNormalize(cross(Normal, WorldUpLS));
+    
     if (length(Tangent) < 0.1)
         Tangent = SafeNormalize(cross(Normal, float3(1.0, 0.0, 0.0)));
+
     float3 Binormal = cross(Normal, Tangent);
-    
     TangentToLocal[0] = half3(Tangent);
     TangentToLocal[1] = half3(Binormal);
     TangentToLocal[2] = half3(Normal);

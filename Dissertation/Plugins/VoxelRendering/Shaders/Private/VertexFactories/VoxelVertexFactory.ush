@@ -84,10 +84,10 @@ FPrimitiveSceneData GetPrimitiveData(FVertexFactoryIntermediates Intermediates)
     return Intermediates.SceneData.Primitive;
 }
 
-half3x3 CalcTangentToWorldNoScale(in half3x3 TangentToLocal)
+half3x3 CalcTangentToWorldNoScale(FVertexFactoryIntermediates Intermediates, half3x3 TangentToLocal)
 {
-    half3x3 LocalToWorld = GetLocalToWorld3x3();
-    half3 InvScale = Primitive.InvNonUniformScale;
+    half3x3 LocalToWorld = DFToFloat3x3(GetPrimitiveData(Intermediates).LocalToWorld);
+    half3 InvScale = GetPrimitiveData(Intermediates).InvNonUniformScale;
     LocalToWorld[0] *= InvScale.x;
     LocalToWorld[1] *= InvScale.y;
     LocalToWorld[2] *= InvScale.z;
@@ -175,7 +175,6 @@ float3 VertexFactoryGetWorldNormal(FVertexFactoryInput Input, FVertexFactoryInte
 {
     return (float3) Intermediates.TangentToWorld[2];
 }
-
 
 float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Input)
 {
@@ -277,7 +276,7 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFacto
 
     float Handedness = (dot(cross(T, B), N) < 0) ? -1.0 : 1.0;
     
-    Interpolants.TangentToWorld0 = float4(T, 0.0);
+    Interpolants.TangentToWorld0 = float4(T, Handedness);
     Interpolants.TangentToWorld2 = float4((float3)Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
     
     Interpolants.Color = Intermediates.Color;
@@ -314,7 +313,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
     Intermediates.Position = Input.Position.xyz;
     Intermediates.TangentToLocal = CalcTangentToLocal(Input);
-    Intermediates.TangentToWorld = (half3x3) CalcTangentToWorldNoScale((float3x3) Intermediates.TangentToLocal);
+    Intermediates.TangentToWorld = (half3x3) CalcTangentToWorldNoScale(Intermediates, (float3x3) Intermediates.TangentToLocal);
     Intermediates.TangentToWorldSign = (half) (determinant((float3x3) Intermediates.TangentToWorld) < 0 ? -1.0 : 1.0);
 
     int typeValue = Input.Type;

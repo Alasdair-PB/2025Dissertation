@@ -40,7 +40,7 @@ float GetDensity(int3 coord)
 int GetType(int3 coord)
 {
     bool isEdge = any(coord < 0) || any(coord > voxelsPerAxis);
-    if (isEdge) return 1; // Warning this creates a seam
+    if (isEdge) return 0;
     return typeValues[(GetIsoIndex(coord))];
 }
 
@@ -111,6 +111,8 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         outNormalInfo[base * 3 + 0] = 0.0;
         outNormalInfo[base * 3 + 1] = 0.0;
         outNormalInfo[base * 3 + 2] = 0.0;
+        outTypeInfo[base] = 1;
+
     }
     
     float scale = baseDepthScale / (1 << leafDepth);

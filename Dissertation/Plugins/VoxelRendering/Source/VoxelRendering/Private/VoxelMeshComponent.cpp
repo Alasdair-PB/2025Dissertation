@@ -84,12 +84,12 @@ void UVoxelMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
     if (!tree) return;
     TraverseAndDraw();
     InvokeVoxelRenderPasses();
-    CheckRotation();
+    CheckRotation(DeltaTime);
 
 }
 
-void UVoxelMeshComponent::CheckRotation() {
-    if (rotatePlanet) RotateAroundAxis(FVector(0.2f, 1.0f, 0.2f), 0.5f);
+void UVoxelMeshComponent::CheckRotation(float deltaTime) {
+    if (rotatePlanet) RotateAroundAxis(FVector(0.2f, 1.0f, 0.2f), 10.0f * deltaTime);
 }
 
 void UVoxelMeshComponent::RotateAroundAxis(FVector axis, float degreeTick)

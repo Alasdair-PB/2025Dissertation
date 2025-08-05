@@ -57,7 +57,7 @@ float3 CalculateNormal(int3 coord)
     return all(delta == 0) ? float3(0.0f, 0.0f, 0.0f) : normalize(float3(dx, dy, dz));
 }
 
-void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worldPos, float isoScale)
+int CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worldPos, float isoScale)
 {
     float3 posA = worldPos + (cornerPosA * isoScale);
     float3 posB = worldPos + (cornerPosB * isoScale);
@@ -86,6 +86,8 @@ void CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 worl
     outNormalInfo[base + 1] = normalRes.y;
     outNormalInfo[base + 2] = normalRes.z;
     outTypeInfo[vertexIndex] = typeFinal;
+    return typeFinal;
+
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
@@ -155,8 +157,12 @@ void MarchingCubes(int3 id : SV_DispatchThreadID)
         int indexB = (vertexStartIndex + k + 1);
         int indexC = (vertexStartIndex + k + 2);
 
-        CreateVertex(cornerCoords[a0], cornerCoords[b0], indexA, minimumCornerWorldPos, isoScale);
-        CreateVertex(cornerCoords[a1], cornerCoords[b1], indexB, minimumCornerWorldPos, isoScale);
-        CreateVertex(cornerCoords[a2], cornerCoords[b2], indexC, minimumCornerWorldPos, isoScale);
+        int typeA = CreateVertex(cornerCoords[a0], cornerCoords[b0], indexA, minimumCornerWorldPos, isoScale);
+        int typeB = CreateVertex(cornerCoords[a1], cornerCoords[b1], indexB, minimumCornerWorldPos, isoScale);
+        int typeC = CreateVertex(cornerCoords[a2], cornerCoords[b2], indexC, minimumCornerWorldPos, isoScale);
+        
+        //outTypeInfo[indexA] = typeA;
+        //outTypeInfo[indexB] = typeA;
+        //outTypeInfo[indexC] = typeA;
     }
 }

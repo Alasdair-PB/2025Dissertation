@@ -101,13 +101,17 @@ float4 TransformTranslatedWorldToLocal(float4 TranslatedWorldPosition, FDFInvers
     return LocalPosition;
 }
 
-void GetTangents(FVertexFactoryInput Input, out float4 Right, out float4 Up)
+float2 NormalBasedPlanarMapping(FVertexFactoryInput Input, float2 UVDensity)
 {
-    float3 N = SafeNormalize(Input.Normal);
-    float3 T = abs(N.z) < 0.999 ? normalize(cross(float3(0, 0, 1), N)) : float3(1, 0, 0);
-    float3 B = normalize(cross(N, T));
-    Right = float4(T, 1.0);
-    Up = float4(B, 1.0);
+    float3 N = normalize(Input.Normal);
+    float2 UV = float2(0.0, 0.0);
+    if (abs(N.z) > abs(N.x) && abs(N.z) > abs(N.y))
+        UV = Input.Position.xy; // XY plane
+    else if (abs(N.y) > abs(N.x))
+        UV = Input.Position.xz; // XZ plane
+    else
+        UV = Input.Position.yz; // YZ plane
+    return UV * UVDensity;
 }
 
 // ************************ Instancing, LOD, et al Support ************************
@@ -264,35 +268,16 @@ FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVS
     return Result;
 }
 
-float2 NormalBasedPlanarMapping(FVertexFactoryInput Input, float2 UVDensity)
-{
-    float3 N = normalize(Input.Normal);
-    float2 UV = float2(0.0, 0.0);
-    if (abs(N.z) > abs(N.x) && abs(N.z) > abs(N.y))
-        UV = Input.Position.xy; // XY plane
-    else if (abs(N.y) > abs(N.x))
-        UV = Input.Position.xz; // XZ plane
-    else
-        UV = Input.Position.yz; // YZ plane
-    return UV * UVDensity;
-}
-
-float3x3 CalcTangentBasis(FVertexFactoryInput Input)
-{
-    float4 Right, Up;
-    GetTangents(Input, Right, Up);
-    return float3x3(
-			Right.xyz,
-			Up.xyz,
-			-normalize(cross(Right.xyz, Up.xyz))
-			);
-}
-
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
-    FVertexFactoryInterpolantsVSToPS Interpolants;
-    Interpolants.TangentToWorld0.xyz = Intermediates.TangentToWorld[0];
-    Interpolants.TangentToWorld0.w = 0.0;    
+    FVertexFactoryInterpolantsVSToPS Interpolants;    
+    float3 T = Intermediates.TangentToWorld[0];
+    float3 B = Intermediates.TangentToWorld[1];
+    float3 N = Intermediates.TangentToWorld[2];
+
+    float Handedness = (dot(cross(T, B), N) < 0) ? -1.0 : 1.0;
+    
+    Interpolants.TangentToWorld0 = float4(T, 0.0);
     Interpolants.TangentToWorld2 = float4((float3)Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
     
     Interpolants.Color = Intermediates.Color;

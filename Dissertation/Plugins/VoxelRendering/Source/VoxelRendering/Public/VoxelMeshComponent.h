@@ -98,7 +98,7 @@ protected:
     void SetChildrenVisible(TArray<OctreeNode*>& pushStack, OctreeNode* node, int currentDepth, int targetDepth);
     bool BalanceNode(TArray<OctreeNode*>& removalStack, TArray<OctreeNode*>& pushStack, TArray<OctreeNode*>& visibleNodes, OctreeNode* node);
     void BalanceVisibleNodes(TArray<OctreeNode*>&visibleNodes);
-    void CheckRotation();
+    void CheckRotation(float deltaTime);
     void InitMaterial();
 
     Palette* palette;

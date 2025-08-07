@@ -81,7 +81,7 @@ void AddOctreeMarchingPass(FRDGBuilder& GraphBuilder, const FVoxelComputeUpdateN
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FMarchingCubes> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis), FIntVector(NUM_THREADS_MarchingCubes_X, NUM_THREADS_MarchingCubes_Y, NUM_THREADS_MarchingCubes_Z));
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("Marching Cubes"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {

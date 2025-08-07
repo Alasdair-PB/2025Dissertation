@@ -83,7 +83,7 @@ public:
 
     FVector GetNodePosition() const { return FVector(bounds.Center().X, bounds.Center().Y, bounds.Center().Z);  }
     FVector GetNodeSize() const { return FVector(bounds.Size().X, bounds.Size().Y, bounds.Size().Z); }
-    FVector GetWorldNodePosition() const { return  GetNodePosition() + treeActor->GetTransform().GetLocation(); }
+    FVector GetWorldNodePosition() const { return  treeActor->GetTransform().TransformPosition(GetNodePosition()) + treeActor->GetTransform().GetLocation(); }
     void AssignChildNeighboursAsRoot();
     AABB GetBounds() const { return bounds; }
     int GetDepth() const { return depth; }
@@ -126,6 +126,34 @@ public:
                 return;
             }
         }
+    }
+
+    bool RayIntersectVoxelBody(FVector start, float inDistance)
+    {
+        FTransform parentTransform = treeActor->GetTransform();
+        FVector worldDir = (GetWorldNodePosition() - start);
+        worldDir.Normalize();
+        FVector end = start + worldDir * inDistance;
+        start = parentTransform.InverseTransformPosition(start);
+        end = parentTransform.InverseTransformPosition(end);
+
+        float ratio = bounds.Size().X / 2.0;
+        FVector extent = FVector(ratio, ratio, ratio);
+
+        FBox boundsFBox = FBox();
+        FVector3f nodeCenterV3F = bounds.Center();
+        FVector nodeCenter = FVector(nodeCenterV3F.X, nodeCenterV3F.Y, nodeCenterV3F.Z);
+        boundsFBox = boundsFBox.BuildAABB(nodeCenter, extent * 2);
+
+        FVector direction = (end - start).GetSafeNormal();
+        FVector oneOverDirection(
+            FMath::IsNearlyZero(direction.X) ? 1e10f : 1.0f / direction.X,
+            FMath::IsNearlyZero(direction.Y) ? 1e10f : 1.0f / direction.Y,
+            FMath::IsNearlyZero(direction.Z) ? 1e10f : 1.0f / direction.Z
+        );
+        bool bIntersects = FMath::LineBoxIntersection(boundsFBox, start, end, direction, oneOverDirection);
+        bool bInsideOrOn = boundsFBox.IsInside(start);// || boundsFBox.IsInside(end);
+        return (bIntersects || bInsideOrOn) ? true : false;
     }
 
     OctreeNode* children[8];

@@ -6,7 +6,7 @@
 
 #define NUM_THREADS_TransvoxelMC_X 8
 #define NUM_THREADS_TransvoxelMC_Y 8
-#define NUM_THREADS_TransvoxelMC_Z 8
+#define NUM_THREADS_TransvoxelMC_Z 1
 
 DECLARE_STATS_GROUP(TEXT("TransvoxelMC"), STATGROUP_TransVoxel, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("TransvoxelMC Execute"), STAT_TransVoxel_Execute, STATGROUP_TransVoxel);

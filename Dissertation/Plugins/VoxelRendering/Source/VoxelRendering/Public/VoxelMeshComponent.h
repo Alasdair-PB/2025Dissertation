@@ -75,7 +75,7 @@ public:
     void SetPaintType(int type) { if (palette) palette->SetPaintType(type);}
     void ToggleLODState() { usePlayerLOD = !usePlayerLOD; }
     void UpdateSceneProxyNodes(const TArray<FVoxelProxyUpdateDataNode> updateNodes);
-
+    void SetVisibleDistance(float inVisibleDistance) { viewDistance = inVisibleDistance; }
 private:
     UPROPERTY(Transient)
     TObjectPtr<UMaterialInterface> Material;
@@ -106,6 +106,8 @@ protected:
     Octree* tree;
     UBodySetup* voxelBodySetup;
     UNiagaraSystem* vfxSystem;
+
+    float viewDistance;
     bool rotatePlanet;
     bool debugNodes;
     bool usePlayerLOD;

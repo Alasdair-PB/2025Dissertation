@@ -18,6 +18,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLODToggle);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeformToggle);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDensityDelta, float, value);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnViewDelta, float, value);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRadiusDelta, float, value);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTypeDelta, int, value);
 
@@ -33,6 +34,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Events")
     static void BroadcastRadiusDeltaEvent(float radius);
+
+    UFUNCTION(BlueprintCallable, Category = "Events")
+    static void BroadcastViewDeltaEvent(float viewDis);
 
     UFUNCTION(BlueprintCallable, Category = "Events")
     static void BroadcastTypeDeltaEvent(int type);
@@ -78,6 +82,9 @@ public:
     void SetBrushRadius(float radius);
 
     UFUNCTION(BlueprintCallable, Category = "UI")
+    void SetView(float inViewDis);
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
     void SetBrushType(int type);
 
     UFUNCTION(BlueprintCallable, Category = "UI")
@@ -92,6 +99,8 @@ public:
     static FOnDensityDelta onDensityDelta;
     static FOnRadiusDelta onRadiusDelta;
     static FOnTypeDelta onTypeDelta;
+    static FOnViewDelta onViewDelta;
+
 
     void BeginPlay()
     {
@@ -105,6 +114,8 @@ public:
         onTypeDelta.AddDynamic(this, &AVoxelBody::SetBrushType);
         onLODToggle.AddDynamic(this, &AVoxelBody::ToggleLOD);
         onDeformToggle.AddDynamic(this, &AVoxelBody::ToggleDeform);
+        onViewDelta.AddDynamic(this, &AVoxelBody::SetView);
+
     }
 
     void EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -120,6 +131,7 @@ public:
         onTypeDelta.RemoveDynamic(this, &AVoxelBody::SetBrushType);
         onLODToggle.RemoveDynamic(this, &AVoxelBody::ToggleLOD);
         onDeformToggle.RemoveDynamic(this, &AVoxelBody::ToggleDeform);
+        onViewDelta.RemoveDynamic(this, &AVoxelBody::SetView);
     }
 
 protected:

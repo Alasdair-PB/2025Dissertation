@@ -463,14 +463,9 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         
         float lowDensity = densityLowA + densityLowB + densityLowC;
         float highDensity = densityHighA + densityHighB + densityHighC;
-
         bool switchOnDensity = lowDensity + 0.01 > highDensity;
-        //highDensity = directionPriority ? !highResPriority : highResPriority;
-        //float signedArea = (positionB.x - positionA.x) * (positionC.y - positionA.y) - (positionB.y - positionA.y) * (positionC.x - positionA.x);
-        //highResPriority = signedArea > 0.001 ? highResPriority : !highResPriority;
         
-        int3 order = switchOrder ? int3(0, 1, 2) : int3(2, 1, 0);
-        switchOrder = !switchOrder;
+        int3 order = true ? int3(0, 1, 2) : int3(2, 1, 0);
         AssignVertexInfo(positionA, normalResA, typeA, order.x + k, vertexStartIndex);
         AssignVertexInfo(positionB, normalResB, typeB, order.y + k, vertexStartIndex);
         AssignVertexInfo(positionC, normalResC, typeC, order.z + k, vertexStartIndex);

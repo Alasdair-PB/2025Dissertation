@@ -12,6 +12,7 @@ FOnDeformToggle AVoxelBody::onDeformToggle;
 FOnDensityDelta AVoxelBody::onDensityDelta;
 FOnRadiusDelta AVoxelBody::onRadiusDelta;
 FOnTypeDelta AVoxelBody::onTypeDelta;
+FOnViewDelta AVoxelBody::onViewDelta;
 
 
 AVoxelBody::AVoxelBody()
@@ -29,6 +30,10 @@ void AVoxelBody::BroadcastDensityDeltaEvent(float density) {
 
 void AVoxelBody::BroadcastRadiusDeltaEvent(float radius) {
     onRadiusDelta.Broadcast(radius);
+}
+
+void AVoxelBody::BroadcastViewDeltaEvent(float viewDis) {
+    onViewDelta.Broadcast(viewDis);
 }
 
 void AVoxelBody::BroadcastTypeDeltaEvent(int type) {
@@ -95,6 +100,11 @@ void AVoxelBody::SetBrushDensity(float density) {
     meshComponent->SetBrushDensity(density);
 }
 
+void AVoxelBody::SetView(float inViewDis) {
+    if (!meshComponent) return;
+    meshComponent->SetVisibleDistance(inViewDis);
+}
+
 void AVoxelBody::SetBrushRadius(float radius) {
     if (!meshComponent) return;
     meshComponent->SetBrushRadius(radius);
@@ -109,7 +119,6 @@ void AVoxelBody::ToggleLOD() {
     if (!meshComponent) return;
     meshComponent->ToggleLODState();
 }
-
 
 void AVoxelBody::ToggleDeform() {
     if (!meshComponent) return;

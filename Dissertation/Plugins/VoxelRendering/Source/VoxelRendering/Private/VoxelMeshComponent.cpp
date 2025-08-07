@@ -8,7 +8,7 @@
 #include "RenderData.h"
 #include "PhysicsEngine/BodySetup.h"
 
-UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr), rotatePlanet(true), debugNodes(false), usePlayerLOD(true), deform(true)
+UVoxelMeshComponent::UVoxelMeshComponent() : voxelBodySetup(nullptr), viewDistance(10.0f), rotatePlanet(true), debugNodes(false), usePlayerLOD(true), deform(true)
 {
     PrimaryComponentTick.bCanEverTick = true;
     bUseAsOccluder = false;
@@ -34,7 +34,7 @@ void UVoxelMeshComponent::InitVoxelMesh(
 {
     eraser = inEraser;
     player = inPlayer;
-    palette = new Palette(100.0f, 1.0, 3);
+    palette = new Palette(1000.0f, 1.0, 3);
     vfxSystem = inVfxSystem;
     AActor* owner = GetOwner();
     tree = new Octree(owner, isoLevel, scale, voxelsPerAxis, depth, inBufferSizePerAxis, in_isoValueBuffer, in_typeValueBuffer);
@@ -213,6 +213,7 @@ void UVoxelMeshComponent::SetChildrenVisible(TArray<OctreeNode*>& pushStack, Oct
 
     if (currentDepth >= targetDepth || node->IsLeaf()) {
         pushStack.Add(node);
+        node->SetVisible(true);
         return;
     }
 
@@ -327,8 +328,9 @@ void UVoxelMeshComponent::BalanceVisibleNodes(TArray<OctreeNode*>& visibleNodes)
     });
 
     for (OctreeNode* node : pushStack) {
-        if (!visibleNodes.Contains(node))
+        if (!visibleNodes.Contains(node)) {
             visibleNodes.Add(node);
+        }
     }
 
     if (reBalance)
@@ -344,16 +346,12 @@ void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode
     APawn* playerPawn = playerController->GetPawn();
     FTransform playerTransform = usePlayerLOD ? playerPawn->GetActorTransform() : player->GetActorTransform();
     FVector playerPos = playerTransform.GetLocation();
-    playerPos = GetComponentTransform().InverseTransformPosition(playerPos);
 
     if (node->IsLeaf()) 
         SetNodeVisible(nodes, node);
     else {
-        float visibleDistance = 1000.0f / (1 << node->GetDepth());
-        FVector boundsCenter = node->GetWorldNodePosition();
-        float distance = (playerPos - boundsCenter).Length();
 
-        if (distance < visibleDistance) {
+        if (node->RayIntersectVoxelBody(playerPos, viewDistance)) {
             for (int i = 0; i < 8; i++)
                 GetVisibleNodes(nodes, node->children[i]);
         }

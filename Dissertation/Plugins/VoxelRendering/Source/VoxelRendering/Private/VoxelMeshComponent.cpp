@@ -344,14 +344,18 @@ void UVoxelMeshComponent::GetVisibleNodes(TArray<OctreeNode*>& nodes, OctreeNode
         playerController = GetWorld()->GetFirstPlayerController();
 
     APawn* playerPawn = playerController->GetPawn();
-    FTransform playerTransform = usePlayerLOD ? playerPawn->GetActorTransform() : player->GetActorTransform();
-    FVector playerPos = playerTransform.GetLocation();
 
+    FRotator viewRot;
+    FVector playerViewLoc;
+    playerController->GetPlayerViewPoint(playerViewLoc, viewRot);
+
+    FVector playerPos = usePlayerLOD ? playerViewLoc : player->GetActorTransform().GetLocation();
+    FQuat playerForward = viewRot.Quaternion();
     if (node->IsLeaf()) 
         SetNodeVisible(nodes, node);
     else {
 
-        if (node->RayIntersectVoxelBody(playerPos, viewDistance)) {
+        if (node->RayIntersectVoxelBody(playerPos, playerForward, viewDistance, usePlayerLOD)) {
             for (int i = 0; i < 8; i++)
                 GetVisibleNodes(nodes, node->children[i]);
         }

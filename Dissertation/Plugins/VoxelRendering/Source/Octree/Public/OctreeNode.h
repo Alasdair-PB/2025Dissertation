@@ -83,7 +83,7 @@ public:
 
     FVector GetNodePosition() const { return FVector(bounds.Center().X, bounds.Center().Y, bounds.Center().Z);  }
     FVector GetNodeSize() const { return FVector(bounds.Size().X, bounds.Size().Y, bounds.Size().Z); }
-    FVector GetWorldNodePosition() const { return  treeActor->GetTransform().TransformPosition(GetNodePosition()) + treeActor->GetTransform().GetLocation(); }
+    FVector GetWorldNodePosition() const { return  treeActor->GetTransform().TransformPosition(GetNodePosition()); }
     void AssignChildNeighboursAsRoot();
     AABB GetBounds() const { return bounds; }
     int GetDepth() const { return depth; }
@@ -128,14 +128,20 @@ public:
         }
     }
 
-    bool RayIntersectVoxelBody(FVector start, float inDistance)
+    bool RayIntersectVoxelBody(FVector start, FQuat forwardView, float inDistance, bool forwardCheckFlag)
     {
         FTransform parentTransform = treeActor->GetTransform();
         FVector worldDir = (GetWorldNodePosition() - start);
         worldDir.Normalize();
-        FVector end = start + worldDir * inDistance;
+        FVector end = start + (worldDir * inDistance);
         start = parentTransform.InverseTransformPosition(start);
         end = parentTransform.InverseTransformPosition(end);
+
+        FVector segmentDir = end - start;
+        FVector normalView = segmentDir.GetSafeNormal();;
+
+        float dot = FVector::DotProduct(parentTransform.InverseTransformRotation(forwardView).GetForwardVector(), normalView);
+        bool isInFront = forwardCheckFlag ? dot > 0 : true;
 
         float ratio = bounds.Size().X / 2.0;
         FVector extent = FVector(ratio, ratio, ratio);
@@ -145,15 +151,14 @@ public:
         FVector nodeCenter = FVector(nodeCenterV3F.X, nodeCenterV3F.Y, nodeCenterV3F.Z);
         boundsFBox = boundsFBox.BuildAABB(nodeCenter, extent * 2);
 
-        FVector direction = (end - start).GetSafeNormal();
         FVector oneOverDirection(
-            FMath::IsNearlyZero(direction.X) ? 1e10f : 1.0f / direction.X,
-            FMath::IsNearlyZero(direction.Y) ? 1e10f : 1.0f / direction.Y,
-            FMath::IsNearlyZero(direction.Z) ? 1e10f : 1.0f / direction.Z
+            FMath::IsNearlyZero(segmentDir.X) ? 1e10f : 1.0f / segmentDir.X,
+            FMath::IsNearlyZero(segmentDir.Y) ? 1e10f : 1.0f / segmentDir.Y,
+            FMath::IsNearlyZero(segmentDir.Z) ? 1e10f : 1.0f / segmentDir.Z
         );
-        bool bIntersects = FMath::LineBoxIntersection(boundsFBox, start, end, direction, oneOverDirection);
+        bool bIntersects = FMath::LineBoxIntersection(boundsFBox, start, end, segmentDir, oneOverDirection);
         bool bInsideOrOn = boundsFBox.IsInside(start);// || boundsFBox.IsInside(end);
-        return (bIntersects || bInsideOrOn) ? true : false;
+        return ((bIntersects && isInFront) || bInsideOrOn) ? true : false;
     }
 
     OctreeNode* children[8];

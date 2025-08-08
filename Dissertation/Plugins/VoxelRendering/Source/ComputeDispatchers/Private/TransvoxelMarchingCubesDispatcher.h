@@ -107,7 +107,6 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, const FVoxelTrans
 	PassParams->transitionCellIndex = transVoxelNodeData.transitionCellIndex;
 	PassParams->resetNode = useZeroData;
 
-	int isoValuesPerAxis = voxelsPerAxis + 1;
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FTransvoxelMC> ComputeShader(ShaderMap);
 	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((voxelsPerAxis, voxelsPerAxis, 1)), FComputeShaderUtils::kGolden2DGroupSize);

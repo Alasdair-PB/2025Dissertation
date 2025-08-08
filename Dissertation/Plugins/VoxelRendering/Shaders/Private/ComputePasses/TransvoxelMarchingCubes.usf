@@ -365,7 +365,7 @@ out float3 position, out float3 normalRes, out int typeFinal, out float lowResDe
 }
 
 // x, y, 1
-[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+[numthreads(THREADS_X, THREADS_Y, 1)]
 void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
 {
     if (any(id >= voxelsPerAxis)) return;
@@ -385,7 +385,7 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
 
     float3 minimumCornerWorldPos = leafPosition - float3(centerDis, centerDis, centerDis);
     
-    for (int j = 0; j < 36; j++)
+    for (int j = 0; j <= 36; j ++)
     {
         uint vertexFloatIndex = (vertexStartIndex + j) * 3;
         outVertexInfo[vertexFloatIndex] = 0.0;
@@ -469,8 +469,6 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         AssignVertexInfo(positionA, normalResA, typeA, order.x + k, vertexStartIndex);
         AssignVertexInfo(positionB, normalResB, typeB, order.y + k, vertexStartIndex);
         AssignVertexInfo(positionC, normalResC, typeC, order.z + k, vertexStartIndex);
-
-
     }
 }
 

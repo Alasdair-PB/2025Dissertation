@@ -115,7 +115,7 @@ void Deformation(int3 id : SV_DispatchThreadID)
     leafStride /= 2;
     int halfStride = leafStride;
     
-    if (any(id == 0))
+    /*if (any(id == 0))
     {
         int3 readBufferIndex = startIndex - int3(halfStride, halfStride, halfStride);
         int flat = GetIsoIndex(readBufferIndex, isoPerAxisMaxRes);
@@ -139,7 +139,7 @@ void Deformation(int3 id : SV_DispatchThreadID)
         isoCombinedValues[writeIndex] = cornerDensity;
         typeCombinedValues[writeIndex] = type;
         return;
-    }
+    }*/
     
     float count = 0.0;
     float sum = 0.0;  

@@ -56,8 +56,8 @@ public:
 	FVoxelTransVoxelNodeData(TransitionCell* inTransitionCell, OctreeNode* inOwner, int inTransitionCellIndex)
 		: transitionCell(inTransitionCell), owningNode(inOwner), direction(FVector()), transitionCellIndex(inTransitionCellIndex), zeroNode(false)
 {}
-	FVoxelTransVoxelNodeData(OctreeNode* inOwner, int inNodeIndex)
-		: transitionCell(nullptr), owningNode(inOwner), direction(FVector()), transitionCellIndex(inNodeIndex), zeroNode(true) {}
+	FVoxelTransVoxelNodeData(OctreeNode* inOwner, int inTransitionCellIndex)
+		: transitionCell(nullptr), owningNode(inOwner), direction(FVector()), transitionCellIndex(inTransitionCellIndex), zeroNode(true) {}
 
 	bool BuildEmptyDataCache() {
 		if (owningNode) {

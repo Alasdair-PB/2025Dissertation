@@ -6,7 +6,7 @@
 
 #define NUM_THREADS_TransvoxelMC_X 8
 #define NUM_THREADS_TransvoxelMC_Y 8
-#define NUM_THREADS_TransvoxelMC_Z 1
+#define NUM_THREADS_TransvoxelMC_Z 8
 
 DECLARE_STATS_GROUP(TEXT("TransvoxelMC"), STATGROUP_TransVoxel, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("TransvoxelMC Execute"), STAT_TransVoxel_Execute, STATGROUP_TransVoxel);
@@ -100,16 +100,15 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, const FVoxelTrans
 	PassParams->outTypeInfo = nodeData.vertexFactory->GetVertexTypeUAV();
 
 	PassParams->voxelsPerAxis = voxelsPerAxis;
-
 	PassParams->baseDepthScale = updateData.scale;
 	PassParams->isoLevel = updateData.isoLevel;
 	PassParams->direction = transVoxelNodeData.direction;
 	PassParams->transitionCellIndex = transVoxelNodeData.transitionCellIndex;
-	PassParams->resetNode = useZeroData;
+	PassParams->resetNode = useZeroData ? 1 : 0;
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FTransvoxelMC> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((voxelsPerAxis, voxelsPerAxis, 1)), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((voxelsPerAxis, voxelsPerAxis, voxelsPerAxis)), FComputeShaderUtils::kGolden2DGroupSize);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("TransvoxelMC Pass"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {

@@ -92,11 +92,11 @@ void Deformation(int3 id : SV_DispatchThreadID)
     float stride = (highResVoxelsPerAxis / voxelsPerAxis);
 
     float scale = baseDepthScale / (1 << leafDepth);
-    float centerDis = scale / 2;
+    float centerDis = floor(scale / 2);
     float3 leafMinWorld = leafPosition - float3(centerDis, centerDis, centerDis);
     
     float3 offsetWorld = leafMinWorld - minimumCornerVoxelBodyPos;
-    float3 offsetVoxelsF = offsetWorld / voxelWorldSize;
+    float3 offsetVoxelsF = floor(offsetWorld / voxelWorldSize);
     float leafStride = stride / (1 << leafDepth);
     int3 startIndex = (int3) offsetVoxelsF + (id * leafStride);
     
@@ -112,8 +112,8 @@ void Deformation(int3 id : SV_DispatchThreadID)
         return;
     }
     
-    leafStride /= 2;
-    int halfStride = leafStride;
+    //leafStride /= 2;
+    int halfStride = floor(leafStride / 2);
     
     /*if (any(id == 0))
     {

@@ -94,6 +94,8 @@ int CreateVertex(int3 cornerPosA, int3 cornerPosB, int vertexIndex, float3 world
 void MarchingCubes(int3 id : SV_DispatchThreadID)
 {
     if (any(id >= voxelsPerAxis)) return;
+    if (id.z >= voxelsPerAxis || id.y >= voxelsPerAxis || id.z >= voxelsPerAxis)
+        return;
     
     int voxelsPerLeaf = voxelsPerAxis * voxelsPerAxis * voxelsPerAxis;
     int globalVoxelIndex = nodeIndex * voxelsPerLeaf;

@@ -353,7 +353,7 @@ out float3 position, out float3 normalRes, out int typeFinal, out float lowResDe
             t = (densityA > isoLevel ? -0.5 : 0.5);
     }
     else
-        t = (isoLevel - densityA) / denom;
+    t = (isoLevel - densityA) / denom;
     
      t = clamp(t, -1.0, 1.0);
     normalRes = lerp(normalA, normalB, t);
@@ -361,16 +361,18 @@ out float3 position, out float3 normalRes, out int typeFinal, out float lowResDe
     
     int typeA = _trCellTypeValues[a];
     int typeB = _trCellTypeValues[b];
-    typeFinal = densityA < densityB ? typeA : typeB;
+    typeFinal = 2;  // densityA < densityB ? typeA : typeB;
 }
 
 // x, y, 1
-[numthreads(THREADS_X, THREADS_Y, 1)]
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
 {
     if (any(id >= voxelsPerAxis)) return;
+    if (id.z >= voxelsPerAxis || id.y >= voxelsPerAxis || id.z >= voxelsPerAxis)
+        return;
     
-     int transitionCellMarchIndex = (id.x * voxelsPerAxis) + id.y;
+    int transitionCellMarchIndex = (id.x * voxelsPerAxis) + id.y;
     int maxedCount = (voxelsPerAxis * voxelsPerAxis * voxelsPerAxis) * 15;
     int totalMarchCellsPerTransitionCell = voxelsPerAxis * voxelsPerAxis;
     int flatIndex = (transitionCellIndex * totalMarchCellsPerTransitionCell) + transitionCellMarchIndex;
@@ -466,9 +468,9 @@ void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
         bool switchOnDensity = lowDensity + 0.01 > highDensity;
         
         int3 order = true ? int3(0, 1, 2) : int3(2, 1, 0);
-        AssignVertexInfo(positionA, normalResA, typeA, order.x + k, vertexStartIndex);
-        AssignVertexInfo(positionB, normalResB, typeB, order.y + k, vertexStartIndex);
-        AssignVertexInfo(positionC, normalResC, typeC, order.z + k, vertexStartIndex);
+        AssignVertexInfo(positionA, normalResA, typeA, (order.x + k), vertexStartIndex);
+        AssignVertexInfo(positionB, normalResB, typeB, (order.y + k), vertexStartIndex);
+        AssignVertexInfo(positionC, normalResC, typeC, (order.z + k), vertexStartIndex);
     }
 }
 

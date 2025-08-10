@@ -252,7 +252,7 @@ FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVS
 {
     FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
     Result.Particle.Color = half4(1, 1, 1, 1);
-    Result.TwoSidedSign = 0;
+    Result.TwoSidedSign = 1;
     Result.VertexColor = Interpolants.Color;
     Result.PrimitiveId = GetPrimitiveId(Interpolants);
     

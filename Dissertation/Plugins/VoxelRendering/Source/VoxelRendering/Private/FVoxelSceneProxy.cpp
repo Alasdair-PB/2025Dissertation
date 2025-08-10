@@ -117,18 +117,16 @@ FORCENOINLINE void FVoxelSceneProxy::GetDynamicMeshElements(
 	for (int32 viewIndex = 0; viewIndex < Views.Num(); viewIndex++)
 	{
 		if (!(VisibilityMap & (1 << viewIndex))) continue;
-
 		if (selectedNodes.Num() == 0) continue; 
 
-		for (const FVoxelProxyUpdateDataNode node : selectedNodes)
+		TArray<FVoxelProxyUpdateDataNode> nodeData = selectedNodes;
+		for (const FVoxelProxyUpdateDataNode node : nodeData)
 		{
 			if ((node.vertexFactory.IsValid() && node.vertexFactory->IsInitialized()))
 			{
 				FMeshBatch& meshBatch = Collector.AllocateMesh();
 				SetMeshBatchGeneric(meshBatch, node, viewIndex);
 				SetMeshBatchElementsGeneric(meshBatch, node, viewIndex);
-
-				//CustomPassMeshBatches.Add(FMeshBatch(meshBatch));
 				Collector.AddMesh(viewIndex, meshBatch);
 			}
 		}

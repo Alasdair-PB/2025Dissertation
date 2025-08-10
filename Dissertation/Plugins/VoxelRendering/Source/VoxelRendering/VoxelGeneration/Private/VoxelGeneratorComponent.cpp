@@ -207,7 +207,6 @@ void UVoxelGeneratorComponent::InvokeVoxelRenderer(OctreeNode* node) {
         int32 readBufferIndex = ReadBufferIndex;
         double password = 0.0;
         stopWatch->TryStartSecureStopWatch(password);
-        dispathShader = false;
         FMarchingCubesInterface::Dispatch(Params,
             [WeakThis = TWeakObjectPtr<UVoxelGeneratorComponent>(this), readBufferIndex, password](FMarchingCubesOutput OutputVal) {
                 if (!WeakThis.IsValid()) return;

@@ -6,7 +6,7 @@
 
 #define NUM_THREADS_TransvoxelMC_X 8
 #define NUM_THREADS_TransvoxelMC_Y 8
-#define NUM_THREADS_TransvoxelMC_Z 8
+#define NUM_THREADS_TransvoxelMC_Z 1
 
 DECLARE_STATS_GROUP(TEXT("TransvoxelMC"), STATGROUP_TransVoxel, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("TransvoxelMC Execute"), STAT_TransVoxel_Execute, STATGROUP_TransVoxel);
@@ -57,11 +57,11 @@ class FTransvoxelMC : public FGlobalShader
 
 	static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
 	{
-		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+		/*FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 		const FPermutationDomain PermutationVector(Parameters.PermutationId);
 		OutEnvironment.SetDefine(TEXT("THREADS_X"), NUM_THREADS_TransvoxelMC_X);
 		OutEnvironment.SetDefine(TEXT("THREADS_Y"), NUM_THREADS_TransvoxelMC_Y);
-		OutEnvironment.SetDefine(TEXT("THREADS_Z"), NUM_THREADS_TransvoxelMC_Z);
+		OutEnvironment.SetDefine(TEXT("THREADS_Z"), NUM_THREADS_TransvoxelMC_Z);*/
 	}
 };
 
@@ -108,7 +108,7 @@ void AddTransvoxelMarchingCubesPass(FRDGBuilder& GraphBuilder, const FVoxelTrans
 
 	const auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
 	const TShaderMapRef<FTransvoxelMC> ComputeShader(ShaderMap);
-	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector((voxelsPerAxis, voxelsPerAxis, voxelsPerAxis)), FComputeShaderUtils::kGolden2DGroupSize);
+	auto GroupCount = FComputeShaderUtils::GetGroupCount(FIntVector(voxelsPerAxis, voxelsPerAxis, 1), FIntVector(8,8,1));
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("TransvoxelMC Pass"), PassParams, ERDGPassFlags::AsyncCompute,
 		[PassParams, ComputeShader, GroupCount](FRHIComputeCommandList& RHICmdList) {

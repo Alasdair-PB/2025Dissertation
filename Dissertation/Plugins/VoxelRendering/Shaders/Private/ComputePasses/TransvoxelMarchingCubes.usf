@@ -341,19 +341,16 @@ out float3 position, out float3 normalRes, out int typeFinal, out float lowResDe
     
     float denom = densityB - densityA;
     float t = 0;
-    abs(denom) < 0.01 ?
-    (densityA > isoLevel ? -0.5 : 0.5)
-    : (isoLevel - densityA) / denom;
     
     if (abs(denom) < 0.01)
     {
         if (isAHighRes || isBHighRes)
-            t = (densityA > isoLevel ? 0.5 : -0.5);
+            t = (densityA > isoLevel ? 0.5 : 0.5);
         else
-            t = (densityA > isoLevel ? -0.5 : 0.5);
+            t = (densityA > isoLevel ? 0.5 : 0.5);
     }
     else
-    t = (isoLevel - densityA) / denom;
+        t = (isoLevel - densityA) / denom;
     
      t = clamp(t, -1.0, 1.0);
     normalRes = lerp(normalA, normalB, t);
@@ -361,16 +358,14 @@ out float3 position, out float3 normalRes, out int typeFinal, out float lowResDe
     
     int typeA = _trCellTypeValues[a];
     int typeB = _trCellTypeValues[b];
-    typeFinal = 2;  // densityA < densityB ? typeA : typeB;
+    typeFinal = densityA < densityB ? typeA : typeB;
 }
 
 // x, y, 1
-[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+[numthreads(8, 8, 1)]
 void TransvoxelMarchingCubes(int3 id : SV_DispatchThreadID)
 {
     if (any(id >= voxelsPerAxis)) return;
-    if (id.z >= voxelsPerAxis || id.y >= voxelsPerAxis || id.z >= voxelsPerAxis)
-        return;
     
     int transitionCellMarchIndex = (id.x * voxelsPerAxis) + id.y;
     int maxedCount = (voxelsPerAxis * voxelsPerAxis * voxelsPerAxis) * 15;
